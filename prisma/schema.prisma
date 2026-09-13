@@ -1,0 +1,405 @@
+// Gestión del Desempeño — Invest in Bogotá
+// Modelo de datos completo. Ver /prisma/constraints.sql para las validaciones
+// a nivel de base de datos que Prisma aún no expresa de forma nativa
+// (reglas de integridad entre `nivel` y las FKs de `usuarioId` / `gerenciaId`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Rol {
+  COLABORADOR
+  JEFE
+  GERENTE
+  // Encargado de crear los 8 objetivos corporativos al inicio del periodo y
+  // de publicar su avance (comentario + % de 0-100) en cada corte — un rol
+  // acotado a esa sola tarea, sin los demás poderes de GESTION_HUMANA/ADMIN
+  // (periodos, cortes, estructura organizacional).
+  GESTOR_CORPORATIVO
+  GESTION_HUMANA
+  ADMIN
+}
+
+enum NivelObjetivo {
+  INDIVIDUAL
+  GERENCIA
+  CORPORATIVO
+}
+
+// Solo aplica a nivel INDIVIDUAL: los objetivos de desempeño se miden contra
+// una línea estratégica corporativa (ver LineaEstrategica); los de
+// desarrollo se miden contra una competencia a fortalecer (texto libre en
+// `competencia`, no hay catálogo fijo).
+enum TipoObjetivoIndividual {
+  DESEMPENO
+  DESARROLLO
+}
+
+// Catálogo fijo de líneas estratégicas corporativas. Solo se usa en
+// objetivos INDIVIDUAL de tipo DESEMPENO.
+enum LineaEstrategica {
+  L1
+  L2
+  L3
+  L4
+  L5
+}
+
+enum EstadoPeriodo {
+  BORRADOR
+  ABIERTO
+  EN_EVALUACION
+  CERRADO
+}
+
+// El corte no se abre solo (nunca por fecha): el administrador lo abre y lo
+// cierra cuando decide, ver `Corte`.
+enum EstadoCorte {
+  BORRADOR
+  ABIERTO
+  CERRADO
+}
+
+// Flujo definido: el colaborador (o gerente/GH, según nivel) propone el
+// objetivo y el jefe directo (o el rol correspondiente al nivel) lo aprueba.
+enum EstadoAprobacionObjetivo {
+  BORRADOR
+  PENDIENTE_APROBACION
+  APROBADO
+  DEVUELTO
+}
+
+enum EstadoEvaluacion {
+  EN_PROGRESO
+  CALIFICADO
+  CERRADO
+}
+
+// ---------------------------------------------------------------------------
+// Identidad y estructura organizacional
+// ---------------------------------------------------------------------------
+
+model Usuario {
+  id     String  @id @default(cuid())
+  // Nulo mientras el colaborador está "pre-registrado" (dado de alta por
+  // Gestión Humana en la estructura organizacional) pero todavía no ha
+  // iniciado sesión ni una sola vez con su cuenta corporativa. Se completa
+  // solo, automáticamente, la primera vez que esa persona entra por SSO:
+  // el callback de login lo empareja por `email` y lo vincula (ver
+  // `resolverUsuarioParaLogin` en usuarios.service.ts). Postgres permite
+  // múltiples NULL bajo un índice único, así que varios pendientes pueden
+  // coexistir sin chocar contra el `@unique`.
+  entraObjectId String? @unique @map("entra_object_id")
+  email         String  @unique
+  nombre        String
+  cargo         String?
+  activo        Boolean @default(true)
+
+  // Foto de perfil traída de Microsoft Graph (la misma que se ve en Teams/
+  // Outlook). Se guarda como bytes en vez de solo una URL porque la foto de
+  // Graph requiere un token de acceso para descargarse — no se puede
+  // referenciar directo desde el navegador. La trae y actualiza
+  // `sincronizar-grupo.mjs` en cada corrida (ver ese script). Nula si la
+  // persona no tiene foto configurada en Entra ID.
+  foto            Bytes?    @map("foto")
+  fotoTipo        String?   @map("foto_tipo")
+  fotoActualizada DateTime? @map("foto_actualizada")
+
+  gerenciaId String?   @map("gerencia_id")
+  gerencia   Gerencia? @relation("ColaboradoresDeGerencia", fields: [gerenciaId], references: [id])
+
+  jefeId        String?   @map("jefe_id")
+  jefe          Usuario?  @relation("JefeColaborador", fields: [jefeId], references: [id])
+  colaboradores Usuario[] @relation("JefeColaborador")
+
+  // Gerencia de la que este usuario es el gerente (relación 1:1 inversa).
+  gerenciaComoGerente Gerencia? @relation("GerenteDeGerencia")
+
+  roles UsuarioRol[]
+
+  objetivosPropios    Objetivo[] @relation("ObjetivoUsuario")
+  objetivosCreados    Objetivo[] @relation("ObjetivoCreadoPor")
+  objetivosAprobados  Objetivo[] @relation("ObjetivoAprobadoPor")
+  objetivosCalificados Objetivo[] @relation("ObjetivoCalificadoPor")
+
+  seguimientosRegistrados Seguimiento[] @relation("SeguimientoRegistradoPor")
+
+  evaluaciones Evaluacion[]
+  auditorias   Auditoria[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([gerenciaId])
+  @@index([jefeId])
+  @@map("usuarios")
+}
+
+// Un usuario puede tener varios roles simultáneos (ej. GERENTE + JEFE).
+model UsuarioRol {
+  id        String  @id @default(cuid())
+  usuarioId String  @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol       Rol
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([usuarioId, rol])
+  @@map("usuario_roles")
+}
+
+model Gerencia {
+  id        String  @id @default(cuid())
+  nombre    String  @unique
+  gerenteId String? @unique @map("gerente_id")
+  gerente   Usuario? @relation("GerenteDeGerencia", fields: [gerenteId], references: [id])
+
+  colaboradores Usuario[]  @relation("ColaboradoresDeGerencia")
+  objetivos     Objetivo[] @relation("ObjetivoGerencia")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("gerencias")
+}
+
+// ---------------------------------------------------------------------------
+// Periodos y cortes de seguimiento
+// ---------------------------------------------------------------------------
+
+model Periodo {
+  id          String        @id @default(cuid())
+  nombre      String        @unique // ej. "2026" (el periodo es anual, no semestral)
+  fechaInicio DateTime      @map("fecha_inicio")
+  fechaFin    DateTime      @map("fecha_fin")
+  estado      EstadoPeriodo @default(BORRADOR)
+
+  objetivos    Objetivo[]
+  cortes       Corte[]
+  evaluaciones Evaluacion[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("periodos")
+}
+
+// Cortes de seguimiento configurables por periodo (admin decide cuántos,
+// con qué fecha límite, y — a diferencia de la fecha límite, que es solo
+// referencia — CUÁNDO se abren de verdad: el corte no se activa solo porque
+// llegó su fecha, el administrador lo abre cuando decide que es momento de
+// que jefes/gerentes/GH empiecen a registrar seguimiento contra él, y lo
+// cierra cuando decide que ya terminó esa ventana. Aplican a los 3 niveles
+// de objetivo por igual.
+model Corte {
+  id          String        @id @default(cuid())
+  periodoId   String        @map("periodo_id")
+  periodo     Periodo       @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  numero      Int
+  nombre      String // ej. "Corte 1 - Q1 2026"
+  fechaLimite DateTime      @map("fecha_limite")
+  estado      EstadoCorte   @default(BORRADOR)
+
+  seguimientos Seguimiento[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodoId, numero])
+  @@map("cortes")
+}
+
+// ---------------------------------------------------------------------------
+// Objetivos (los 3 niveles conviven en la misma tabla, discriminados por `nivel`)
+// ---------------------------------------------------------------------------
+
+model Objetivo {
+  id        String        @id @default(cuid())
+  periodoId String        @map("periodo_id")
+  periodo   Periodo       @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  nivel     NivelObjetivo
+
+  // Solo para nivel INDIVIDUAL.
+  usuarioId String?  @map("usuario_id")
+  usuario   Usuario? @relation("ObjetivoUsuario", fields: [usuarioId], references: [id])
+
+  // Solo para nivel GERENCIA.
+  gerenciaId String?   @map("gerencia_id")
+  gerencia   Gerencia? @relation("ObjetivoGerencia", fields: [gerenciaId], references: [id])
+
+  // Nivel CORPORATIVO no lleva usuarioId ni gerenciaId (aplica a toda la organización).
+
+  // Solo para nivel INDIVIDUAL: clasifica el objetivo como de desempeño (va
+  // contra una línea estratégica) o de desarrollo (va contra una
+  // competencia). Obligatorio para INDIVIDUAL, nulo en los demás niveles.
+  tipoIndividual TipoObjetivoIndividual? @map("tipo_individual")
+  // Solo cuando tipoIndividual = DESEMPENO.
+  lineaEstrategica LineaEstrategica? @map("linea_estrategica")
+  // Solo cuando tipoIndividual = DESARROLLO (texto libre, ej. "Liderazgo",
+  // "Comunicación asertiva").
+  competencia String? @map("competencia")
+  // Enlace a la carpeta/repositorio donde se recopila la evidencia del
+  // objetivo durante el periodo. Distinto de `evidenciaUrl` en Seguimiento,
+  // que es la evidencia puntual de cada corte.
+  linkRepositorio String? @map("link_repositorio")
+  // Solo para nivel INDIVIDUAL: las acciones concretas para lograr el
+  // objetivo (distinto de `descripcion`, que es el objetivo en sí).
+  acciones String?
+
+  // `titulo` es un encabezado corto para listas/tarjetas — en INDIVIDUAL se
+  // deriva automáticamente de `descripcion` (no hay un campo de título en el
+  // formulario: la planilla original de Power Apps ya lo traía como texto
+  // autogenerado sin valor real, ej. "Obj 6 - Nombre Persona").
+  titulo String
+
+  descripcion String
+  // `meta` y `unidadMedida` no aplican a objetivos INDIVIDUAL (no existían en
+  // la herramienta anterior para ese nivel); siguen siendo obligatorios para
+  // GERENCIA y CORPORATIVO.
+  meta         String?
+  indicador    String
+  unidadMedida String? @map("unidad_medida")
+
+  // INDIVIDUAL: peso libre dentro de su grupo, solo para DESEMPENO — los 4
+  // deben sumar 40 (ver calculo-notas.ts). Los de DESARROLLO no compiten por
+  // peso: siempre queda en 0 (ver `cumplioDesarrollo`). GERENCIA: fijo en
+  // 15.00 (2 objetivos por gerencia). CORPORATIVO: fijo en 3.75 (8 objetivos
+  // para toda la organización).
+  peso Decimal @db.Decimal(5, 2)
+
+  estadoAprobacion     EstadoAprobacionObjetivo @default(BORRADOR) @map("estado_aprobacion")
+  comentarioAprobacion String?                  @map("comentario_aprobacion")
+
+  creadoPor String  @map("creado_por")
+  creador   Usuario @relation("ObjetivoCreadoPor", fields: [creadoPor], references: [id])
+
+  aprobadoPor     String?   @map("aprobado_por")
+  aprobador       Usuario?  @relation("ObjetivoAprobadoPor", fields: [aprobadoPor], references: [id])
+  fechaAprobacion DateTime? @map("fecha_aprobacion")
+
+  // Calificación final 0-100 asignada al cierre del periodo (insumo del motor
+  // de cálculo). Es un juicio del evaluador, no un promedio automático de los
+  // seguimientos: por eso es un campo propio y no se deriva del último corte.
+  // La asigna el jefe (individual), el gerente (gerencia) o Gestión Humana
+  // (corporativo), según el nivel del objetivo.
+  calificacionFinal Decimal?  @map("calificacion_final") @db.Decimal(5, 2)
+  calificadoPor     String?   @map("calificado_por")
+  calificador       Usuario?  @relation("ObjetivoCalificadoPor", fields: [calificadoPor], references: [id])
+  fechaCalificacion DateTime? @map("fecha_calificacion")
+
+  // Solo para objetivos INDIVIDUAL de tipo DESARROLLO: no llevan nota
+  // numérica (no tienen peso), así que el jefe simplemente marca si se
+  // cumplieron o no al momento de la calificación final. Es informativo — no
+  // entra al cálculo de la nota individual (ver calculo-notas.ts).
+  cumplioDesarrollo Boolean? @map("cumplio_desarrollo")
+
+  seguimientos Seguimiento[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([periodoId, nivel])
+  @@index([usuarioId])
+  @@index([gerenciaId])
+  @@map("objetivos")
+}
+
+// ---------------------------------------------------------------------------
+// Seguimiento de ejecución (histórico, nunca se sobrescribe)
+// ---------------------------------------------------------------------------
+
+// Bitácora de seguimiento: en cada corte, quien le hace seguimiento al
+// objetivo (el jefe para individuales, el gerente para los de gerencia, el
+// encargado de objetivos corporativos para esos) deja un comentario con
+// fecha. No lleva porcentaje de avance ni semáforo en INDIVIDUAL/GERENCIA —
+// es una nota de proceso, no una nota numérica; la calificación real
+// (`Objetivo.calificacionFinal`) es un juicio aparte que se asigna al cierre
+// del periodo. CORPORATIVO es la excepción: el encargado de esos objetivos sí
+// publica un porcentaje de avance (`porcentajeAvance`) visible para toda la
+// organización en cada corte, además del comentario.
+//
+// Cada corte puede tener más de un registro por objetivo: quien le hace
+// seguimiento puede corregir su propio comentario del mismo corte creando
+// una versión nueva en vez de editar la anterior. `version` es el
+// correlativo dentro de (objetivoId, corteId); la de mayor número es la
+// vigente.
+model Seguimiento {
+  id         String   @id @default(cuid())
+  objetivoId String   @map("objetivo_id")
+  objetivo   Objetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  corteId    String   @map("corte_id")
+  corte      Corte    @relation(fields: [corteId], references: [id])
+  version    Int      @default(1)
+
+  comentario String
+  // Solo para objetivos de nivel CORPORATIVO (0-100) — ver comentario del
+  // modelo. Nulo en INDIVIDUAL/GERENCIA.
+  porcentajeAvance Int? @map("porcentaje_avance")
+
+  registradoPor String  @map("registrado_por")
+  registrador   Usuario @relation("SeguimientoRegistradoPor", fields: [registradoPor], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([objetivoId, corteId, version])
+  @@index([corteId])
+  @@map("seguimientos")
+}
+
+// ---------------------------------------------------------------------------
+// Evaluación consolidada por colaborador y periodo
+// ---------------------------------------------------------------------------
+
+model Evaluacion {
+  id        String  @id @default(cuid())
+  periodoId String  @map("periodo_id")
+  periodo   Periodo @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  usuarioId String  @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  notaIndividual  Decimal? @map("nota_individual") @db.Decimal(5, 2)
+  notaGerencia    Decimal? @map("nota_gerencia") @db.Decimal(5, 2)
+  notaCorporativa Decimal? @map("nota_corporativa") @db.Decimal(5, 2)
+  notaFinal       Decimal? @map("nota_final") @db.Decimal(5, 2)
+
+  estado      EstadoEvaluacion @default(EN_PROGRESO)
+  calculadoEn DateTime?        @map("calculado_en")
+  fechaCierre DateTime?        @map("fecha_cierre")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodoId, usuarioId])
+  @@map("evaluaciones")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoría
+// ---------------------------------------------------------------------------
+
+model Auditoria {
+  id        String  @id @default(cuid())
+  entidad   String // ej. "Objetivo", "Evaluacion", "Periodo"
+  entidadId String  @map("entidad_id")
+  accion    String // ej. "CREATE" | "UPDATE" | "DELETE" | "CIERRE_PERIODO"
+  campo     String?
+  valorAnterior Json? @map("valor_anterior")
+  valorNuevo    Json? @map("valor_nuevo")
+
+  realizadoPor String  @map("realizado_por")
+  usuario      Usuario @relation(fields: [realizadoPor], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entidad, entidadId])
+  @@map("auditoria")
+}

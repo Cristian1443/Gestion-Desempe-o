@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gestion_desempeno
+      POSTGRES_PASSWORD: gestion_desempeno
+      POSTGRES_DB: gestion_desempeno
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Sin publicar puerto al host a propósito: la app se conecta por la red
+    # interna de Docker (nombre de servicio "db"), así que este contenedor no
+    # necesita exponer nada afuera. Esto evita chocar con otro Postgres que ya
+    # esté usando el 5432 del host (ej. en un servidor de QA compartido con
+    # otra app). Si necesitas conectarte desde fuera para depurar (psql,
+    # DBeaver, etc.), descomenta con un puerto libre en el host:
+    # ports:
+    #   - "5433:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql://gestion_desempeno:gestion_desempeno@db:5432/gestion_desempeno?schema=public"
+    ports:
+      # Puerto del HOST configurable — útil en un servidor compartido donde
+      # el 3000 ya podría estar tomado por otra app. Define APP_PORT en el
+      # archivo .env (a la par de docker-compose.yml) para cambiarlo, ej.
+      # APP_PORT=3001. El contenedor sigue escuchando en 3000 por dentro.
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  db_data:

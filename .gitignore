@@ -1,0 +1,35 @@
+# local Postgres data directory (raw DB files, includes real org data — never commit)
+/db_local
+
+# dependencies
+/node_modules
+
+# Node 20 portable runtime (workaround for a Node 24 WebCrypto/Auth.js bug —
+# see README). Not part of the project, just a local dev tool.
+/.tools
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env
+.env
+.env*.local
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# testing
+/coverage
+
+# archivos sueltos de trabajo, no parte del código de la app
+/*.xlsx
