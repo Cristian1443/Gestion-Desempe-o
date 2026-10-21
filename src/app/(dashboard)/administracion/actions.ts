@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRol } from "@/server/auth/rbac";
-import { ErrorCalificacion, calificarObjetivoCorporativo } from "@/server/services/calificaciones.service";
-import { ErrorCorporativo, crearObjetivosCorporativos } from "@/server/services/corporativos.service";
 import {
   ErrorPeriodo,
   abrirPeriodo,
@@ -14,9 +12,6 @@ import {
   editarSeguimiento,
   eliminarSeguimiento,
 } from "@/server/services/periodos.service";
-import { ErrorSeguimiento, registrarSeguimientoCorporativo } from "@/server/services/seguimientos.service";
-import { calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
-import { objetivosCorporativosSchema } from "@/server/validations/corporativo.schema";
 import {
   agregarSeguimientoSchema,
   crearPeriodoSchema,
@@ -25,7 +20,6 @@ import {
   periodoIdSchema,
   seguimientoIdSchema,
 } from "@/server/validations/periodo.schema";
-import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionAdmin = { ok: true } | { ok: false; error: string };
 
@@ -35,76 +29,7 @@ function revalidarVistas() {
   revalidatePath("/mi-equipo");
   revalidatePath("/mi-gerencia");
   revalidatePath("/resultados");
-}
-
-export async function accionCrearObjetivosCorporativos(objetivos: unknown): Promise<EstadoAccionAdmin> {
-  const admin = await requireRol("GESTION_HUMANA", "ADMIN", "GESTOR_CORPORATIVO");
-
-  const parsed = objetivosCorporativosSchema.safeParse({ objetivos });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await crearObjetivosCorporativos(admin.usuarioId, parsed.data.objetivos);
-  } catch (error) {
-    if (error instanceof ErrorCorporativo) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al cargar los objetivos." };
-  }
-
-  revalidarVistas();
-  return { ok: true };
-}
-
-export async function accionRegistrarSeguimientoCorporativo(
-  _estadoPrevio: EstadoAccionAdmin,
-  formData: FormData,
-): Promise<EstadoAccionAdmin> {
-  const admin = await requireRol("GESTION_HUMANA", "ADMIN", "GESTOR_CORPORATIVO");
-
-  const parsed = registrarSeguimientoSchema.safeParse({
-    objetivoId: formData.get("objetivoId"),
-    comentario: formData.get("comentario"),
-  });
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await registrarSeguimientoCorporativo({ ...parsed.data, registradoPor: admin.usuarioId });
-  } catch (error) {
-    if (error instanceof ErrorSeguimiento) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el seguimiento." };
-  }
-
-  revalidarVistas();
-  return { ok: true };
-}
-
-// A diferencia de crear/registrar (abiertas también a GESTOR_CORPORATIVO), el
-// % de cumplimiento queda reservado a Gestión Humana/Admin — mismo alcance que
-// la administración de periodos y franjas de esta misma pantalla.
-export async function accionCalificarCorporativo(
-  objetivoId: string,
-  calificacionFinal: number,
-): Promise<EstadoAccionAdmin> {
-  const admin = await requireRol("GESTION_HUMANA", "ADMIN");
-
-  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, calificacionFinal });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await calificarObjetivoCorporativo({ ...parsed.data, adminId: admin.usuarioId });
-  } catch (error) {
-    if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
-  }
-
-  revalidarVistas();
-  return { ok: true };
+  revalidatePath("/indicadores");
 }
 
 export async function accionCrearPeriodo(input: unknown): Promise<EstadoAccionAdmin> {

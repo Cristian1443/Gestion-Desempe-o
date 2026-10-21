@@ -248,10 +248,11 @@ export async function abrirPeriodo(periodoId: string) {
   return db.periodo.update({ where: { id: periodoId }, data: { estado: "ABIERTO" } });
 }
 
-// Igual que antes, no se cierra un periodo con evaluaciones a medias: todo
-// objetivo debe tener su % de cumplimiento. Un objetivo DESARROLLO se considera
-// calificado por `cumplioDesarrollo` (sí/no); el resto (DESEMPEÑO, GERENCIA,
-// CORPORATIVO) por `calificacionFinal`.
+// No se cierra un periodo con evaluaciones a medias: todo objetivo debe tener su
+// resultado. Un objetivo DESARROLLO se considera calificado por
+// `cumplioDesarrollo` (sí/no); un indicador de la empresa (CORPORATIVO) por
+// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO, GERENCIA) por su % de
+// cumplimiento (`calificacionFinal`).
 export async function cerrarPeriodo(periodoId: string) {
   const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
   if (!periodo) {
@@ -263,11 +264,12 @@ export async function cerrarPeriodo(periodoId: string) {
 
   const objetivos = await db.objetivo.findMany({
     where: { periodoId },
-    select: { nivel: true, tipoIndividual: true, calificacionFinal: true, cumplioDesarrollo: true },
+    select: { nivel: true, tipoIndividual: true, calificacionFinal: true, cumplioDesarrollo: true, cumplido: true },
   });
-  const sinCalificar = objetivos.filter((o) =>
-    o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null,
-  );
+  const sinCalificar = objetivos.filter((o) => {
+    if (o.nivel === "CORPORATIVO") return o.cumplido === null;
+    return o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null;
+  });
   if (sinCalificar.length > 0) {
     const porNivel = sinCalificar.reduce<Record<string, number>>((acumulado, o) => {
       acumulado[o.nivel] = (acumulado[o.nivel] ?? 0) + 1;
@@ -277,7 +279,7 @@ export async function cerrarPeriodo(periodoId: string) {
       .map(([nivel, cantidad]) => `${cantidad} ${nivel}`)
       .join(", ");
     throw new ErrorPeriodo(
-      `Todos los objetivos deben tener su % de cumplimiento antes de cerrar el periodo. Faltan: ${detalle}.`,
+      `Todos los objetivos e indicadores deben tener su resultado antes de cerrar el periodo. Faltan: ${detalle}.`,
     );
   }
 

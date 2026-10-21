@@ -214,8 +214,10 @@ npx prisma db seed
 ```
 
 El seed crea la cuenta de arranque `iibservices2@investinbogota.org`
-(Gestión Humana + Admin), el periodo `2026` con 4 seguimientos con franja y 8 objetivos
-corporativos genéricos.
+(Gestión Humana + Admin) y el periodo `2026` con 4 seguimientos con franja y la franja del %
+de cumplimiento. No crea indicadores de la empresa: los carga el Gestor corporativo desde la
+pestaña Indicadores. Para eso, la persona encargada debe tener el rol *Gestor de objetivos
+corporativos* (Administración → Estructura organizacional).
 
 **No volver a correr el seed en producción.** Sus `upsert` restauran valores:
 reabrirían el periodo 2026 aunque ya esté cerrado, devolverían los seguimientos a sus

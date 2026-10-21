@@ -40,7 +40,7 @@ export default async function ResultadosPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TarjetaKpi etiqueta="Con seguimiento — Individual" cobertura={datos.coberturaIndividual} />
           <TarjetaKpi etiqueta="Con seguimiento — Gerencia" cobertura={datos.coberturaGerencia} />
-          <TarjetaKpi etiqueta="Con seguimiento — Corporativo" cobertura={datos.coberturaCorporativo} />
+          <TarjetaKpi etiqueta="Indicadores con avance del mes" cobertura={datos.coberturaCorporativo} />
           <div className="flex flex-col gap-1.5 rounded-card bg-iib-surface p-5 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">
               Colaboradores con objetivos
@@ -79,7 +79,7 @@ export default async function ResultadosPage() {
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Objetivos sin registro en el seguimiento</h2>
+          <h2 className="text-base font-bold">Objetivos e indicadores sin registro</h2>
           <span className="text-sm text-iib-secondary">
             {datos.objetivosSinSeguimiento.length} objetivo
             {datos.objetivosSinSeguimiento.length === 1 ? "" : "s"}
@@ -88,7 +88,7 @@ export default async function ResultadosPage() {
 
         {datos.objetivosSinSeguimiento.length === 0 ? (
           <p className="text-sm text-iib-secondary">
-            Todos los objetivos ya tienen registro en este seguimiento.
+            Todos los objetivos y los indicadores tienen su registro al día.
           </p>
         ) : (
           <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">

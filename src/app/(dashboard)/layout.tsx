@@ -19,7 +19,10 @@ export default async function DashboardLayout({
     select: { foto: true },
   });
 
-  const items = [{ href: "/mis-objetivos", label: "Mis objetivos" }];
+  const items = [
+    { href: "/mis-objetivos", label: "Mis objetivos" },
+    { href: "/indicadores", label: "Indicadores" },
+  ];
   if (usuario.roles.includes("JEFE")) {
     items.push({ href: "/mi-equipo", label: "Mi equipo" });
   }
@@ -29,8 +32,6 @@ export default async function DashboardLayout({
   if (usuario.roles.includes("GESTION_HUMANA") || usuario.roles.includes("ADMIN")) {
     items.push({ href: "/administracion", label: "Administración" });
     items.push({ href: "/resultados", label: "Resultados" });
-  } else if (usuario.roles.includes("GESTOR_CORPORATIVO")) {
-    items.push({ href: "/administracion", label: "Objetivos corporativos" });
   }
 
   return (

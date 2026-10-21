@@ -12,7 +12,7 @@ export class ErrorCalificacion extends Error {
   }
 }
 
-function exigirFranjaCumplimiento(periodo: {
+export function exigirFranjaCumplimiento(periodo: {
   estado: string;
   cumplimientoInicio: Date | null;
   cumplimientoFin: Date | null;
@@ -120,33 +120,6 @@ export async function calificarObjetivoGerencia(input: {
     data: {
       calificacionFinal: input.calificacionFinal,
       calificadoPor: input.gerenteId,
-      fechaCalificacion: new Date(),
-    },
-  });
-}
-
-// Calificación final de objetivos CORPORATIVO — la pone Gestión Humana/Admin.
-// No hay un "dueño" individual como en jefe/gerente: el control de acceso es
-// puramente por rol (ver requireRol en administracion/actions.ts).
-export async function calificarObjetivoCorporativo(input: {
-  objetivoId: string;
-  calificacionFinal: number;
-  adminId: string;
-}) {
-  const objetivo = await db.objetivo.findUnique({
-    where: { id: input.objetivoId },
-    include: { periodo: true },
-  });
-  if (!objetivo || objetivo.nivel !== "CORPORATIVO") {
-    throw new ErrorCalificacion("El objetivo no existe.");
-  }
-  exigirFranjaCumplimiento(objetivo.periodo);
-
-  return db.objetivo.update({
-    where: { id: input.objetivoId },
-    data: {
-      calificacionFinal: input.calificacionFinal,
-      calificadoPor: input.adminId,
       fechaCalificacion: new Date(),
     },
   });

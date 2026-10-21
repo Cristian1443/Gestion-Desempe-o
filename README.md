@@ -274,6 +274,31 @@ semáforo: describen el flujo anterior, no el actual.
   existe "En evaluación" ni "Pasar a evaluación": la franja lo reemplaza.
 - Los seguimientos nunca alimentan la nota ponderada (`calculo-notas.ts`).
 
+### Indicadores de la empresa (nivel corporativo)
+
+Los objetivos corporativos se llaman **indicadores** y funcionan distinto al resto.
+Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todos.
+
+- **Sin peso.** Solo Cumple / No cumple. `Objetivo.peso` queda en 0 y la cantidad
+  ya no es fija en 8.
+- **Seguimiento mensual**, sin franjas: un registro por mes calendario con el
+  **% acumulado** (0-100) y un comentario (`AvanceIndicador`, ej. "en octubre vamos
+  en 60%"). Se puede registrar el mes en curso y completar o corregir meses
+  anteriores del periodo, nunca meses futuros; corregir crea una versión nueva.
+  Los meses salen del calendario en hora de Bogotá, ver [src/lib/mes.ts](src/lib/mes.ts).
+- **Resultado final.** Al final, quien encarga marca Cumple o No cumple
+  (`Objetivo.cumplido`), solo dentro de la franja del % de cumplimiento del periodo.
+  Un periodo no se cierra mientras algún indicador no tenga resultado.
+- **Quién los gestiona.** El rol *Gestor de objetivos corporativos* (hoy Andrea
+  Jimenez Fandiño) carga los indicadores, hace el seguimiento mensual y marca el
+  resultado; Gestión Humana y Admin pueden hacer lo mismo. Todos los demás los ven
+  en solo lectura. La pantalla muestra como responsables a quienes tengan ese rol.
+- **Nota final.** Cómo cuentan los indicadores en el 30% corporativo de la nota
+  está sin definir; `calculo-notas.ts` no se tocó y sigue sin conectarse a nada.
+- Los registros de seguimiento viejos de objetivos corporativos (los del modelo
+  anterior de franjas) siguen en la tabla `registros_seguimiento`, pero ya no se
+  muestran.
+
 ## Módulo "Mis objetivos" (fase 4, primera entrega)
 
 Pantalla del colaborador: ve sus objetivos individuales, los 2 de su gerencia
@@ -496,8 +521,9 @@ Administración, hasta que hizo falta de verdad.
 la migración real (`scripts/migracion-sharepoint/importar-estructura-real.mjs`)
 contra el directorio de Entra ID. El seed solo crea lo mínimo para arrancar un
 ambiente nuevo: la cuenta de arranque de Gestión Humana/Admin, el periodo
-anual `2026` con 4 seguimientos con franja, la franja del % de cumplimiento, y 8 objetivos corporativos de
-contenido genérico — es idempotente, se puede correr varias veces:
+anual `2026` con 4 seguimientos con franja y la franja del % de cumplimiento. No crea indicadores de la
+empresa: los carga el Gestor corporativo desde la pestaña Indicadores. Es idempotente, se puede correr varias
+veces:
 
 ```bash
 npx prisma db seed

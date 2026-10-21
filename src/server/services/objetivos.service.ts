@@ -43,7 +43,8 @@ export interface MisObjetivos {
   nombreJefe: string | null;
   individuales: ObjetivoVista[];
   gerencia: { nombreGerencia: string | null; objetivos: ObjetivoVista[] };
-  corporativos: ObjetivoVista[];
+  // Los indicadores de la empresa se gestionan en /indicadores; aquí solo hace falta cuántos son.
+  indicadoresTotal: number;
 }
 
 // Convierte un Objetivo con su bitácora de seguimientos (un registro vigente
@@ -122,7 +123,7 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
     include: { seguimiento: { select: { numero: true } }, registrador: { select: { nombre: true } } },
   };
 
-  const [franjas, individuales, gerencia, corporativos] = await Promise.all([
+  const [franjas, individuales, gerencia, indicadoresTotal] = await Promise.all([
     obtenerContextoFranjas(periodo.id),
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId },
@@ -136,11 +137,7 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
           orderBy: { createdAt: "asc" },
         })
       : Promise.resolve([]),
-    db.objetivo.findMany({
-      where: { periodoId: periodo.id, nivel: "CORPORATIVO" },
-      include: { seguimientos: bitacoraDeSeguimientos },
-      orderBy: { createdAt: "asc" },
-    }),
+    db.objetivo.count({ where: { periodoId: periodo.id, nivel: "CORPORATIVO" } }),
   ]);
 
   return {
@@ -152,6 +149,6 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
       nombreGerencia: usuario.gerencia?.nombre ?? null,
       objetivos: gerencia.map((o) => aVista(o)),
     },
-    corporativos: corporativos.map((o) => aVista(o)),
+    indicadoresTotal,
   };
 }

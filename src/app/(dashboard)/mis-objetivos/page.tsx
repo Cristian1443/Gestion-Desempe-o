@@ -2,7 +2,6 @@ import { FranjaItems } from "@/components/FranjaBanner";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
 import {
-  ObjetivoCorporativoRow,
   ObjetivoIndividualCard,
   ObjetivoSoloLecturaCard,
   TarjetaCategoria,
@@ -10,7 +9,7 @@ import {
 } from "./components";
 import { ProponerObjetivosForm } from "./ProponerObjetivosForm";
 
-type Categoria = "corporativo" | "gerencia" | "desempeno" | "desarrollo";
+type Categoria = "gerencia" | "desempeno" | "desarrollo";
 
 export default async function MisObjetivosPage({
   searchParams,
@@ -31,7 +30,7 @@ export default async function MisObjetivosPage({
     );
   }
 
-  const { periodo, franjas, nombreJefe, individuales, gerencia, corporativos } = datos;
+  const { periodo, franjas, nombreJefe, individuales, gerencia, indicadoresTotal } = datos;
 
   const desempeno = individuales.filter((o) => o.tipoIndividual === "DESEMPENO");
   const desarrollo = individuales.filter((o) => o.tipoIndividual === "DESARROLLO");
@@ -43,7 +42,7 @@ export default async function MisObjetivosPage({
     individuales.length === 0 || individuales.every((o) => o.estadoAprobacion === "DEVUELTO");
 
   const categoria = (
-    ["corporativo", "gerencia", "desempeno", "desarrollo"] as Categoria[]
+    ["gerencia", "desempeno", "desarrollo"] as Categoria[]
   ).includes(searchParams.categoria as Categoria)
     ? (searchParams.categoria as Categoria)
     : undefined;
@@ -93,12 +92,13 @@ export default async function MisObjetivosPage({
           <TarjetaCategoria
             categoria="corporativo"
             titulo="Indicadores"
+            href="/indicadores"
             resumen={
-              corporativos.length === 0
+              indicadoresTotal === 0
                 ? "Aún no cargados"
-                : `${corporativos.length} objetivos · 30% de la nota`
+                : `${indicadoresTotal} indicador${indicadoresTotal === 1 ? "" : "es"}`
             }
-            detalle="Aplican a toda la Corporación"
+            detalle="Aplican a toda la Corporación · cumple o no cumple"
           />
           {gerencia.nombreGerencia ? (
             <TarjetaCategoria
@@ -140,37 +140,6 @@ export default async function MisObjetivosPage({
       ) : (
         <div className="flex flex-col gap-4">
           <VolverASelectorLink />
-
-          {categoria === "corporativo" && (
-            <section className="flex flex-col gap-4" aria-labelledby="nivel-corporativo">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h2 id="nivel-corporativo" className="text-base font-bold">
-                    Objetivos corporativos
-                  </h2>
-                  <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    30% de la nota final
-                  </span>
-                </div>
-                <span className="rounded-full border border-iib-border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
-                  Solo lectura
-                </span>
-              </div>
-              <p className="-mt-2.5 text-sm text-iib-secondary">Aplican a toda la Corporación.</p>
-
-              {corporativos.length === 0 ? (
-                <p className="text-sm text-iib-secondary">
-                  Gestión Humana aún no ha cargado los objetivos corporativos de este periodo.
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
-                  {corporativos.map((objetivo, indice) => (
-                    <ObjetivoCorporativoRow key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
 
           {categoria === "gerencia" && gerencia.nombreGerencia && (
             <section className="flex flex-col gap-4" aria-labelledby="nivel-gerencia">

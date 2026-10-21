@@ -23,14 +23,10 @@ ALTER TABLE objetivos
   CHECK (nivel <> 'CORPORATIVO' OR (usuario_id IS NULL AND gerencia_id IS NULL));
 
 -- Peso fijo por nivel (ver motor de cálculo para el detalle de por qué estos
--- valores exactos: 30% / 2 objetivos = 15.00, 30% / 8 objetivos = 3.75).
+-- valores exactos: 30% / 2 objetivos = 15.00). Los corporativos no llevan peso.
 ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_peso_gerencia
   CHECK (nivel <> 'GERENCIA' OR peso = 15.00);
-
-ALTER TABLE objetivos
-  ADD CONSTRAINT chk_objetivo_peso_corporativo
-  CHECK (nivel <> 'CORPORATIVO' OR peso = 3.75);
 
 -- Todo objetivo INDIVIDUAL debe traer su clasificación (desempeño vs.
 -- desarrollo); los demás niveles no la usan.

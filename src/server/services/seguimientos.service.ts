@@ -118,30 +118,3 @@ export async function registrarSeguimientoGerencia(
 
   return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.gerenteId, input.comentario);
 }
-
-// Seguimiento de un objetivo CORPORATIVO. No tiene un dueño individual ni de
-// gerencia — la autorización (Gestión Humana/Admin o el rol acotado
-// GESTOR_CORPORATIVO) se resuelve en la capa de Server Action con
-// `requireRol`, no aquí.
-export async function registrarSeguimientoCorporativo(
-  input: RegistrarSeguimientoInput & { registradoPor: string },
-) {
-  const objetivo = await db.objetivo.findUnique({
-    where: { id: input.objetivoId },
-    include: { periodo: true },
-  });
-
-  if (!objetivo) {
-    throw new ErrorSeguimiento("El objetivo no existe.");
-  }
-  if (objetivo.nivel !== "CORPORATIVO") {
-    throw new ErrorSeguimiento("Este objetivo no es corporativo.");
-  }
-  if (objetivo.periodo.estado !== "ABIERTO") {
-    throw new ErrorSeguimiento("El periodo no está abierto para registrar seguimiento.");
-  }
-
-  const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
-
-  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.registradoPor, input.comentario);
-}

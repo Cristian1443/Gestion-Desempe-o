@@ -126,6 +126,7 @@ model Usuario {
   objetivosCalificados Objetivo[] @relation("ObjetivoCalificadoPor")
 
   seguimientosRegistrados RegistroSeguimiento[] @relation("SeguimientoRegistradoPor")
+  avancesRegistrados      AvanceIndicador[]     @relation("AvanceRegistradoPor")
 
   evaluaciones Evaluacion[]
   auditorias   Auditoria[]
@@ -270,8 +271,8 @@ model Objetivo {
   // INDIVIDUAL: peso libre dentro de su grupo, solo para DESEMPENO — los 4
   // deben sumar 40 (ver calculo-notas.ts). Los de DESARROLLO no compiten por
   // peso: siempre queda en 0 (ver `cumplioDesarrollo`). GERENCIA: fijo en
-  // 15.00 (2 objetivos por gerencia). CORPORATIVO: fijo en 3.75 (8 objetivos
-  // para toda la organización).
+  // 15.00 (2 objetivos por gerencia). CORPORATIVO (los "indicadores de la
+  // empresa"): no llevan peso, siempre 0 — solo Cumple / No cumple.
   peso Decimal @db.Decimal(5, 2)
 
   estadoAprobacion     EstadoAprobacionObjetivo @default(BORRADOR) @map("estado_aprobacion")
@@ -301,7 +302,14 @@ model Objetivo {
   // entra al cálculo de la nota individual (ver calculo-notas.ts).
   cumplioDesarrollo Boolean? @map("cumplio_desarrollo")
 
+  // Solo para nivel CORPORATIVO (indicadores de la empresa): no llevan nota ni
+  // peso, solo Cumple / No cumple, que marca la persona encargada al final,
+  // dentro de la franja del % de cumplimiento del periodo.
+  cumplido Boolean? @map("cumplido")
+
   seguimientos RegistroSeguimiento[]
+  // Solo CORPORATIVO: avance mes a mes del indicador.
+  avances AvanceIndicador[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -345,6 +353,33 @@ model RegistroSeguimiento {
   @@unique([objetivoId, seguimientoId, version])
   @@index([seguimientoId])
   @@map("registros_seguimiento")
+}
+
+// Avance mensual de un indicador de la empresa (objetivo CORPORATIVO): un
+// registro por mes calendario con el % acumulado (0-100, ej. "en octubre vamos
+// en 60%") y un comentario. Se puede registrar el mes en curso y completar o
+// corregir meses anteriores, nunca meses futuros. Corregir un mes crea una
+// versión nueva (queda la de mayor número), igual que `RegistroSeguimiento`.
+// El CHECK de 0-100 de `porcentaje` vive en la propia migración.
+model AvanceIndicador {
+  id         String   @id @default(cuid())
+  objetivoId String   @map("objetivo_id")
+  objetivo   Objetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  // Primer día del mes, a medianoche UTC.
+  mes        DateTime
+  version    Int      @default(1)
+
+  porcentaje Int
+  comentario String
+
+  registradoPor String  @map("registrado_por")
+  registrador   Usuario @relation("AvanceRegistradoPor", fields: [registradoPor], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([objetivoId, mes, version])
+  @@index([objetivoId])
+  @@map("avances_indicador")
 }
 
 // ---------------------------------------------------------------------------

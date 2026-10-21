@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { primerDiaDelMes, mesActual } from "@/lib/mes";
 import { obtenerContextoFranjas, obtenerPeriodoActual } from "@/server/services/periodos.service";
 
 export interface ObjetivoSinSeguimiento {
@@ -70,9 +71,11 @@ export async function obtenerResultados(): Promise<Resultados | null> {
       where: { periodoId: periodo.id, nivel: "GERENCIA" },
       include: { seguimientos: seguimientoDeReferencia, gerencia: { select: { nombre: true } } },
     }),
+    // Los indicadores de la empresa se siguen mes a mes: cuenta quien ya tiene
+    // avance registrado en el mes en curso.
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "CORPORATIVO" },
-      include: { seguimientos: seguimientoDeReferencia },
+      include: { avances: { where: { mes: primerDiaDelMes(mesActual()) }, take: 1 } },
     }),
     db.usuario.findMany({
       where: { activo: true, gerenciaId: { not: null } },
@@ -92,7 +95,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
   }));
   const corporativosConCobertura = corporativos.map((o) => ({
     ...o,
-    tieneSeguimiento: o.seguimientos.length > 0,
+    tieneSeguimiento: o.avances.length > 0,
   }));
 
   const colaboradoresConObjetivosIds = new Set(
@@ -143,7 +146,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
 
   for (const o of corporativosConCobertura) {
     if (o.tieneSeguimiento) continue;
-    objetivosSinSeguimiento.push({ id: o.id, titulo: o.titulo, nivel: "CORPORATIVO", propietario: "Corporativo" });
+    objetivosSinSeguimiento.push({ id: o.id, titulo: o.titulo, nivel: "CORPORATIVO", propietario: "Indicador de la empresa" });
   }
 
   return {

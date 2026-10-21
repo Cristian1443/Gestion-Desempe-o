@@ -83,12 +83,15 @@ export function TarjetaCategoria({
   titulo,
   resumen,
   detalle,
+  href,
   deshabilitada = false,
 }: {
   categoria: keyof typeof COLORES_CATEGORIA;
   titulo: string;
   resumen: string;
   detalle?: string;
+  // A dónde lleva la tarjeta; por omisión, al detalle de la categoría.
+  href?: string;
   deshabilitada?: boolean;
 }) {
   const color = COLORES_CATEGORIA[categoria];
@@ -130,7 +133,7 @@ export function TarjetaCategoria({
   if (deshabilitada) return contenido;
 
   return (
-    <Link href={`/mis-objetivos?categoria=${categoria}`} className="block h-full">
+    <Link href={href ?? `/mis-objetivos?categoria=${categoria}`} className="block h-full">
       {contenido}
     </Link>
   );
@@ -386,42 +389,5 @@ export function ObjetivoSoloLecturaCard({
 
       <CalificacionFinalVista objetivo={objetivo} />
     </article>
-  );
-}
-
-export function ObjetivoCorporativoRow({
-  objetivo,
-  numero,
-}: {
-  objetivo: ObjetivoVista;
-  numero: number;
-}) {
-  const ultimo = objetivo.seguimientos[objetivo.seguimientos.length - 1];
-  return (
-    <div className="flex flex-col gap-1.5 border-b border-iib-border px-4 py-3 last:border-b-0">
-      <div className="grid grid-cols-[1.2rem_1fr_auto_auto] items-center gap-x-3">
-        <span className="text-xs tabular-nums text-iib-secondary">{numero}</span>
-        <span className="text-sm font-medium">{objetivo.titulo}</span>
-        {objetivo.calificacionFinal !== null && (
-          <span
-            className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
-              cumpleCalificacion(objetivo.calificacionFinal)
-                ? "bg-success text-white"
-                : "bg-danger text-white"
-            }`}
-          >
-            {objetivo.calificacionFinal}% · {cumpleCalificacion(objetivo.calificacionFinal) ? "Cumple" : "No cumple"}
-          </span>
-        )}
-        <span className="w-fit rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
-          {objetivo.peso}%
-        </span>
-      </div>
-      <p className="pl-[1.2rem] text-xs text-iib-secondary">
-        {ultimo
-          ? `Último registro: Seguimiento ${ultimo.numero} · ${formatearFecha(ultimo.fecha)}`
-          : "Aún sin seguimiento registrado"}
-      </p>
-    </div>
   );
 }

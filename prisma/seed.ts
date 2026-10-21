@@ -1,5 +1,5 @@
 // Datos mínimos para poder arrancar el sistema en un ambiente nuevo:
-// periodo, seguimientos con franja, objetivos corporativos de partida, y una cuenta de
+// periodo, seguimientos con franja, y una cuenta de
 // arranque con permisos de administrador. Ya NO inventa personas ni
 // gerencias — eso lo trae la migración real
 // (scripts/migracion-sharepoint/importar-estructura-real.mjs) contra el
@@ -71,46 +71,10 @@ async function main() {
     );
   }
 
-  // --- Objetivos corporativos (30%, 8 x 3.75%) ---
-  // Contenido de partida genérico — Gestión Humana los reemplaza por los
-  // reales del periodo desde Administración cuando los tenga definidos.
-  const existentes = await db.objetivo.count({ where: { periodoId: periodo.id, nivel: "CORPORATIVO" } });
-  if (existentes === 0) {
-    const objetivosCorporativos = [
-      "Incrementar la inversión extranjera directa facilitada hacia Bogotá-Región.",
-      "Fortalecer la percepción de Bogotá como destino de inversión en mercados prioritarios.",
-      "Mejorar el índice de satisfacción de los inversionistas atendidos.",
-      "Aumentar el compromiso y clima organizacional (eNPS).",
-      "Fortalecer el gobierno de datos y la seguridad de la información.",
-      "Optimizar la ejecución presupuestal de la Corporación.",
-      "Fortalecer alianzas estratégicas con el sector público y privado.",
-      "Avanzar en la estrategia de sostenibilidad y responsabilidad social corporativa.",
-    ];
-
-    for (const titulo of objetivosCorporativos) {
-      await db.objetivo.create({
-        data: {
-          periodoId: periodo.id,
-          nivel: "CORPORATIVO",
-          titulo,
-          descripcion: titulo,
-          meta: "Por definir por Gestión Humana",
-          indicador: "Por definir por Gestión Humana",
-          unidadMedida: "%",
-          peso: 3.75,
-          estadoAprobacion: "APROBADO",
-          creadoPor: admin.id,
-        },
-      });
-    }
-  }
-
   console.log("Seed completado:");
   console.log(`  Cuenta de arranque: ${admin.email} (Gestión Humana + Admin, pendiente de primer login)`);
   console.log(`  Periodo: ${periodo.nombre} (${seguimientos.length} seguimientos con franja)`);
-  console.log(
-    "  Objetivos corporativos de partida: 8 (contenido genérico, editar desde Administración)",
-  );
+  console.log("  Indicadores de la empresa: ninguno (los carga el Gestor corporativo desde la pestaña Indicadores)");
   console.log(
     "\n  Para cargar la estructura organizacional y los objetivos reales, corre:",
   );
