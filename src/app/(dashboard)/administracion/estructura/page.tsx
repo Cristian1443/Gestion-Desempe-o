@@ -1,14 +1,24 @@
+import Link from "next/link";
 import { requireRol } from "@/server/auth/rbac";
 import { listarGerencias, listarUsuarios } from "@/server/services/organizacion.service";
 import { GerenciaRow, UsuarioRow } from "./components";
 import { CrearGerenciaForm } from "./CrearGerenciaForm";
 import { CrearUsuarioForm } from "./CrearUsuarioForm";
 
-export default async function EstructuraOrganizacionalPage() {
+export default async function EstructuraOrganizacionalPage({
+  searchParams,
+}: {
+  searchParams: { inactivos?: string };
+}) {
   await requireRol("GESTION_HUMANA", "ADMIN");
 
   const [gerencias, usuarios] = await Promise.all([listarGerencias(), listarUsuarios()]);
   const usuariosActivos = usuarios.filter((u) => u.activo);
+  const cantidadInactivos = usuarios.length - usuariosActivos.length;
+  // Los inactivos (quienes ya salieron del grupo de Entra ID) se ocultan por
+  // defecto, pero se pueden ver para reactivar a alguien.
+  const mostrarInactivos = searchParams.inactivos === "1";
+  const usuariosVisibles = mostrarInactivos ? usuarios : usuariosActivos;
 
   return (
     <>
@@ -44,14 +54,27 @@ export default async function EstructuraOrganizacionalPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
           <h2 className="text-base font-bold">Colaboradores</h2>
           <span className="text-sm text-iib-secondary">
-            {usuarios.length} usuario{usuarios.length === 1 ? "" : "s"}
+            {usuariosVisibles.length} usuario{usuariosVisibles.length === 1 ? "" : "s"}
+            {cantidadInactivos > 0 && (
+              <>
+                {" · "}
+                <Link
+                  href={mostrarInactivos ? "/administracion/estructura" : "/administracion/estructura?inactivos=1"}
+                  className="font-semibold text-iib-primary underline"
+                >
+                  {mostrarInactivos
+                    ? "Ocultar inactivos"
+                    : `Mostrar ${cantidadInactivos} inactivo${cantidadInactivos === 1 ? "" : "s"}`}
+                </Link>
+              </>
+            )}
           </span>
         </div>
 
         <CrearUsuarioForm gerencias={gerencias} usuarios={usuariosActivos} />
 
         <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
-          {usuarios.map((usuario) => (
+          {usuariosVisibles.map((usuario) => (
             <UsuarioRow
               key={usuario.id}
               usuario={usuario}
