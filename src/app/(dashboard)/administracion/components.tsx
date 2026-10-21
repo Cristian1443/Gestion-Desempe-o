@@ -1,47 +1,43 @@
 import { formatearFecha } from "@/lib/fecha";
-import { ReportarAvanceDialog } from "@/components/ReportarAvanceDialog";
+import { estadoFranja, hoyEnBogota } from "@/lib/franja";
+import type { FranjaUI } from "@/lib/franja-ui";
+import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDialog";
+import { CumplimientoLectura } from "@/components/CumplimientoLectura";
 import { BotonAccionSimple } from "@/components/AccionesSimples";
 import type { ObjetivoCorporativoVista } from "@/server/services/corporativos.service";
-import {
-  accionAbrirPeriodo,
-  accionCerrarPeriodo,
-  accionPasarAEvaluacion,
-  accionReportarAvanceCorporativo,
-} from "./actions";
-import { AgregarCorteForm } from "./AgregarCorteForm";
+import { accionAbrirPeriodo, accionCerrarPeriodo, accionRegistrarSeguimientoCorporativo } from "./actions";
+import { AgregarSeguimientoForm } from "./AgregarSeguimientoForm";
 import { CalificacionCorporativaControl } from "./CalificacionCorporativaControl";
-import { CorteRow } from "./CorteRow";
+import { FranjaCumplimientoForm } from "./FranjaCumplimientoForm";
+import { SeguimientoRow } from "./SeguimientoRow";
 
 const ETIQUETA_ESTADO_PERIODO: Record<string, string> = {
   BORRADOR: "Borrador",
   ABIERTO: "Abierto",
-  EN_EVALUACION: "En evaluación",
   CERRADO: "Cerrado",
 };
 
 const CLASES_ESTADO_PERIODO: Record<string, string> = {
   BORRADOR: "bg-iib-surface-sunken text-iib-secondary",
   ABIERTO: "bg-success-bg text-success",
-  EN_EVALUACION: "bg-warning-bg text-warning",
   CERRADO: "bg-iib-surface-sunken text-iib-secondary",
 };
 
 export function ObjetivoCorporativoCard({
   objetivo,
   numero,
-  numeroCorteActual,
-  periodoEstado,
+  franja,
   puedeCalificar,
 }: {
   objetivo: ObjetivoCorporativoVista;
   numero: number;
-  numeroCorteActual: number | null;
-  periodoEstado: string;
+  franja: FranjaUI;
   puedeCalificar: boolean;
 }) {
-  const yaTieneSeguimientoDelCorte = objetivo.seguimientos.some(
-    (s) => s.numeroCorte === numeroCorteActual,
-  );
+  const enCurso = franja.seguimientoEnCurso;
+  const yaTieneRegistroDeEste = enCurso
+    ? objetivo.seguimientos.some((s) => s.numero === enCurso.numero)
+    : false;
 
   return (
     <article className="flex flex-col gap-3 rounded-card bg-iib-surface p-5 shadow-card">
@@ -66,17 +62,10 @@ export function ObjetivoCorporativoCard({
       ) : (
         <ul className="flex flex-col gap-2">
           {objetivo.seguimientos.map((s) => (
-            <li key={s.numeroCorte} className="rounded-md bg-iib-surface-sunken px-3 py-2">
+            <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="text-xs font-bold text-iib-foreground">Corte {s.numeroCorte}</span>
-                <div className="flex items-center gap-2">
-                  {s.porcentajeAvance !== null && (
-                    <span className="rounded-full bg-iib-primary/10 px-2 py-0.5 text-[0.7rem] font-bold tabular-nums text-iib-primary">
-                      {s.porcentajeAvance}%
-                    </span>
-                  )}
-                  <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
-                </div>
+                <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
+                <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
               </div>
               <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
             </li>
@@ -84,24 +73,31 @@ export function ObjetivoCorporativoCard({
         </ul>
       )}
 
-      {periodoEstado === "EN_EVALUACION" && puedeCalificar ? (
+      {franja.cumplimientoEnCurso && puedeCalificar ? (
         <div className="flex justify-end pt-0.5">
           <CalificacionCorporativaControl objetivo={objetivo} />
         </div>
       ) : (
-        numeroCorteActual !== null && (
-          <div className="flex justify-end pt-0.5">
-            <ReportarAvanceDialog
-              objetivoId={objetivo.id}
-              tituloObjetivo={objetivo.titulo}
-              numeroCorte={numeroCorteActual}
-              etiquetaBoton={yaTieneSeguimientoDelCorte ? "Actualizar seguimiento" : "Registrar seguimiento"}
-              etiquetaEnviar="Guardar"
-              incluirAvance
-              accion={accionReportarAvanceCorporativo}
-            />
-          </div>
-        )
+        <>
+          <CumplimientoLectura calificacionFinal={objetivo.calificacionFinal} />
+          {enCurso && (
+            <div className="flex justify-end pt-0.5">
+              <RegistrarSeguimientoDialog
+                objetivoId={objetivo.id}
+                tituloObjetivo={objetivo.titulo}
+                numeroSeguimiento={enCurso.numero}
+                franja={enCurso.texto}
+                etiquetaBoton={
+                  yaTieneRegistroDeEste
+                    ? `Actualizar seguimiento ${enCurso.numero}`
+                    : `Registrar seguimiento ${enCurso.numero}`
+                }
+                etiquetaEnviar="Guardar"
+                accion={accionRegistrarSeguimientoCorporativo}
+              />
+            </div>
+          )}
+        </>
       )}
     </article>
   );
@@ -116,9 +112,24 @@ export function PeriodoRow({
     fechaInicio: Date;
     fechaFin: Date;
     estado: string;
-    cortes: Array<{ id: string; numero: number; nombre: string; fechaLimite: Date; estado: string }>;
+    cumplimientoInicio: Date | null;
+    cumplimientoFin: Date | null;
+    seguimientos: Array<{
+      id: string;
+      numero: number;
+      fechaInicio: Date;
+      fechaFin: Date;
+      _count: { registros: number };
+    }>;
   };
 }) {
+  const hoy = hoyEnBogota();
+  const cerrado = periodo.estado === "CERRADO";
+  const franjaCumplimiento =
+    periodo.cumplimientoInicio && periodo.cumplimientoFin
+      ? { inicio: periodo.cumplimientoInicio, fin: periodo.cumplimientoFin }
+      : null;
+
   return (
     <div className="flex flex-col gap-3 border-b border-iib-border p-4 last:border-b-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -135,15 +146,54 @@ export function PeriodoRow({
         </span>
       </div>
 
-      {periodo.cortes.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {periodo.cortes.map((corte) => (
-            <CorteRow key={corte.id} corte={corte} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Seguimientos del periodo</p>
+        {periodo.seguimientos.length === 0 ? (
+          <p className="text-xs text-iib-secondary">
+            Todavía no hay seguimientos. Agrega cada uno con su franja de fechas: solo se podrá registrar dentro de
+            esas fechas.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {periodo.seguimientos.map((seguimiento) => (
+              <SeguimientoRow
+                key={seguimiento.id}
+                seguimiento={seguimiento}
+                estado={estadoFranja(seguimiento.fechaInicio, seguimiento.fechaFin, hoy)}
+                registros={seguimiento._count.registros}
+                periodoCerrado={cerrado}
+              />
+            ))}
+          </div>
+        )}
+        {!cerrado && <AgregarSeguimientoForm periodoId={periodo.id} />}
+      </div>
 
-      {periodo.estado !== "CERRADO" && <AgregarCorteForm periodoId={periodo.id} />}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">
+          % de cumplimiento final
+        </p>
+        {franjaCumplimiento ? (
+          <p className="text-sm">
+            Del {formatearFecha(franjaCumplimiento.inicio)} al {formatearFecha(franjaCumplimiento.fin)}
+          </p>
+        ) : (
+          <p className="text-xs text-iib-secondary">
+            Sin franja.{" "}
+            {periodo.estado === "BORRADOR"
+              ? "Defínela para poder abrir el periodo: "
+              : "Nadie puede poner el % de cumplimiento hasta que la definas: "}
+            es el rango de fechas en que jefes, gerentes y Gestión Humana lo ponen en cada objetivo.
+          </p>
+        )}
+        {!cerrado && (
+          <FranjaCumplimientoForm
+            periodoId={periodo.id}
+            inicio={periodo.cumplimientoInicio?.toISOString().slice(0, 10) ?? ""}
+            fin={periodo.cumplimientoFin?.toISOString().slice(0, 10) ?? ""}
+          />
+        )}
+      </div>
 
       {periodo.estado === "BORRADOR" && (
         <div className="flex justify-end">
@@ -156,17 +206,6 @@ export function PeriodoRow({
       )}
 
       {periodo.estado === "ABIERTO" && (
-        <div className="flex justify-end">
-          <BotonAccionSimple
-            etiqueta="Pasar a evaluación"
-            etiquetaEnviando="Actualizando…"
-            variante="ghost"
-            accion={accionPasarAEvaluacion.bind(null, periodo.id)}
-          />
-        </div>
-      )}
-
-      {periodo.estado === "EN_EVALUACION" && (
         <div className="flex justify-end">
           <BotonAccionSimple
             etiqueta="Cerrar periodo"

@@ -1,9 +1,13 @@
 import type { EstadoAprobacionObjetivo } from "@prisma/client";
 import { db } from "@/server/db";
-import { obtenerCorteActual, obtenerPeriodoActual } from "@/server/services/periodos.service";
+import {
+  obtenerContextoFranjas,
+  obtenerPeriodoActual,
+  type ContextoFranjas,
+} from "@/server/services/periodos.service";
 
 export interface SeguimientoEquipoVista {
-  numeroCorte: number;
+  numero: number;
   comentario: string;
   fecha: Date;
 }
@@ -22,8 +26,8 @@ export interface ObjetivoEquipoVista {
   linkRepositorio: string | null;
   estadoAprobacion: EstadoAprobacionObjetivo;
   comentarioAprobacion: string | null;
-  // Un registro por corte (el más reciente, si hubo correcciones), ordenado
-  // por número de corte ascendente.
+  // Un registro por seguimiento (el más reciente, si hubo correcciones), ordenado
+  // por número de seguimiento ascendente.
   seguimientos: SeguimientoEquipoVista[];
   // Calificación final: numérica para DESEMPENO, sí/no para DESARROLLO (ver
   // calculo-notas.ts — DESARROLLO no tiene nota, solo cumplimiento).
@@ -41,7 +45,7 @@ export interface ColaboradorEquipo {
 
 export interface MiEquipo {
   periodo: { id: string; nombre: string; estado: string };
-  corteActual: { id: string; numero: number; fechaLimite: Date } | null;
+  franjas: ContextoFranjas;
   jefe: {
     usuarioId: string;
     nombre: string;
@@ -56,7 +60,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
   const periodo = await obtenerPeriodoActual();
   if (!periodo) return null;
 
-  const corteActual = await obtenerCorteActual(periodo.id);
+  const franjas = await obtenerContextoFranjas(periodo.id);
 
   const [jefe, colaboradores] = await Promise.all([
     db.usuario.findUniqueOrThrow({
@@ -76,9 +80,9 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
         where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id },
         include: {
           seguimientos: {
-            orderBy: [{ corteId: "asc" }, { version: "desc" }],
-            distinct: ["corteId"],
-            include: { corte: { select: { numero: true } } },
+            orderBy: [{ seguimientoId: "asc" }, { version: "desc" }],
+            distinct: ["seguimientoId"],
+            include: { seguimiento: { select: { numero: true } } },
           },
         },
         orderBy: { createdAt: "asc" },
@@ -104,8 +108,8 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
           estadoAprobacion: o.estadoAprobacion,
           comentarioAprobacion: o.comentarioAprobacion,
           seguimientos: o.seguimientos
-            .map((s) => ({ numeroCorte: s.corte.numero, comentario: s.comentario, fecha: s.createdAt }))
-            .sort((a, b) => a.numeroCorte - b.numeroCorte),
+            .map((s) => ({ numero: s.seguimiento.numero, comentario: s.comentario, fecha: s.createdAt }))
+            .sort((a, b) => a.numero - b.numero),
           calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
           cumplioDesarrollo: o.cumplioDesarrollo,
         })),
@@ -115,7 +119,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre, estado: periodo.estado },
-    corteActual,
+    franjas,
     jefe: {
       usuarioId: jefe.id,
       nombre: jefe.nombre,

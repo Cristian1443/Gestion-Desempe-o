@@ -22,7 +22,7 @@ export function CalificacionCorporativaControl({ objetivo }: { objetivo: Objetiv
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-iib-secondary">Calificación final</span>
+        <span className="text-xs font-semibold text-iib-secondary">% de cumplimiento</span>
         {objetivo.calificacionFinal !== null && (
           <span
             className={`rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${

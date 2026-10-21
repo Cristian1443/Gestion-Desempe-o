@@ -6,27 +6,26 @@ import { ErrorCalificacion, calificarObjetivoCorporativo } from "@/server/servic
 import { ErrorCorporativo, crearObjetivosCorporativos } from "@/server/services/corporativos.service";
 import {
   ErrorPeriodo,
-  abrirCorte,
   abrirPeriodo,
-  agregarCorte,
-  cerrarCorte,
+  agregarSeguimiento,
   cerrarPeriodo,
   crearPeriodo,
-  editarCorte,
-  eliminarCorte,
-  pasarPeriodoAEvaluacion,
+  definirFranjaCumplimiento,
+  editarSeguimiento,
+  eliminarSeguimiento,
 } from "@/server/services/periodos.service";
-import { ErrorSeguimiento, reportarAvanceCorporativo } from "@/server/services/seguimientos.service";
+import { ErrorSeguimiento, registrarSeguimientoCorporativo } from "@/server/services/seguimientos.service";
 import { calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
 import { objetivosCorporativosSchema } from "@/server/validations/corporativo.schema";
 import {
-  agregarCorteSchema,
-  corteIdSchema,
+  agregarSeguimientoSchema,
   crearPeriodoSchema,
-  editarCorteSchema,
+  editarSeguimientoSchema,
+  franjaCumplimientoSchema,
   periodoIdSchema,
+  seguimientoIdSchema,
 } from "@/server/validations/periodo.schema";
-import { reportarAvanceCorporativoSchema } from "@/server/validations/seguimiento.schema";
+import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionAdmin = { ok: true } | { ok: false; error: string };
 
@@ -35,6 +34,7 @@ function revalidarVistas() {
   revalidatePath("/mis-objetivos");
   revalidatePath("/mi-equipo");
   revalidatePath("/mi-gerencia");
+  revalidatePath("/resultados");
 }
 
 export async function accionCrearObjetivosCorporativos(objetivos: unknown): Promise<EstadoAccionAdmin> {
@@ -56,16 +56,15 @@ export async function accionCrearObjetivosCorporativos(objetivos: unknown): Prom
   return { ok: true };
 }
 
-export async function accionReportarAvanceCorporativo(
+export async function accionRegistrarSeguimientoCorporativo(
   _estadoPrevio: EstadoAccionAdmin,
   formData: FormData,
 ): Promise<EstadoAccionAdmin> {
   const admin = await requireRol("GESTION_HUMANA", "ADMIN", "GESTOR_CORPORATIVO");
 
-  const parsed = reportarAvanceCorporativoSchema.safeParse({
+  const parsed = registrarSeguimientoSchema.safeParse({
     objetivoId: formData.get("objetivoId"),
     comentario: formData.get("comentario"),
-    porcentajeAvance: formData.get("porcentajeAvance"),
   });
 
   if (!parsed.success) {
@@ -73,19 +72,19 @@ export async function accionReportarAvanceCorporativo(
   }
 
   try {
-    await reportarAvanceCorporativo({ ...parsed.data, registradoPor: admin.usuarioId });
+    await registrarSeguimientoCorporativo({ ...parsed.data, registradoPor: admin.usuarioId });
   } catch (error) {
     if (error instanceof ErrorSeguimiento) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el reporte." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el seguimiento." };
   }
 
   revalidarVistas();
   return { ok: true };
 }
 
-// A diferencia de crear/reportar (abiertas también a GESTOR_CORPORATIVO), la
-// calificación final queda reservada a Gestión Humana/Admin — mismo alcance
-// que las transiciones de periodo de esta misma pantalla.
+// A diferencia de crear/registrar (abiertas también a GESTOR_CORPORATIVO), el
+// % de cumplimiento queda reservado a Gestión Humana/Admin — mismo alcance que
+// la administración de periodos y franjas de esta misma pantalla.
 export async function accionCalificarCorporativo(
   objetivoId: string,
   calificacionFinal: number,
@@ -101,7 +100,7 @@ export async function accionCalificarCorporativo(
     await calificarObjetivoCorporativo({ ...parsed.data, adminId: admin.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar la calificación." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
   }
 
   revalidarVistas();
@@ -127,41 +126,24 @@ export async function accionCrearPeriodo(input: unknown): Promise<EstadoAccionAd
   return { ok: true };
 }
 
-export async function accionAgregarCorte(input: unknown): Promise<EstadoAccionAdmin> {
-  await requireRol("GESTION_HUMANA", "ADMIN");
-
-  const parsed = agregarCorteSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await agregarCorte(parsed.data);
-  } catch (error) {
-    if (error instanceof ErrorPeriodo) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al agregar el corte." };
-  }
-
-  revalidatePath("/administracion");
-  return { ok: true };
-}
-
-async function transicionarPeriodo(
-  periodoId: unknown,
-  accion: (periodoId: string) => Promise<unknown>,
+async function ejecutarAdminPeriodo<T>(
+  schema: { safeParse(input: unknown): { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } } },
+  input: unknown,
+  accion: (datos: T) => Promise<unknown>,
+  mensajeInesperado: string,
 ): Promise<EstadoAccionAdmin> {
   await requireRol("GESTION_HUMANA", "ADMIN");
 
-  const parsed = periodoIdSchema.safeParse({ periodoId });
+  const parsed = schema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
   try {
-    await accion(parsed.data.periodoId);
+    await accion(parsed.data);
   } catch (error) {
     if (error instanceof ErrorPeriodo) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado." };
+    return { ok: false, error: mensajeInesperado };
   }
 
   revalidarVistas();
@@ -169,66 +151,55 @@ async function transicionarPeriodo(
 }
 
 export async function accionAbrirPeriodo(periodoId: string): Promise<EstadoAccionAdmin> {
-  return transicionarPeriodo(periodoId, abrirPeriodo);
-}
-
-export async function accionPasarAEvaluacion(periodoId: string): Promise<EstadoAccionAdmin> {
-  return transicionarPeriodo(periodoId, pasarPeriodoAEvaluacion);
+  return ejecutarAdminPeriodo(
+    periodoIdSchema,
+    { periodoId },
+    (d) => abrirPeriodo(d.periodoId),
+    "Ocurrió un error inesperado al abrir el periodo.",
+  );
 }
 
 export async function accionCerrarPeriodo(periodoId: string): Promise<EstadoAccionAdmin> {
-  return transicionarPeriodo(periodoId, cerrarPeriodo);
+  return ejecutarAdminPeriodo(
+    periodoIdSchema,
+    { periodoId },
+    (d) => cerrarPeriodo(d.periodoId),
+    "Ocurrió un error inesperado al cerrar el periodo.",
+  );
 }
 
-async function transicionarCorte(
-  corteId: unknown,
-  accion: (corteId: string) => Promise<unknown>,
-): Promise<EstadoAccionAdmin> {
-  await requireRol("GESTION_HUMANA", "ADMIN");
-
-  const parsed = corteIdSchema.safeParse({ corteId });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await accion(parsed.data.corteId);
-  } catch (error) {
-    if (error instanceof ErrorPeriodo) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado." };
-  }
-
-  revalidarVistas();
-  return { ok: true };
+export async function accionAgregarSeguimiento(input: unknown): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    agregarSeguimientoSchema,
+    input,
+    agregarSeguimiento,
+    "Ocurrió un error inesperado al agregar el seguimiento.",
+  );
 }
 
-export async function accionAbrirCorte(corteId: string): Promise<EstadoAccionAdmin> {
-  return transicionarCorte(corteId, abrirCorte);
+export async function accionEditarSeguimiento(input: unknown): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    editarSeguimientoSchema,
+    input,
+    editarSeguimiento,
+    "Ocurrió un error inesperado al editar el seguimiento.",
+  );
 }
 
-export async function accionCerrarCorte(corteId: string): Promise<EstadoAccionAdmin> {
-  return transicionarCorte(corteId, cerrarCorte);
+export async function accionEliminarSeguimiento(seguimientoId: string): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    seguimientoIdSchema,
+    { seguimientoId },
+    (d) => eliminarSeguimiento(d.seguimientoId),
+    "Ocurrió un error inesperado al eliminar el seguimiento.",
+  );
 }
 
-export async function accionEditarCorte(input: unknown): Promise<EstadoAccionAdmin> {
-  await requireRol("GESTION_HUMANA", "ADMIN");
-
-  const parsed = editarCorteSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await editarCorte(parsed.data);
-  } catch (error) {
-    if (error instanceof ErrorPeriodo) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al editar el corte." };
-  }
-
-  revalidarVistas();
-  return { ok: true };
-}
-
-export async function accionEliminarCorte(corteId: string): Promise<EstadoAccionAdmin> {
-  return transicionarCorte(corteId, eliminarCorte);
+export async function accionDefinirFranjaCumplimiento(input: unknown): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    franjaCumplimientoSchema,
+    input,
+    definirFranjaCumplimiento,
+    "Ocurrió un error inesperado al guardar la franja del % de cumplimiento.",
+  );
 }

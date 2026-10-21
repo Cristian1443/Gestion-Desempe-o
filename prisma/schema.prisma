@@ -21,9 +21,9 @@ enum Rol {
   JEFE
   GERENTE
   // Encargado de crear los 8 objetivos corporativos al inicio del periodo y
-  // de publicar su avance (comentario + % de 0-100) en cada corte — un rol
-  // acotado a esa sola tarea, sin los demás poderes de GESTION_HUMANA/ADMIN
-  // (periodos, cortes, estructura organizacional).
+  // de registrar su seguimiento en cada franja — un rol acotado a esa sola
+  // tarea, sin los demás poderes de GESTION_HUMANA/ADMIN (periodos,
+  // seguimientos, estructura organizacional).
   GESTOR_CORPORATIVO
   GESTION_HUMANA
   ADMIN
@@ -54,16 +54,10 @@ enum LineaEstrategica {
   L5
 }
 
+// El periodo solo se abre y se cierra a mano. Lo que ocurre dentro (cuándo se
+// puede registrar un seguimiento y cuándo se pone el % de cumplimiento) lo
+// deciden las franjas de fechas, ver `Seguimiento` y `Periodo.cumplimiento*`.
 enum EstadoPeriodo {
-  BORRADOR
-  ABIERTO
-  EN_EVALUACION
-  CERRADO
-}
-
-// El corte no se abre solo (nunca por fecha): el administrador lo abre y lo
-// cierra cuando decide, ver `Corte`.
-enum EstadoCorte {
   BORRADOR
   ABIERTO
   CERRADO
@@ -131,7 +125,7 @@ model Usuario {
   objetivosAprobados  Objetivo[] @relation("ObjetivoAprobadoPor")
   objetivosCalificados Objetivo[] @relation("ObjetivoCalificadoPor")
 
-  seguimientosRegistrados Seguimiento[] @relation("SeguimientoRegistradoPor")
+  seguimientosRegistrados RegistroSeguimiento[] @relation("SeguimientoRegistradoPor")
 
   evaluaciones Evaluacion[]
   auditorias   Auditoria[]
@@ -173,7 +167,7 @@ model Gerencia {
 }
 
 // ---------------------------------------------------------------------------
-// Periodos y cortes de seguimiento
+// Periodos y seguimientos
 // ---------------------------------------------------------------------------
 
 model Periodo {
@@ -183,8 +177,15 @@ model Periodo {
   fechaFin    DateTime      @map("fecha_fin")
   estado      EstadoPeriodo @default(BORRADOR)
 
+  // Franja de fechas (inclusive) en la que se pone el % de cumplimiento final
+  // de cada objetivo. La define Gestión Humana y puede terminar después de
+  // `fechaFin` (la evaluación se hace al cierre del año). Nulas hasta que se
+  // definan; sin franja nadie puede poner el % final.
+  cumplimientoInicio DateTime? @map("cumplimiento_inicio")
+  cumplimientoFin    DateTime? @map("cumplimiento_fin")
+
   objetivos    Objetivo[]
-  cortes       Corte[]
+  seguimientos Seguimiento[]
   evaluaciones Evaluacion[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -193,29 +194,27 @@ model Periodo {
   @@map("periodos")
 }
 
-// Cortes de seguimiento configurables por periodo (admin decide cuántos,
-// con qué fecha límite, y — a diferencia de la fecha límite, que es solo
-// referencia — CUÁNDO se abren de verdad: el corte no se activa solo porque
-// llegó su fecha, el administrador lo abre cuando decide que es momento de
-// que jefes/gerentes/GH empiecen a registrar seguimiento contra él, y lo
-// cierra cuando decide que ya terminó esa ventana. Aplican a los 3 niveles
-// de objetivo por igual.
-model Corte {
-  id          String        @id @default(cuid())
-  periodoId   String        @map("periodo_id")
-  periodo     Periodo       @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+// Seguimiento numerado de un periodo (Seguimiento 1, 2… N). Gestión Humana
+// define cuántos hay y la franja de fechas (inclusive) de cada uno; el sistema
+// decide solo, por la fecha de hoy, cuál está en curso, así que nadie abre ni
+// cierra nada a mano. Las franjas no se traslapan y aplican a los 3 niveles
+// de objetivo por igual. Lo que cada persona escribe en un seguimiento queda
+// en `RegistroSeguimiento`.
+model Seguimiento {
+  id          String   @id @default(cuid())
+  periodoId   String   @map("periodo_id")
+  periodo     Periodo  @relation(fields: [periodoId], references: [id], onDelete: Cascade)
   numero      Int
-  nombre      String // ej. "Corte 1 - Q1 2026"
-  fechaLimite DateTime      @map("fecha_limite")
-  estado      EstadoCorte   @default(BORRADOR)
+  fechaInicio DateTime @map("fecha_inicio")
+  fechaFin    DateTime @map("fecha_fin")
 
-  seguimientos Seguimiento[]
+  registros RegistroSeguimiento[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([periodoId, numero])
-  @@map("cortes")
+  @@map("seguimientos")
 }
 
 // ---------------------------------------------------------------------------
@@ -248,8 +247,7 @@ model Objetivo {
   // "Comunicación asertiva").
   competencia String? @map("competencia")
   // Enlace a la carpeta/repositorio donde se recopila la evidencia del
-  // objetivo durante el periodo. Distinto de `evidenciaUrl` en Seguimiento,
-  // que es la evidencia puntual de cada corte.
+  // objetivo durante el periodo.
   linkRepositorio String? @map("link_repositorio")
   // Solo para nivel INDIVIDUAL: las acciones concretas para lograr el
   // objetivo (distinto de `descripcion`, que es el objetivo en sí).
@@ -286,9 +284,10 @@ model Objetivo {
   aprobador       Usuario?  @relation("ObjetivoAprobadoPor", fields: [aprobadoPor], references: [id])
   fechaAprobacion DateTime? @map("fecha_aprobacion")
 
-  // Calificación final 0-100 asignada al cierre del periodo (insumo del motor
-  // de cálculo). Es un juicio del evaluador, no un promedio automático de los
-  // seguimientos: por eso es un campo propio y no se deriva del último corte.
+  // Calificación final 0-100 (en pantalla: "% de cumplimiento"), asignada una
+  // sola vez dentro de la franja del periodo (insumo del motor de cálculo).
+  // Es un juicio del evaluador, no un promedio automático de los
+  // seguimientos: por eso es un campo propio.
   // La asigna el jefe (individual), el gerente (gerencia) o Gestión Humana
   // (corporativo), según el nivel del objetivo.
   calificacionFinal Decimal?  @map("calificacion_final") @db.Decimal(5, 2)
@@ -302,7 +301,7 @@ model Objetivo {
   // entra al cálculo de la nota individual (ver calculo-notas.ts).
   cumplioDesarrollo Boolean? @map("cumplio_desarrollo")
 
-  seguimientos Seguimiento[]
+  seguimientos RegistroSeguimiento[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -317,42 +316,35 @@ model Objetivo {
 // Seguimiento de ejecución (histórico, nunca se sobrescribe)
 // ---------------------------------------------------------------------------
 
-// Bitácora de seguimiento: en cada corte, quien le hace seguimiento al
-// objetivo (el jefe para individuales, el gerente para los de gerencia, el
-// encargado de objetivos corporativos para esos) deja un comentario con
-// fecha. No lleva porcentaje de avance ni semáforo en INDIVIDUAL/GERENCIA —
-// es una nota de proceso, no una nota numérica; la calificación real
-// (`Objetivo.calificacionFinal`) es un juicio aparte que se asigna al cierre
-// del periodo. CORPORATIVO es la excepción: el encargado de esos objetivos sí
-// publica un porcentaje de avance (`porcentajeAvance`) visible para toda la
-// organización en cada corte, además del comentario.
+// Bitácora de seguimiento: en cada seguimiento del periodo, quien le hace
+// seguimiento al objetivo (el jefe para individuales, el gerente para los de
+// gerencia, el encargado de objetivos corporativos para esos) deja un
+// comentario con fecha. Es una nota de proceso, sin porcentaje: el % de
+// cumplimiento (`Objetivo.calificacionFinal`) es un juicio aparte que se pone
+// una sola vez, al final, dentro de la franja del periodo.
 //
-// Cada corte puede tener más de un registro por objetivo: quien le hace
-// seguimiento puede corregir su propio comentario del mismo corte creando
-// una versión nueva en vez de editar la anterior. `version` es el
-// correlativo dentro de (objetivoId, corteId); la de mayor número es la
-// vigente.
-model Seguimiento {
-  id         String   @id @default(cuid())
-  objetivoId String   @map("objetivo_id")
-  objetivo   Objetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
-  corteId    String   @map("corte_id")
-  corte      Corte    @relation(fields: [corteId], references: [id])
-  version    Int      @default(1)
+// Cada seguimiento puede tener más de un registro por objetivo: quien lo hace
+// puede corregir su comentario creando una versión nueva en vez de editar la
+// anterior. `version` es el correlativo dentro de (objetivoId, seguimientoId);
+// la de mayor número es la vigente.
+model RegistroSeguimiento {
+  id            String      @id @default(cuid())
+  objetivoId    String      @map("objetivo_id")
+  objetivo      Objetivo    @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  seguimientoId String      @map("seguimiento_id")
+  seguimiento   Seguimiento @relation(fields: [seguimientoId], references: [id])
+  version       Int         @default(1)
 
   comentario String
-  // Solo para objetivos de nivel CORPORATIVO (0-100) — ver comentario del
-  // modelo. Nulo en INDIVIDUAL/GERENCIA.
-  porcentajeAvance Int? @map("porcentaje_avance")
 
   registradoPor String  @map("registrado_por")
   registrador   Usuario @relation("SeguimientoRegistradoPor", fields: [registradoPor], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([objetivoId, corteId, version])
-  @@index([corteId])
-  @@map("seguimientos")
+  @@unique([objetivoId, seguimientoId, version])
+  @@index([seguimientoId])
+  @@map("registros_seguimiento")
 }
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+import { FranjaBanner } from "@/components/FranjaBanner";
+import { aFranjaUI } from "@/lib/franja-ui";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerMiGerencia } from "@/server/services/gerencia.service";
 import { ColaboradorConsolidadoRow, ObjetivoGerenciaCard } from "./components";
@@ -26,6 +28,7 @@ export default async function MiGerenciaPage() {
           <strong className="font-semibold text-iib-foreground">{datos.gerencia.nombre}</strong> ·
           Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
         </p>
+        <FranjaBanner periodo={datos.periodo.nombre} franjas={datos.franjas} />
       </div>
 
       <section className="flex flex-col gap-4">
@@ -43,8 +46,7 @@ export default async function MiGerenciaPage() {
                 key={objetivo.id}
                 objetivo={objetivo}
                 numero={indice + 1}
-                numeroCorteActual={datos.corteActual?.numero ?? null}
-                periodoEstado={datos.periodo.estado}
+                franja={aFranjaUI(datos.franjas)}
               />
             ))}
           </div>

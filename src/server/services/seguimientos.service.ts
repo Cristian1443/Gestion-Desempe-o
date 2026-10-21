@@ -1,9 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
-import { obtenerCorteActual } from "@/server/services/periodos.service";
-import type {
-  ReportarAvanceCorporativoInput,
-  ReportarAvanceInput,
-} from "@/server/validations/seguimiento.schema";
+import { formatearFecha } from "@/lib/fecha";
+import { obtenerContextoFranjas } from "@/server/services/periodos.service";
+import type { RegistrarSeguimientoInput } from "@/server/validations/seguimiento.schema";
 
 export class ErrorSeguimiento extends Error {
   constructor(message: string) {
@@ -12,42 +11,65 @@ export class ErrorSeguimiento extends Error {
   }
 }
 
-// Núcleo compartido: crea la siguiente versión del seguimiento (comentario +
-// fecha) de un (objetivo, corte), sin importar el nivel del objetivo. Nunca
-// actualiza una fila existente — quien le hace seguimiento puede corregir su
-// propio comentario del corte creando una versión nueva, que queda como la
-// vigente; el historial completo se conserva.
-async function crearSiguienteVersionSeguimiento(
+// El seguimiento en el que se puede registrar hoy: el que Gestión Humana
+// definió con una franja que incluye la fecha de hoy. Fuera de toda franja
+// nadie registra; el mensaje dice cuándo vuelve a abrirse.
+async function exigirSeguimientoEnCurso(periodoId: string) {
+  const { seguimientoEnCurso, proximoSeguimiento } = await obtenerContextoFranjas(periodoId);
+  if (seguimientoEnCurso) return seguimientoEnCurso;
+
+  if (proximoSeguimiento) {
+    throw new ErrorSeguimiento(
+      `No hay un seguimiento en curso. El seguimiento ${proximoSeguimiento.numero} es del ${formatearFecha(
+        proximoSeguimiento.fechaInicio,
+      )} al ${formatearFecha(proximoSeguimiento.fechaFin)}.`,
+    );
+  }
+  throw new ErrorSeguimiento(
+    "No hay un seguimiento en curso y no quedan más seguimientos programados en este periodo.",
+  );
+}
+
+// Núcleo compartido: crea la siguiente versión del registro (comentario +
+// fecha) de un (objetivo, seguimiento), sin importar el nivel del objetivo.
+// Nunca actualiza una fila existente — quien hace el seguimiento puede
+// corregir su comentario dentro de la franja creando una versión nueva, que
+// queda como la vigente; el historial completo se conserva.
+async function crearSiguienteVersionRegistro(
   objetivoId: string,
-  corteId: string,
+  seguimientoId: string,
   registradoPor: string,
   comentario: string,
-  porcentajeAvance?: number,
 ) {
-  const ultimo = await db.seguimiento.findFirst({
-    where: { objetivoId, corteId },
+  const ultimo = await db.registroSeguimiento.findFirst({
+    where: { objetivoId, seguimientoId },
     orderBy: { version: "desc" },
   });
 
-  return db.seguimiento.create({
-    data: {
-      objetivoId,
-      corteId,
-      version: ultimo ? ultimo.version + 1 : 1,
-      comentario,
-      porcentajeAvance,
-      registradoPor,
-    },
-  });
+  try {
+    return await db.registroSeguimiento.create({
+      data: {
+        objetivoId,
+        seguimientoId,
+        version: ultimo ? ultimo.version + 1 : 1,
+        comentario,
+        registradoPor,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ErrorSeguimiento("Se guardó otro registro al mismo tiempo. Recarga la página e inténtalo de nuevo.");
+    }
+    throw error;
+  }
 }
 
 // Seguimiento de un objetivo INDIVIDUAL, registrado directamente por el jefe
 // directo del dueño del objetivo (no es un autorreporte del colaborador: el
 // jefe hace el seguimiento a su equipo durante el periodo y, con base en
-// esos seguimientos, asigna la calificación final al cierre, una vez existan
-// los seguimientos de todos los cortes que definió el administrador).
+// esos seguimientos, pone el % de cumplimiento al final).
 export async function registrarSeguimientoIndividual(
-  input: ReportarAvanceInput & { jefeId: string },
+  input: RegistrarSeguimientoInput & { jefeId: string },
 ) {
   const objetivo = await db.objetivo.findUnique({
     where: { id: input.objetivoId },
@@ -67,17 +89,16 @@ export async function registrarSeguimientoIndividual(
     throw new ErrorSeguimiento("El periodo no está abierto para registrar seguimiento.");
   }
 
-  const corteActual = await obtenerCorteActual(objetivo.periodoId);
-  if (!corteActual) {
-    throw new ErrorSeguimiento("No hay cortes de seguimiento configurados para este periodo.");
-  }
+  const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
 
-  return crearSiguienteVersionSeguimiento(objetivo.id, corteActual.id, input.jefeId, input.comentario);
+  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.jefeId, input.comentario);
 }
 
 // Seguimiento de un objetivo de GERENCIA, hecho por el gerente del área (no
 // hay un dueño individual: el objetivo aplica a toda la gerencia).
-export async function reportarAvanceGerencia(input: ReportarAvanceInput & { gerenteId: string }) {
+export async function registrarSeguimientoGerencia(
+  input: RegistrarSeguimientoInput & { gerenteId: string },
+) {
   const objetivo = await db.objetivo.findUnique({
     where: { id: input.objetivoId },
     include: { periodo: true, gerencia: true },
@@ -93,21 +114,17 @@ export async function reportarAvanceGerencia(input: ReportarAvanceInput & { gere
     throw new ErrorSeguimiento("El periodo no está abierto para registrar seguimiento.");
   }
 
-  const corteActual = await obtenerCorteActual(objetivo.periodoId);
-  if (!corteActual) {
-    throw new ErrorSeguimiento("No hay cortes de seguimiento configurados para este periodo.");
-  }
+  const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
 
-  return crearSiguienteVersionSeguimiento(objetivo.id, corteActual.id, input.gerenteId, input.comentario);
+  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.gerenteId, input.comentario);
 }
 
 // Seguimiento de un objetivo CORPORATIVO. No tiene un dueño individual ni de
 // gerencia — la autorización (Gestión Humana/Admin o el rol acotado
 // GESTOR_CORPORATIVO) se resuelve en la capa de Server Action con
-// `requireRol`, no aquí. A diferencia de INDIVIDUAL/GERENCIA, sí lleva un
-// porcentaje de avance (0-100) visible para toda la organización.
-export async function reportarAvanceCorporativo(
-  input: ReportarAvanceCorporativoInput & { registradoPor: string },
+// `requireRol`, no aquí.
+export async function registrarSeguimientoCorporativo(
+  input: RegistrarSeguimientoInput & { registradoPor: string },
 ) {
   const objetivo = await db.objetivo.findUnique({
     where: { id: input.objetivoId },
@@ -124,16 +141,7 @@ export async function reportarAvanceCorporativo(
     throw new ErrorSeguimiento("El periodo no está abierto para registrar seguimiento.");
   }
 
-  const corteActual = await obtenerCorteActual(objetivo.periodoId);
-  if (!corteActual) {
-    throw new ErrorSeguimiento("No hay cortes de seguimiento configurados para este periodo.");
-  }
+  const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
 
-  return crearSiguienteVersionSeguimiento(
-    objetivo.id,
-    corteActual.id,
-    input.registradoPor,
-    input.comentario,
-    input.porcentajeAvance,
-  );
+  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.registradoPor, input.comentario);
 }

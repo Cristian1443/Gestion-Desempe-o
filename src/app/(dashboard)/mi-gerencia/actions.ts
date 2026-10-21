@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { requireRol } from "@/server/auth/rbac";
 import { ErrorCalificacion, calificarObjetivoGerencia } from "@/server/services/calificaciones.service";
 import { ErrorGerencia, crearObjetivosGerencia } from "@/server/services/gerencia.service";
-import { ErrorSeguimiento, reportarAvanceGerencia } from "@/server/services/seguimientos.service";
+import { ErrorSeguimiento, registrarSeguimientoGerencia } from "@/server/services/seguimientos.service";
 import { calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
 import { objetivosGerenciaSchema } from "@/server/validations/gerencia.schema";
-import { reportarAvanceSchema } from "@/server/validations/seguimiento.schema";
+import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionGerencia = { ok: true } | { ok: false; error: string };
 
@@ -46,7 +46,7 @@ export async function accionCalificarGerencia(
     await calificarObjetivoGerencia({ ...parsed.data, gerenteId: gerente.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar la calificación." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
   }
 
   revalidatePath("/mi-gerencia");
@@ -54,13 +54,13 @@ export async function accionCalificarGerencia(
   return { ok: true };
 }
 
-export async function accionReportarAvanceGerencia(
+export async function accionRegistrarSeguimientoGerencia(
   _estadoPrevio: EstadoAccionGerencia,
   formData: FormData,
 ): Promise<EstadoAccionGerencia> {
   const gerente = await requireRol("GERENTE");
 
-  const parsed = reportarAvanceSchema.safeParse({
+  const parsed = registrarSeguimientoSchema.safeParse({
     objetivoId: formData.get("objetivoId"),
     comentario: formData.get("comentario"),
   });
@@ -70,10 +70,10 @@ export async function accionReportarAvanceGerencia(
   }
 
   try {
-    await reportarAvanceGerencia({ ...parsed.data, gerenteId: gerente.usuarioId });
+    await registrarSeguimientoGerencia({ ...parsed.data, gerenteId: gerente.usuarioId });
   } catch (error) {
     if (error instanceof ErrorSeguimiento) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el reporte." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el seguimiento." };
   }
 
   revalidatePath("/mi-gerencia");

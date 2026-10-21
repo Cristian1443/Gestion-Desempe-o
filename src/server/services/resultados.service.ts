@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { obtenerCorteActual, obtenerPeriodoActual } from "@/server/services/periodos.service";
+import { obtenerContextoFranjas, obtenerPeriodoActual } from "@/server/services/periodos.service";
 
 export interface ObjetivoSinSeguimiento {
   id: string;
@@ -19,12 +19,14 @@ export interface GerenciaResultado {
   colaboradoresTotal: number;
   colaboradoresConObjetivos: number;
   objetivosIndividualesTotal: number;
-  objetivosConSeguimientoDelCorte: number;
+  objetivosConSeguimiento: number;
 }
 
 export interface Resultados {
   periodo: { id: string; nombre: string };
-  corteActual: { id: string; numero: number; fechaLimite: Date } | null;
+  // El seguimiento contra el que se mide la cobertura: el que está en curso o,
+  // si no hay, el último que ya empezó. Null si todavía no empieza ninguno.
+  seguimientoReferencia: { numero: number; fechaInicio: Date; fechaFin: Date; enCurso: boolean } | null;
   coberturaIndividual: CoberturaNivel | null;
   coberturaGerencia: CoberturaNivel | null;
   coberturaCorporativo: CoberturaNivel | null;
@@ -34,44 +36,43 @@ export interface Resultados {
   objetivosSinSeguimiento: ObjetivoSinSeguimiento[];
 }
 
-function calcularCobertura<T extends { tieneSeguimientoDelCorte: boolean }>(
+function calcularCobertura<T extends { tieneSeguimiento: boolean }>(
   objetivos: T[],
 ): CoberturaNivel | null {
   if (objetivos.length === 0) return null;
   return {
-    conSeguimiento: objetivos.filter((o) => o.tieneSeguimientoDelCorte).length,
+    conSeguimiento: objetivos.filter((o) => o.tieneSeguimiento).length,
     total: objetivos.length,
   };
 }
 
-// Vista operativa de "quién ya hizo el seguimiento de este corte y quién no"
-// — no es la nota final del periodo (`Objetivo.calificacionFinal`, un
-// juicio del evaluador que se asigna al cierre, después de que existan los
-// seguimientos de todos los cortes que definió el administrador).
+// Vista operativa de "quién ya hizo el seguimiento en curso y quién no" — no
+// es el % de cumplimiento del periodo (`Objetivo.calificacionFinal`, un juicio
+// del evaluador que se pone al final, dentro de su franja).
 export async function obtenerResultados(): Promise<Resultados | null> {
   const periodo = await obtenerPeriodoActual();
   if (!periodo) return null;
 
-  const corteActual = await obtenerCorteActual(periodo.id);
-  const seguimientoDelCorteActual = corteActual
-    ? { where: { corteId: corteActual.id }, take: 1 as const }
+  const { seguimientoEnCurso, seguimientoReferencia } = await obtenerContextoFranjas(periodo.id);
+  const seguimientoDeReferencia = seguimientoReferencia
+    ? { where: { seguimientoId: seguimientoReferencia.id }, take: 1 as const }
     : { take: 0 as const };
 
   const [individuales, gerenciaObjetivos, corporativos, usuarios] = await Promise.all([
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "INDIVIDUAL", estadoAprobacion: "APROBADO" },
       include: {
-        seguimientos: seguimientoDelCorteActual,
+        seguimientos: seguimientoDeReferencia,
         usuario: { select: { nombre: true, gerenciaId: true } },
       },
     }),
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "GERENCIA" },
-      include: { seguimientos: seguimientoDelCorteActual, gerencia: { select: { nombre: true } } },
+      include: { seguimientos: seguimientoDeReferencia, gerencia: { select: { nombre: true } } },
     }),
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "CORPORATIVO" },
-      include: { seguimientos: seguimientoDelCorteActual },
+      include: { seguimientos: seguimientoDeReferencia },
     }),
     db.usuario.findMany({
       where: { activo: true, gerenciaId: { not: null } },
@@ -83,15 +84,15 @@ export async function obtenerResultados(): Promise<Resultados | null> {
 
   const individualesConCobertura = individuales.map((o) => ({
     ...o,
-    tieneSeguimientoDelCorte: o.seguimientos.length > 0,
+    tieneSeguimiento: o.seguimientos.length > 0,
   }));
   const gerenciaConCobertura = gerenciaObjetivos.map((o) => ({
     ...o,
-    tieneSeguimientoDelCorte: o.seguimientos.length > 0,
+    tieneSeguimiento: o.seguimientos.length > 0,
   }));
   const corporativosConCobertura = corporativos.map((o) => ({
     ...o,
-    tieneSeguimientoDelCorte: o.seguimientos.length > 0,
+    tieneSeguimiento: o.seguimientos.length > 0,
   }));
 
   const colaboradoresConObjetivosIds = new Set(
@@ -113,7 +114,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
       colaboradoresTotal: colaboradoresDeLaGerencia.length,
       colaboradoresConObjetivos: colaboradoresConObjetivos.size,
       objetivosIndividualesTotal: objetivosDeLaGerencia.length,
-      objetivosConSeguimientoDelCorte: objetivosDeLaGerencia.filter((o) => o.tieneSeguimientoDelCorte)
+      objetivosConSeguimiento: objetivosDeLaGerencia.filter((o) => o.tieneSeguimiento)
         .length,
     };
   });
@@ -121,7 +122,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
   const objetivosSinSeguimiento: ObjetivoSinSeguimiento[] = [];
 
   for (const o of individualesConCobertura) {
-    if (o.tieneSeguimientoDelCorte || !o.usuario) continue;
+    if (o.tieneSeguimiento || !o.usuario) continue;
     objetivosSinSeguimiento.push({
       id: o.id,
       titulo: o.titulo,
@@ -131,7 +132,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
   }
 
   for (const o of gerenciaConCobertura) {
-    if (o.tieneSeguimientoDelCorte || !o.gerencia) continue;
+    if (o.tieneSeguimiento || !o.gerencia) continue;
     objetivosSinSeguimiento.push({
       id: o.id,
       titulo: o.titulo,
@@ -141,13 +142,20 @@ export async function obtenerResultados(): Promise<Resultados | null> {
   }
 
   for (const o of corporativosConCobertura) {
-    if (o.tieneSeguimientoDelCorte) continue;
+    if (o.tieneSeguimiento) continue;
     objetivosSinSeguimiento.push({ id: o.id, titulo: o.titulo, nivel: "CORPORATIVO", propietario: "Corporativo" });
   }
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre },
-    corteActual,
+    seguimientoReferencia: seguimientoReferencia
+      ? {
+          numero: seguimientoReferencia.numero,
+          fechaInicio: seguimientoReferencia.fechaInicio,
+          fechaFin: seguimientoReferencia.fechaFin,
+          enCurso: seguimientoEnCurso?.id === seguimientoReferencia.id,
+        }
+      : null,
     coberturaIndividual: calcularCobertura(individualesConCobertura),
     coberturaGerencia: calcularCobertura(gerenciaConCobertura),
     coberturaCorporativo: calcularCobertura(corporativosConCobertura),

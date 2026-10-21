@@ -6,22 +6,28 @@ export const crearPeriodoSchema = z.object({
   fechaFin: z.coerce.date({ invalid_type_error: "Fecha de fin inválida." }),
 });
 
-export const agregarCorteSchema = z.object({
-  periodoId: z.string().min(1),
-  nombre: z.string().min(1, "El nombre del corte es obligatorio.").max(100),
-  fechaLimite: z.coerce.date({ invalid_type_error: "Fecha límite inválida." }),
-});
-
 export const periodoIdSchema = z.object({
   periodoId: z.string().min(1),
 });
 
-export const corteIdSchema = z.object({
-  corteId: z.string().min(1),
+export const agregarSeguimientoSchema = z.object({
+  periodoId: z.string().min(1),
+  fechaInicio: z.coerce.date({ invalid_type_error: "Fecha de inicio inválida." }),
+  fechaFin: z.coerce.date({ invalid_type_error: "Fecha de fin inválida." }),
 });
 
-export const editarCorteSchema = z.object({
-  corteId: z.string().min(1),
-  nombre: z.string().min(1, "El nombre del corte es obligatorio.").max(100),
-  fechaLimite: z.coerce.date({ invalid_type_error: "Fecha límite inválida." }),
+export const seguimientoIdSchema = z.object({
+  seguimientoId: z.string().min(1),
+});
+
+export const editarSeguimientoSchema = z.object({
+  seguimientoId: z.string().min(1),
+  fechaInicio: z.coerce.date({ invalid_type_error: "Fecha de inicio inválida." }),
+  fechaFin: z.coerce.date({ invalid_type_error: "Fecha de fin inválida." }),
+});
+
+export const franjaCumplimientoSchema = z.object({
+  periodoId: z.string().min(1),
+  fechaInicio: z.coerce.date({ invalid_type_error: "Fecha de inicio inválida." }),
+  fechaFin: z.coerce.date({ invalid_type_error: "Fecha de fin inválida." }),
 });

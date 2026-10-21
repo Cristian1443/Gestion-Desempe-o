@@ -1,14 +1,16 @@
 import type { EstadoAprobacionObjetivo } from "@prisma/client";
 import { db } from "@/server/db";
-import { obtenerCorteActual, obtenerPeriodoActual } from "@/server/services/periodos.service";
+import {
+  obtenerContextoFranjas,
+  obtenerPeriodoActual,
+  type ContextoFranjas,
+} from "@/server/services/periodos.service";
 
 export interface SeguimientoVista {
-  numeroCorte: number;
+  numero: number;
   comentario: string;
   fecha: Date;
   registradoPorNombre: string;
-  // Solo lo llevan los objetivos CORPORATIVO — ver Seguimiento en el schema.
-  porcentajeAvance: number | null;
 }
 
 export interface ObjetivoVista {
@@ -25,9 +27,9 @@ export interface ObjetivoVista {
   linkRepositorio: string | null;
   estadoAprobacion: EstadoAprobacionObjetivo;
   comentarioAprobacion: string | null;
-  // Un registro por corte (el más reciente, si hubo correcciones), ordenado
-  // por número de corte ascendente — es la bitácora completa del periodo,
-  // no solo el último.
+  // Un registro por seguimiento (el más reciente, si hubo correcciones),
+  // ordenado por número de seguimiento ascendente — es la bitácora completa
+  // del periodo, no solo el último.
   seguimientos: SeguimientoVista[];
   // Calificación final asignada por el evaluador al cierre del periodo:
   // numérica para DESEMPENO/GERENCIA/CORPORATIVO, sí/no para DESARROLLO.
@@ -37,7 +39,7 @@ export interface ObjetivoVista {
 
 export interface MisObjetivos {
   periodo: { id: string; nombre: string; estado: string };
-  corteActual: { id: string; numero: number; fechaLimite: Date } | null;
+  franjas: ContextoFranjas;
   nombreJefe: string | null;
   individuales: ObjetivoVista[];
   gerencia: { nombreGerencia: string | null; objetivos: ObjetivoVista[] };
@@ -45,7 +47,7 @@ export interface MisObjetivos {
 }
 
 // Convierte un Objetivo con su bitácora de seguimientos (un registro vigente
-// por corte, ya traído con `distinct: ["corteId"]`) al modelo de vista que
+// por seguimiento, ya traído con `distinct: ["seguimientoId"]`) al modelo de vista que
 // consume la UI. Los `Decimal` de Prisma se normalizan a `number` aquí:
 // cruzar la frontera Server → Client Component con un objeto `Decimal` no es
 // serializable, así que esta es la última parada donde conviene hacerlo.
@@ -66,9 +68,8 @@ function aVista(objetivo: {
   seguimientos: Array<{
     comentario: string;
     createdAt: Date;
-    corte: { numero: number };
+    seguimiento: { numero: number };
     registrador: { nombre: string };
-    porcentajeAvance: number | null;
   }>;
   calificacionFinal: { toNumber(): number } | null;
   cumplioDesarrollo: boolean | null;
@@ -89,13 +90,12 @@ function aVista(objetivo: {
     comentarioAprobacion: objetivo.comentarioAprobacion,
     seguimientos: objetivo.seguimientos
       .map((s) => ({
-        numeroCorte: s.corte.numero,
+        numero: s.seguimiento.numero,
         comentario: s.comentario,
         fecha: s.createdAt,
         registradoPorNombre: s.registrador.nombre,
-        porcentajeAvance: s.porcentajeAvance,
       }))
-      .sort((a, b) => a.numeroCorte - b.numeroCorte),
+      .sort((a, b) => a.numero - b.numero),
     calificacionFinal: objetivo.calificacionFinal?.toNumber() ?? null,
     cumplioDesarrollo: objetivo.cumplioDesarrollo,
   };
@@ -117,13 +117,13 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
   });
 
   const bitacoraDeSeguimientos = {
-    orderBy: [{ corteId: "asc" as const }, { version: "desc" as const }],
-    distinct: ["corteId" as const],
-    include: { corte: { select: { numero: true } }, registrador: { select: { nombre: true } } },
+    orderBy: [{ seguimientoId: "asc" as const }, { version: "desc" as const }],
+    distinct: ["seguimientoId" as const],
+    include: { seguimiento: { select: { numero: true } }, registrador: { select: { nombre: true } } },
   };
 
-  const [corteActual, individuales, gerencia, corporativos] = await Promise.all([
-    obtenerCorteActual(periodo.id),
+  const [franjas, individuales, gerencia, corporativos] = await Promise.all([
+    obtenerContextoFranjas(periodo.id),
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId },
       include: { seguimientos: bitacoraDeSeguimientos },
@@ -145,7 +145,7 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre, estado: periodo.estado },
-    corteActual,
+    franjas,
     nombreJefe: usuario.jefe?.nombre ?? null,
     individuales: individuales.map((o) => aVista(o)),
     gerencia: {

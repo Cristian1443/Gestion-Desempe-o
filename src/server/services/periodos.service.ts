@@ -1,26 +1,76 @@
+import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
+import { errorDeFranjas, estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
 
-// El periodo "actual" para efectos de reporte de avance es el que está
-// ABIERTO o EN_EVALUACION. Solo debería haber uno a la vez en la práctica,
-// pero si hubiera más de uno (transición entre periodos), se toma el más
-// reciente por fecha de inicio.
+// El periodo "actual" es el ABIERTO. Solo debería haber uno a la vez en la
+// práctica, pero si hubiera más de uno (transición entre periodos), se toma el
+// más reciente por fecha de inicio.
 export async function obtenerPeriodoActual() {
   return db.periodo.findFirst({
-    where: { estado: { in: ["ABIERTO", "EN_EVALUACION"] } },
+    where: { estado: "ABIERTO" },
     orderBy: { fechaInicio: "desc" },
   });
 }
 
-// El corte "vigente" para registrar seguimiento es el que el administrador
-// dejó ABIERTO — nunca se infiere de la fecha límite (esa es solo una
-// referencia de cuándo debería cerrarse). Si el administrador no ha abierto
-// ningún corte todavía, no hay corte vigente y nadie puede registrar
-// seguimiento hasta que lo abra.
-export async function obtenerCorteActual(periodoId: string) {
-  return db.corte.findFirst({
-    where: { periodoId, estado: "ABIERTO" },
-    orderBy: { numero: "desc" },
+// --- Franjas: qué está en curso hoy ---
+
+export interface SeguimientoVista {
+  id: string;
+  numero: number;
+  fechaInicio: Date;
+  fechaFin: Date;
+}
+
+export interface ContextoFranjas {
+  // El seguimiento cuya franja incluye hoy (a lo más uno: las franjas no se
+  // traslapan). Si es null, nadie puede registrar seguimiento hoy.
+  seguimientoEnCurso: SeguimientoVista | null;
+  // El siguiente que todavía no empieza, para decirle a la gente cuándo vuelve.
+  proximoSeguimiento: SeguimientoVista | null;
+  // Contra cuál se mide la cobertura en pantalla: el que está en curso o, si no
+  // hay, el último que ya empezó.
+  seguimientoReferencia: SeguimientoVista | null;
+  // Franja del % de cumplimiento final. Null mientras Gestión Humana no la defina.
+  cumplimiento: { inicio: Date; fin: Date; estado: EstadoFranja } | null;
+}
+
+export async function obtenerContextoFranjas(
+  periodoId: string,
+  hoy: string = hoyEnBogota(),
+): Promise<ContextoFranjas> {
+  const periodo = await db.periodo.findUniqueOrThrow({
+    where: { id: periodoId },
+    select: {
+      cumplimientoInicio: true,
+      cumplimientoFin: true,
+      seguimientos: {
+        orderBy: { numero: "asc" },
+        select: { id: true, numero: true, fechaInicio: true, fechaFin: true },
+      },
+    },
   });
+
+  const conEstado = periodo.seguimientos.map((s) => ({
+    vista: s,
+    estado: estadoFranja(s.fechaInicio, s.fechaFin, hoy),
+  }));
+  const enCurso = conEstado.find((s) => s.estado === "EN_CURSO")?.vista ?? null;
+  const proximo = conEstado.find((s) => s.estado === "PROXIMA")?.vista ?? null;
+  const iniciados = conEstado.filter((s) => s.estado !== "PROXIMA");
+
+  return {
+    seguimientoEnCurso: enCurso,
+    proximoSeguimiento: proximo,
+    seguimientoReferencia: enCurso ?? iniciados[iniciados.length - 1]?.vista ?? null,
+    cumplimiento:
+      periodo.cumplimientoInicio && periodo.cumplimientoFin
+        ? {
+            inicio: periodo.cumplimientoInicio,
+            fin: periodo.cumplimientoFin,
+            estado: estadoFranja(periodo.cumplimientoInicio, periodo.cumplimientoFin, hoy),
+          }
+        : null,
+  };
 }
 
 // --- Administración de periodos (Gestión Humana / Admin) ---
@@ -34,7 +84,12 @@ export class ErrorPeriodo extends Error {
 
 export async function listarPeriodos() {
   return db.periodo.findMany({
-    include: { cortes: { orderBy: { numero: "asc" } } },
+    include: {
+      seguimientos: {
+        orderBy: { numero: "asc" },
+        include: { _count: { select: { registros: true } } },
+      },
+    },
     orderBy: { fechaInicio: "desc" },
   });
 }
@@ -54,79 +109,119 @@ export async function crearPeriodo(input: { nombre: string; fechaInicio: Date; f
   });
 }
 
-// Los cortes se pueden agregar en cualquier momento mientras el periodo no
-// esté cerrado — como el corte no se activa solo (el administrador lo abre
-// cuando decide), agregar uno nuevo a un periodo ya abierto no genera
-// ninguna inconsistencia: simplemente queda en borrador hasta que se abra.
-export async function agregarCorte(input: { periodoId: string; nombre: string; fechaLimite: Date }) {
+async function cargarPeriodoConFranjas(periodoId: string) {
   const periodo = await db.periodo.findUnique({
-    where: { id: input.periodoId },
-    include: { cortes: { orderBy: { numero: "desc" }, take: 1 } },
+    where: { id: periodoId },
+    include: { seguimientos: { orderBy: { numero: "asc" } } },
   });
-  if (!periodo) {
-    throw new ErrorPeriodo("El periodo no existe.");
-  }
+  if (!periodo) throw new ErrorPeriodo("El periodo no existe.");
   if (periodo.estado === "CERRADO") {
-    throw new ErrorPeriodo("No se pueden agregar cortes a un periodo cerrado.");
+    throw new ErrorPeriodo("No se pueden cambiar las franjas de un periodo cerrado.");
   }
-  if (input.fechaLimite < periodo.fechaInicio || input.fechaLimite > periodo.fechaFin) {
-    throw new ErrorPeriodo("La fecha límite del corte debe estar dentro del rango del periodo.");
+  return periodo;
+}
+
+type PeriodoConFranjas = Awaited<ReturnType<typeof cargarPeriodoConFranjas>>;
+
+function validarOFallar(
+  periodo: PeriodoConFranjas,
+  seguimientos: Array<{ numero: number; fechaInicio: Date; fechaFin: Date }>,
+  cumplimiento: { inicio: Date; fin: Date } | null,
+) {
+  const error = errorDeFranjas({
+    periodo: { inicio: periodo.fechaInicio, fin: periodo.fechaFin },
+    seguimientos: seguimientos.map((s) => ({ numero: s.numero, inicio: s.fechaInicio, fin: s.fechaFin })),
+    cumplimiento,
+  });
+  if (error) throw new ErrorPeriodo(error);
+}
+
+function cumplimientoActual(periodo: PeriodoConFranjas) {
+  return periodo.cumplimientoInicio && periodo.cumplimientoFin
+    ? { inicio: periodo.cumplimientoInicio, fin: periodo.cumplimientoFin }
+    : null;
+}
+
+// Los seguimientos se pueden agregar mientras el periodo no esté cerrado. El
+// número lo asigna el sistema (el siguiente al último) y la franja debe quedar
+// después de la del anterior.
+export async function agregarSeguimiento(input: { periodoId: string; fechaInicio: Date; fechaFin: Date }) {
+  const periodo = await cargarPeriodoConFranjas(input.periodoId);
+  const numero = (periodo.seguimientos[periodo.seguimientos.length - 1]?.numero ?? 0) + 1;
+
+  validarOFallar(
+    periodo,
+    [...periodo.seguimientos, { numero, fechaInicio: input.fechaInicio, fechaFin: input.fechaFin }],
+    cumplimientoActual(periodo),
+  );
+
+  try {
+    return await db.seguimiento.create({
+      data: { periodoId: input.periodoId, numero, fechaInicio: input.fechaInicio, fechaFin: input.fechaFin },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ErrorPeriodo("Alguien agregó un seguimiento al mismo tiempo. Recarga la página e inténtalo de nuevo.");
+    }
+    throw error;
   }
+}
 
-  const ultimoCorte = periodo.cortes[0];
+export async function editarSeguimiento(input: { seguimientoId: string; fechaInicio: Date; fechaFin: Date }) {
+  const seguimiento = await db.seguimiento.findUnique({ where: { id: input.seguimientoId } });
+  if (!seguimiento) throw new ErrorPeriodo("El seguimiento no existe.");
 
-  return db.corte.create({
-    data: {
-      periodoId: input.periodoId,
-      numero: ultimoCorte ? ultimoCorte.numero + 1 : 1,
-      nombre: input.nombre,
-      fechaLimite: input.fechaLimite,
-    },
+  const periodo = await cargarPeriodoConFranjas(seguimiento.periodoId);
+
+  validarOFallar(
+    periodo,
+    periodo.seguimientos.map((s) =>
+      s.id === seguimiento.id ? { numero: s.numero, fechaInicio: input.fechaInicio, fechaFin: input.fechaFin } : s,
+    ),
+    cumplimientoActual(periodo),
+  );
+
+  return db.seguimiento.update({
+    where: { id: seguimiento.id },
+    data: { fechaInicio: input.fechaInicio, fechaFin: input.fechaFin },
   });
 }
 
-export async function editarCorte(input: { corteId: string; nombre: string; fechaLimite: Date }) {
-  const corte = await db.corte.findUnique({
-    where: { id: input.corteId },
-    include: { periodo: true },
+// Solo se puede eliminar un seguimiento que todavía no tiene registros: borrarlo
+// con historial real adentro perdería esos comentarios en silencio.
+export async function eliminarSeguimiento(seguimientoId: string) {
+  const seguimiento = await db.seguimiento.findUnique({
+    where: { id: seguimientoId },
+    include: { periodo: true, _count: { select: { registros: true } } },
   });
-  if (!corte) {
-    throw new ErrorPeriodo("El corte no existe.");
+  if (!seguimiento) throw new ErrorPeriodo("El seguimiento no existe.");
+  if (seguimiento.periodo.estado === "CERRADO") {
+    throw new ErrorPeriodo("No se pueden cambiar las franjas de un periodo cerrado.");
   }
-  if (input.fechaLimite < corte.periodo.fechaInicio || input.fechaLimite > corte.periodo.fechaFin) {
-    throw new ErrorPeriodo("La fecha límite del corte debe estar dentro del rango del periodo.");
+  if (seguimiento._count.registros > 0) {
+    throw new ErrorPeriodo("No se puede eliminar un seguimiento que ya tiene registros.");
   }
 
-  return db.corte.update({
-    where: { id: input.corteId },
-    data: { nombre: input.nombre, fechaLimite: input.fechaLimite },
-  });
+  await db.seguimiento.delete({ where: { id: seguimientoId } });
 }
 
-// Solo se puede eliminar un corte que todavía no tiene ningún seguimiento
-// registrado — borrarlo con historial real adentro perdería ese registro
-// silenciosamente.
-export async function eliminarCorte(corteId: string) {
-  const corte = await db.corte.findUnique({
-    where: { id: corteId },
-    include: { _count: { select: { seguimientos: true } } },
-  });
-  if (!corte) {
-    throw new ErrorPeriodo("El corte no existe.");
-  }
-  if (corte._count.seguimientos > 0) {
-    throw new ErrorPeriodo(
-      "No se puede eliminar un corte que ya tiene seguimientos registrados.",
-    );
-  }
+// Franja del % de cumplimiento final. Puede terminar después del periodo, pero
+// debe empezar cuando ya terminó el último seguimiento.
+export async function definirFranjaCumplimiento(input: { periodoId: string; fechaInicio: Date; fechaFin: Date }) {
+  const periodo = await cargarPeriodoConFranjas(input.periodoId);
 
-  await db.corte.delete({ where: { id: corteId } });
+  validarOFallar(periodo, periodo.seguimientos, { inicio: input.fechaInicio, fin: input.fechaFin });
+
+  return db.periodo.update({
+    where: { id: input.periodoId },
+    data: { cumplimientoInicio: input.fechaInicio, cumplimientoFin: input.fechaFin },
+  });
 }
 
 export async function abrirPeriodo(periodoId: string) {
   const periodo = await db.periodo.findUnique({
     where: { id: periodoId },
-    include: { _count: { select: { cortes: true } } },
+    include: { _count: { select: { seguimientos: true } } },
   });
   if (!periodo) {
     throw new ErrorPeriodo("El periodo no existe.");
@@ -134,12 +229,15 @@ export async function abrirPeriodo(periodoId: string) {
   if (periodo.estado !== "BORRADOR") {
     throw new ErrorPeriodo("Solo se puede abrir un periodo que esté en borrador.");
   }
-  if (periodo._count.cortes === 0) {
-    throw new ErrorPeriodo("Define al menos un corte de seguimiento antes de abrir el periodo.");
+  if (periodo._count.seguimientos === 0) {
+    throw new ErrorPeriodo("Define al menos un seguimiento antes de abrir el periodo.");
+  }
+  if (!periodo.cumplimientoInicio || !periodo.cumplimientoFin) {
+    throw new ErrorPeriodo("Define la franja del % de cumplimiento final antes de abrir el periodo.");
   }
 
   const otroActivo = await db.periodo.findFirst({
-    where: { id: { not: periodoId }, estado: { in: ["ABIERTO", "EN_EVALUACION"] } },
+    where: { id: { not: periodoId }, estado: "ABIERTO" },
   });
   if (otroActivo) {
     throw new ErrorPeriodo(
@@ -150,49 +248,17 @@ export async function abrirPeriodo(periodoId: string) {
   return db.periodo.update({ where: { id: periodoId }, data: { estado: "ABIERTO" } });
 }
 
-// La calificación final (nota de desempeño, sí/no de desarrollo) solo tiene
-// sentido una vez terminó todo el seguimiento del periodo — por eso este
-// paso exige que todos los cortes ya estén cerrados, no solo que el
-// administrador lo decida a criterio libre como con abrir/cerrar cortes.
-export async function pasarPeriodoAEvaluacion(periodoId: string) {
-  const periodo = await db.periodo.findUnique({
-    where: { id: periodoId },
-    include: { cortes: true },
-  });
-  if (!periodo) {
-    throw new ErrorPeriodo("El periodo no existe.");
-  }
-  if (periodo.estado !== "ABIERTO") {
-    throw new ErrorPeriodo("Solo se puede pasar a evaluación un periodo que esté abierto.");
-  }
-  if (periodo.cortes.length === 0) {
-    throw new ErrorPeriodo("Define al menos un corte antes de pasar a evaluación.");
-  }
-  const sinCerrar = periodo.cortes.filter((c) => c.estado !== "CERRADO");
-  if (sinCerrar.length > 0) {
-    throw new ErrorPeriodo(
-      `Todos los cortes deben estar cerrados antes de pasar a evaluación. Falta cerrar: ${sinCerrar
-        .map((c) => c.nombre)
-        .join(", ")}.`,
-    );
-  }
-
-  return db.periodo.update({ where: { id: periodoId }, data: { estado: "EN_EVALUACION" } });
-}
-
-// Igual que "todos los cortes cerrados" es requisito para pasar a
-// EN_EVALUACION, "todos los objetivos calificados" es requisito para cerrar
-// el periodo — de lo contrario se cerraría con evaluaciones a medias. Un
-// objetivo DESARROLLO se considera calificado por `cumplioDesarrollo`
-// (sí/no); el resto (DESEMPEÑO, GERENCIA, CORPORATIVO) por
-// `calificacionFinal`.
+// Igual que antes, no se cierra un periodo con evaluaciones a medias: todo
+// objetivo debe tener su % de cumplimiento. Un objetivo DESARROLLO se considera
+// calificado por `cumplioDesarrollo` (sí/no); el resto (DESEMPEÑO, GERENCIA,
+// CORPORATIVO) por `calificacionFinal`.
 export async function cerrarPeriodo(periodoId: string) {
   const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
   if (!periodo) {
     throw new ErrorPeriodo("El periodo no existe.");
   }
-  if (periodo.estado !== "EN_EVALUACION") {
-    throw new ErrorPeriodo("Solo se puede cerrar un periodo que esté en evaluación.");
+  if (periodo.estado !== "ABIERTO") {
+    throw new ErrorPeriodo("Solo se puede cerrar un periodo que esté abierto.");
   }
 
   const objetivos = await db.objetivo.findMany({
@@ -211,45 +277,9 @@ export async function cerrarPeriodo(periodoId: string) {
       .map(([nivel, cantidad]) => `${cantidad} ${nivel}`)
       .join(", ");
     throw new ErrorPeriodo(
-      `Todos los objetivos deben estar calificados antes de cerrar el periodo. Faltan: ${detalle}.`,
+      `Todos los objetivos deben tener su % de cumplimiento antes de cerrar el periodo. Faltan: ${detalle}.`,
     );
   }
 
   return db.periodo.update({ where: { id: periodoId }, data: { estado: "CERRADO" } });
-}
-
-// --- Administración de cortes (Gestión Humana / Admin) ---
-
-// Solo un corte ABIERTO a la vez por periodo (igual que con Periodo): tener
-// dos "cortes vigentes" simultáneos no tendría sentido para quien registra
-// seguimiento — no sabría contra cuál está reportando.
-export async function abrirCorte(corteId: string) {
-  const corte = await db.corte.findUnique({ where: { id: corteId } });
-  if (!corte) {
-    throw new ErrorPeriodo("El corte no existe.");
-  }
-  if (corte.estado !== "BORRADOR") {
-    throw new ErrorPeriodo("Solo se puede abrir un corte que esté en borrador.");
-  }
-
-  const otroAbierto = await db.corte.findFirst({
-    where: { periodoId: corte.periodoId, id: { not: corteId }, estado: "ABIERTO" },
-  });
-  if (otroAbierto) {
-    throw new ErrorPeriodo(`Ya hay un corte abierto ("${otroAbierto.nombre}"). Ciérralo antes de abrir otro.`);
-  }
-
-  return db.corte.update({ where: { id: corteId }, data: { estado: "ABIERTO" } });
-}
-
-export async function cerrarCorte(corteId: string) {
-  const corte = await db.corte.findUnique({ where: { id: corteId } });
-  if (!corte) {
-    throw new ErrorPeriodo("El corte no existe.");
-  }
-  if (corte.estado !== "ABIERTO") {
-    throw new ErrorPeriodo("Solo se puede cerrar un corte que esté abierto.");
-  }
-
-  return db.corte.update({ where: { id: corteId }, data: { estado: "CERRADO" } });
 }

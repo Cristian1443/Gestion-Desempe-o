@@ -1,14 +1,38 @@
 import { db } from "@/server/db";
+import { formatearFecha } from "@/lib/fecha";
+import { estadoFranja, hoyEnBogota } from "@/lib/franja";
 
-// Calificación final de objetivos INDIVIDUALES (el jefe califica a sus
-// colaboradores directos). Solo procede cuando el periodo ya pasó a
-// EN_EVALUACION, lo que a su vez exige que todos los cortes estén cerrados
-// (ver `pasarPeriodoAEvaluacion` en periodos.service.ts) — así se respeta
-// "la calificación final se pone cuando se cumplan todos los cortes".
+// Calificación final (en pantalla: "% de cumplimiento") de los objetivos. Solo
+// se puede poner dentro de la franja que Gestión Humana define para el periodo;
+// nadie abre ni cierra nada a mano. Individuales: la pone el jefe directo.
 export class ErrorCalificacion extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ErrorCalificacion";
+  }
+}
+
+function exigirFranjaCumplimiento(periodo: {
+  estado: string;
+  cumplimientoInicio: Date | null;
+  cumplimientoFin: Date | null;
+}) {
+  if (periodo.estado !== "ABIERTO") {
+    throw new ErrorCalificacion("El periodo no está abierto.");
+  }
+  const { cumplimientoInicio: inicio, cumplimientoFin: fin } = periodo;
+  if (!inicio || !fin) {
+    throw new ErrorCalificacion("Gestión Humana todavía no definió la franja del % de cumplimiento.");
+  }
+
+  const estado = estadoFranja(inicio, fin, hoyEnBogota());
+  if (estado === "PROXIMA") {
+    throw new ErrorCalificacion(
+      `El % de cumplimiento se pone del ${formatearFecha(inicio)} al ${formatearFecha(fin)}. Todavía no empieza.`,
+    );
+  }
+  if (estado === "FINALIZADA") {
+    throw new ErrorCalificacion(`La franja del % de cumplimiento terminó el ${formatearFecha(fin)}.`);
   }
 }
 
@@ -26,11 +50,7 @@ async function obtenerObjetivoIndividualParaCalificar(objetivoId: string, jefeId
   if (objetivo.estadoAprobacion !== "APROBADO") {
     throw new ErrorCalificacion("Solo se pueden calificar objetivos aprobados.");
   }
-  if (objetivo.periodo.estado !== "EN_EVALUACION") {
-    throw new ErrorCalificacion(
-      "La calificación final solo se registra cuando el periodo pasa a evaluación (todos los cortes cerrados).",
-    );
-  }
+  exigirFranjaCumplimiento(objetivo.periodo);
   return objetivo;
 }
 
@@ -93,11 +113,7 @@ export async function calificarObjetivoGerencia(input: {
   if (objetivo.gerencia.gerenteId !== input.gerenteId) {
     throw new ErrorCalificacion("No eres el gerente de esta gerencia.");
   }
-  if (objetivo.periodo.estado !== "EN_EVALUACION") {
-    throw new ErrorCalificacion(
-      "La calificación final solo se registra cuando el periodo pasa a evaluación (todos los cortes cerrados).",
-    );
-  }
+  exigirFranjaCumplimiento(objetivo.periodo);
 
   return db.objetivo.update({
     where: { id: input.objetivoId },
@@ -124,11 +140,7 @@ export async function calificarObjetivoCorporativo(input: {
   if (!objetivo || objetivo.nivel !== "CORPORATIVO") {
     throw new ErrorCalificacion("El objetivo no existe.");
   }
-  if (objetivo.periodo.estado !== "EN_EVALUACION") {
-    throw new ErrorCalificacion(
-      "La calificación final solo se registra cuando el periodo pasa a evaluación (todos los cortes cerrados).",
-    );
-  }
+  exigirFranjaCumplimiento(objetivo.periodo);
 
   return db.objetivo.update({
     where: { id: input.objetivoId },

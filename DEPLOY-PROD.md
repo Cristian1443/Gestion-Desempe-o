@@ -214,11 +214,11 @@ npx prisma db seed
 ```
 
 El seed crea la cuenta de arranque `iibservices2@investinbogota.org`
-(Gestión Humana + Admin), el periodo `2026` con 4 cortes y 8 objetivos
+(Gestión Humana + Admin), el periodo `2026` con 4 seguimientos con franja y 8 objetivos
 corporativos genéricos.
 
 **No volver a correr el seed en producción.** Sus `upsert` restauran valores:
-reabrirían el periodo 2026 aunque ya esté cerrado, devolverían los cortes a sus
+reabrirían el periodo 2026 aunque ya esté cerrado, devolverían los seguimientos a sus
 fechas originales y repondrían los roles de la cuenta de arranque.
 
 Después, cargar la estructura organizacional:

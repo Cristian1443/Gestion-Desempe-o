@@ -1,4 +1,4 @@
-import { formatearFecha } from "@/lib/fecha";
+import { FranjaItems } from "@/components/FranjaBanner";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
 import {
@@ -11,11 +11,6 @@ import {
 import { ProponerObjetivosForm } from "./ProponerObjetivosForm";
 
 type Categoria = "corporativo" | "gerencia" | "desempeno" | "desarrollo";
-
-function diasHasta(fecha: Date): number {
-  const msPorDia = 1000 * 60 * 60 * 24;
-  return Math.ceil((fecha.getTime() - Date.now()) / msPorDia);
-}
 
 export default async function MisObjetivosPage({
   searchParams,
@@ -36,8 +31,7 @@ export default async function MisObjetivosPage({
     );
   }
 
-  const { periodo, corteActual, nombreJefe, individuales, gerencia, corporativos } = datos;
-  const diasParaCierre = corteActual ? diasHasta(corteActual.fechaLimite) : null;
+  const { periodo, franjas, nombreJefe, individuales, gerencia, corporativos } = datos;
 
   const desempeno = individuales.filter((o) => o.tipoIndividual === "DESEMPENO");
   const desarrollo = individuales.filter((o) => o.tipoIndividual === "DESARROLLO");
@@ -71,18 +65,7 @@ export default async function MisObjetivosPage({
             {periodo.estado === "ABIERTO" ? "Abierto" : periodo.estado}
           </span>
 
-          {corteActual && (
-            <>
-              <span className="h-3 w-px bg-iib-border" aria-hidden />
-              <span className={diasParaCierre !== null && diasParaCierre <= 15 ? "font-medium text-warning" : undefined}>
-                Corte <strong className="font-semibold">{corteActual.numero}</strong>
-                {diasParaCierre !== null &&
-                  (diasParaCierre >= 0
-                    ? ` · vence en ${diasParaCierre} días`
-                    : ` · venció el ${formatearFecha(corteActual.fechaLimite)}`)}
-              </span>
-            </>
-          )}
+          <FranjaItems franjas={franjas} />
 
           {gerencia.nombreGerencia && (
             <>

@@ -4,18 +4,20 @@ import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-e
 import type { ColaboradorEquipo, MiEquipo, ObjetivoEquipoVista } from "@/server/services/equipo.service";
 import { accionAprobarObjetivos, accionDevolverObjetivos, accionRegistrarSeguimiento } from "./actions";
 import { BotonAccionSimple, DialogDevolverConComentario } from "@/components/AccionesSimples";
-import { ReportarAvanceDialog } from "@/components/ReportarAvanceDialog";
+import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDialog";
+import { CumplimientoLectura } from "@/components/CumplimientoLectura";
+import type { FranjaUI } from "@/lib/franja-ui";
 import { Avatar } from "@/components/Avatar";
 import { CalificacionFinalControl } from "./CalificacionFinalControl";
 
 // Verde: todo al día. Rojo: necesita atención (propuesta pendiente de
-// aprobar, o le falta seguimiento del corte vigente). Gris: aún sin
+// aprobar, o le falta el registro del seguimiento de referencia). Gris: aún sin
 // objetivos propuestos para el periodo.
 type EstadoColaborador = "AL_DIA" | "NECESITA_ATENCION" | "SIN_OBJETIVOS";
 
 function estadoColaborador(
   colaborador: ColaboradorEquipo,
-  numeroCorteActual: number | null,
+  referenciaNumero: number | null,
 ): EstadoColaborador {
   if (colaborador.objetivos.length === 0) return "SIN_OBJETIVOS";
 
@@ -24,8 +26,8 @@ function estadoColaborador(
 
   const aprobados = colaborador.objetivos.filter((o) => o.estadoAprobacion === "APROBADO");
   const faltaSeguimiento =
-    numeroCorteActual !== null &&
-    aprobados.some((o) => !o.seguimientos.some((s) => s.numeroCorte === numeroCorteActual));
+    referenciaNumero !== null &&
+    aprobados.some((o) => !o.seguimientos.some((s) => s.numero === referenciaNumero));
   if (faltaSeguimiento) return "NECESITA_ATENCION";
 
   return "AL_DIA";
@@ -65,16 +67,16 @@ export function TarjetaJefe({ jefe }: { jefe: MiEquipo["jefe"] }) {
 
 export function TarjetaColaborador({
   colaborador,
-  numeroCorteActual,
+  referenciaNumero,
   seleccionado,
   onClick,
 }: {
   colaborador: ColaboradorEquipo;
-  numeroCorteActual: number | null;
+  referenciaNumero: number | null;
   seleccionado: boolean;
   onClick: () => void;
 }) {
-  const estado = estadoColaborador(colaborador, numeroCorteActual);
+  const estado = estadoColaborador(colaborador, referenciaNumero);
   return (
     <button
       type="button"
@@ -139,9 +141,9 @@ function BitacoraSeguimiento({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
   return (
     <ul className="flex flex-col gap-2">
       {objetivo.seguimientos.map((s) => (
-        <li key={s.numeroCorte} className="rounded-md bg-iib-surface-sunken px-3 py-2">
+        <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <span className="text-xs font-bold text-iib-foreground">Corte {s.numeroCorte}</span>
+            <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
             <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
           </div>
           <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
@@ -232,18 +234,11 @@ function ObjetivoPendienteRow({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
   );
 }
 
-function ObjetivoAprobadoRow({
-  objetivo,
-  numeroCorteActual,
-  periodoEstado,
-}: {
-  objetivo: ObjetivoEquipoVista;
-  numeroCorteActual: number | null;
-  periodoEstado: string;
-}) {
-  const yaTieneSeguimientoDelCorte = objetivo.seguimientos.some(
-    (s) => s.numeroCorte === numeroCorteActual,
-  );
+function ObjetivoAprobadoRow({ objetivo, franja }: { objetivo: ObjetivoEquipoVista; franja: FranjaUI }) {
+  const enCurso = franja.seguimientoEnCurso;
+  const yaTieneRegistroDeEste = enCurso
+    ? objetivo.seguimientos.some((s) => s.numero === enCurso.numero)
+    : false;
   const colorBorde = clasificacion(objetivo)?.colorBorde ?? "border-l-transparent";
 
   return (
@@ -255,44 +250,48 @@ function ObjetivoAprobadoRow({
 
       <BitacoraSeguimiento objetivo={objetivo} />
 
-      {periodoEstado === "EN_EVALUACION" ? (
+      {franja.cumplimientoEnCurso ? (
         <div className="flex justify-end">
           <CalificacionFinalControl objetivo={objetivo} />
         </div>
       ) : (
-        numeroCorteActual !== null && (
-          <div className="flex justify-end">
-            <ReportarAvanceDialog
-              objetivoId={objetivo.id}
-              tituloObjetivo={objetivo.titulo}
-              numeroCorte={numeroCorteActual}
-              etiquetaBoton={yaTieneSeguimientoDelCorte ? "Actualizar seguimiento" : "Registrar seguimiento"}
-              etiquetaEnviar="Guardar"
-              accion={accionRegistrarSeguimiento.bind(null, objetivo.id)}
-            />
-          </div>
-        )
+        <>
+          <CumplimientoLectura
+            calificacionFinal={objetivo.calificacionFinal}
+            cumplioDesarrollo={objetivo.cumplioDesarrollo}
+          />
+          {enCurso && (
+            <div className="flex justify-end">
+              <RegistrarSeguimientoDialog
+                objetivoId={objetivo.id}
+                tituloObjetivo={objetivo.titulo}
+                numeroSeguimiento={enCurso.numero}
+                franja={enCurso.texto}
+                etiquetaBoton={
+                  yaTieneRegistroDeEste
+                    ? `Actualizar seguimiento ${enCurso.numero}`
+                    : `Registrar seguimiento ${enCurso.numero}`
+                }
+                etiquetaEnviar="Guardar"
+                accion={accionRegistrarSeguimiento.bind(null, objetivo.id)}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-export function ColaboradorPanel({
-  colaborador,
-  numeroCorteActual,
-  periodoEstado,
-}: {
-  colaborador: ColaboradorEquipo;
-  numeroCorteActual: number | null;
-  periodoEstado: string;
-}) {
+export function ColaboradorPanel({ colaborador, franja }: { colaborador: ColaboradorEquipo; franja: FranjaUI }) {
   const pendientes = colaborador.objetivos.filter((o) => o.estadoAprobacion === "PENDIENTE_APROBACION");
   const aprobados = colaborador.objetivos.filter((o) => o.estadoAprobacion === "APROBADO");
   const devueltos = colaborador.objetivos.filter((o) => o.estadoAprobacion === "DEVUELTO");
 
-  const sinSeguimientoDelCorte = aprobados.filter(
-    (o) => !o.seguimientos.some((s) => s.numeroCorte === numeroCorteActual),
-  ).length;
+  const sinRegistroDeReferencia =
+    franja.referenciaNumero === null
+      ? 0
+      : aprobados.filter((o) => !o.seguimientos.some((s) => s.numero === franja.referenciaNumero)).length;
 
   return (
     <article className="flex flex-col gap-4 rounded-card bg-iib-surface p-5 shadow-card">
@@ -301,9 +300,9 @@ export function ColaboradorPanel({
           <h3 className="text-base font-semibold">{colaborador.nombre}</h3>
           {colaborador.cargo && <p className="text-xs text-iib-secondary">{colaborador.cargo}</p>}
         </div>
-        {sinSeguimientoDelCorte > 0 && numeroCorteActual !== null && (
+        {sinRegistroDeReferencia > 0 && franja.referenciaNumero !== null && (
           <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
-            {sinSeguimientoDelCorte} sin seguimiento del Corte {numeroCorteActual}
+            {sinRegistroDeReferencia} sin registro en el seguimiento {franja.referenciaNumero}
           </span>
         )}
       </div>
@@ -351,12 +350,7 @@ export function ColaboradorPanel({
           </p>
           <div className="rounded-md border border-iib-border px-3.5">
             {aprobados.map((objetivo) => (
-              <ObjetivoAprobadoRow
-                key={objetivo.id}
-                objetivo={objetivo}
-                numeroCorteActual={numeroCorteActual}
-                periodoEstado={periodoEstado}
-              />
+              <ObjetivoAprobadoRow key={objetivo.id} objetivo={objetivo} franja={franja} />
             ))}
           </div>
         </div>

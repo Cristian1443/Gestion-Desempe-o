@@ -39,7 +39,7 @@ export function FilaGerencia({ gerencia }: { gerencia: GerenciaResultado }) {
     gerencia.objetivosIndividualesTotal === 0
       ? 0
       : Math.round(
-          (gerencia.objetivosConSeguimientoDelCorte / gerencia.objetivosIndividualesTotal) * 100,
+          (gerencia.objetivosConSeguimiento / gerencia.objetivosIndividualesTotal) * 100,
         );
 
   return (
@@ -57,10 +57,10 @@ export function FilaGerencia({ gerencia }: { gerencia: GerenciaResultado }) {
           <div className="h-full rounded-full bg-iib-primary" style={{ width: `${porcentaje}%` }} />
         </div>
         <span className="min-w-[3.5rem] text-right text-sm font-bold tabular-nums">
-          {gerencia.objetivosConSeguimientoDelCorte}/{gerencia.objetivosIndividualesTotal}
+          {gerencia.objetivosConSeguimiento}/{gerencia.objetivosIndividualesTotal}
         </span>
       </div>
-      <p className="text-xs text-iib-secondary">objetivos individuales con seguimiento del corte actual</p>
+      <p className="text-xs text-iib-secondary">objetivos individuales con registro en el seguimiento</p>
     </div>
   );
 }

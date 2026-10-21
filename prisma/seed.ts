@@ -1,5 +1,5 @@
 // Datos mínimos para poder arrancar el sistema en un ambiente nuevo:
-// periodo, cortes, objetivos corporativos de partida, y una cuenta de
+// periodo, seguimientos con franja, objetivos corporativos de partida, y una cuenta de
 // arranque con permisos de administrador. Ya NO inventa personas ni
 // gerencias — eso lo trae la migración real
 // (scripts/migracion-sharepoint/importar-estructura-real.mjs) contra el
@@ -36,10 +36,14 @@ async function main() {
   // `update` va con los mismos valores que `create` (no `{}`): así, si una
   // prueba manual dejó el periodo en otro estado, volver a correr el seed lo
   // restaura de verdad en vez de dejarlo como esté.
+  // La franja del % de cumplimiento es de ejemplo: termina después del periodo
+  // porque la evaluación se hace al cierre del año.
   const datosPeriodo = {
     fechaInicio: new Date("2026-01-01"),
     fechaFin: new Date("2026-12-31"),
     estado: "ABIERTO" as const,
+    cumplimientoInicio: new Date("2027-01-05"),
+    cumplimientoFin: new Date("2027-01-25"),
   };
   const periodo = await db.periodo.upsert({
     where: { nombre: "2026" },
@@ -47,20 +51,21 @@ async function main() {
     create: { nombre: "2026", ...datosPeriodo },
   });
 
-  // Cortes trimestrales de partida — Gestión Humana los reprograma desde
-  // Administración según el calendario real de seguimiento del año.
-  const fechasCorte = [
-    { numero: 1, nombre: "Corte 1", fechaLimite: new Date("2026-03-31") },
-    { numero: 2, nombre: "Corte 2", fechaLimite: new Date("2026-06-30") },
-    { numero: 3, nombre: "Corte 3", fechaLimite: new Date("2026-09-30") },
-    { numero: 4, nombre: "Corte 4", fechaLimite: new Date("2026-12-31") },
+  // Seguimientos trimestrales de partida, con una franja de dos semanas al
+  // final de cada trimestre — Gestión Humana los reprograma desde
+  // Administración según el calendario real del año.
+  const franjasSeguimiento = [
+    { numero: 1, fechaInicio: new Date("2026-03-16"), fechaFin: new Date("2026-03-31") },
+    { numero: 2, fechaInicio: new Date("2026-06-16"), fechaFin: new Date("2026-06-30") },
+    { numero: 3, fechaInicio: new Date("2026-09-16"), fechaFin: new Date("2026-09-30") },
+    { numero: 4, fechaInicio: new Date("2026-12-16"), fechaFin: new Date("2026-12-31") },
   ];
-  const cortes = [];
-  for (const datos of fechasCorte) {
-    cortes.push(
-      await db.corte.upsert({
+  const seguimientos = [];
+  for (const datos of franjasSeguimiento) {
+    seguimientos.push(
+      await db.seguimiento.upsert({
         where: { periodoId_numero: { periodoId: periodo.id, numero: datos.numero } },
-        update: { nombre: datos.nombre, fechaLimite: datos.fechaLimite },
+        update: { fechaInicio: datos.fechaInicio, fechaFin: datos.fechaFin },
         create: { ...datos, periodoId: periodo.id },
       }),
     );
@@ -102,7 +107,7 @@ async function main() {
 
   console.log("Seed completado:");
   console.log(`  Cuenta de arranque: ${admin.email} (Gestión Humana + Admin, pendiente de primer login)`);
-  console.log(`  Periodo: ${periodo.nombre} (${cortes.length} cortes)`);
+  console.log(`  Periodo: ${periodo.nombre} (${seguimientos.length} seguimientos con franja)`);
   console.log(
     "  Objetivos corporativos de partida: 8 (contenido genérico, editar desde Administración)",
   );

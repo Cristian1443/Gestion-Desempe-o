@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { FranjaUI } from "@/lib/franja-ui";
 import type { ColaboradorEquipo, MiEquipo } from "@/server/services/equipo.service";
 import { ColaboradorPanel, TarjetaColaborador, TarjetaJefe } from "./components";
 
@@ -14,13 +15,11 @@ const OPCIONES_TIPO: { valor: FiltroTipo; etiqueta: string }[] = [
 
 export function EquipoFiltrable({
   colaboradores,
-  numeroCorteActual,
-  periodoEstado,
+  franja,
   jefe,
 }: {
   colaboradores: ColaboradorEquipo[];
-  numeroCorteActual: number | null;
-  periodoEstado: string;
+  franja: FranjaUI;
   jefe: MiEquipo["jefe"];
 }) {
   const [busqueda, setBusqueda] = useState("");
@@ -90,7 +89,7 @@ export function EquipoFiltrable({
             <TarjetaColaborador
               key={colaborador.usuarioId}
               colaborador={colaborador}
-              numeroCorteActual={numeroCorteActual}
+              referenciaNumero={franja.referenciaNumero}
               seleccionado={colaborador.usuarioId === seleccionadoId}
               onClick={() =>
                 setSeleccionadoId((actual) => (actual === colaborador.usuarioId ? null : colaborador.usuarioId))
@@ -101,11 +100,7 @@ export function EquipoFiltrable({
       )}
 
       {seleccionado ? (
-        <ColaboradorPanel
-          colaborador={seleccionado}
-          numeroCorteActual={numeroCorteActual}
-          periodoEstado={periodoEstado}
-        />
+        <ColaboradorPanel colaborador={seleccionado} franja={franja} />
       ) : (
         <p className="rounded-card border border-dashed border-iib-border p-5 text-center text-sm text-iib-secondary">
           Selecciona un colaborador para ver y gestionar sus objetivos.

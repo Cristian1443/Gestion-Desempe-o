@@ -1,6 +1,10 @@
 import { db } from "@/server/db";
 import { validarObjetivosGerencia } from "@/server/services/calculo-notas";
-import { obtenerCorteActual, obtenerPeriodoActual } from "@/server/services/periodos.service";
+import {
+  obtenerContextoFranjas,
+  obtenerPeriodoActual,
+  type ContextoFranjas,
+} from "@/server/services/periodos.service";
 
 export class ErrorGerencia extends Error {
   constructor(message: string) {
@@ -72,7 +76,7 @@ export async function crearObjetivosGerencia(
 }
 
 export interface SeguimientoGerenciaVista {
-  numeroCorte: number;
+  numero: number;
   comentario: string;
   fecha: Date;
 }
@@ -84,8 +88,8 @@ export interface ObjetivoGerenciaVista {
   meta: string;
   indicador: string;
   peso: number;
-  // Un registro por corte (el más reciente, si hubo correcciones), ordenado
-  // por número de corte ascendente.
+  // Un registro por seguimiento (el más reciente, si hubo correcciones),
+  // ordenado por número de seguimiento ascendente.
   seguimientos: SeguimientoGerenciaVista[];
   // Calificación final (0-100) asignada por el gerente al cierre del
   // periodo — ver calificaciones.service.ts.
@@ -99,12 +103,14 @@ export interface ColaboradorConsolidado {
   totalObjetivos: number;
   aprobados: number;
   pendientes: number;
-  conSeguimientoDelCorteActual: number;
+  // Objetivos aprobados que ya tienen al menos un seguimiento registrado en
+  // el seguimiento de referencia (el que está en curso o el último iniciado).
+  conSeguimientoDeReferencia: number;
 }
 
 export interface MiGerencia {
   periodo: { id: string; nombre: string; estado: string };
-  corteActual: { id: string; numero: number; fechaLimite: Date } | null;
+  franjas: ContextoFranjas;
   gerencia: { id: string; nombre: string };
   objetivos: ObjetivoGerenciaVista[];
   colaboradores: ColaboradorConsolidado[];
@@ -117,15 +123,16 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
   const periodo = await obtenerPeriodoActual();
   if (!periodo) return null;
 
-  const corteActual = await obtenerCorteActual(periodo.id);
+  const franjas = await obtenerContextoFranjas(periodo.id);
+  const seguimientoReferenciaId = franjas.seguimientoReferencia?.id;
 
   const objetivosGerencia = await db.objetivo.findMany({
     where: { periodoId: periodo.id, nivel: "GERENCIA", gerenciaId: gerencia.id },
     include: {
       seguimientos: {
-        orderBy: [{ corteId: "asc" }, { version: "desc" }],
-        distinct: ["corteId"],
-        include: { corte: { select: { numero: true } } },
+        orderBy: [{ seguimientoId: "asc" }, { version: "desc" }],
+        distinct: ["seguimientoId"],
+        include: { seguimiento: { select: { numero: true } } },
       },
     },
     orderBy: { createdAt: "asc" },
@@ -141,8 +148,8 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
     indicador: o.indicador,
     peso: o.peso.toNumber(),
     seguimientos: o.seguimientos
-      .map((s) => ({ numeroCorte: s.corte.numero, comentario: s.comentario, fecha: s.createdAt }))
-      .sort((a, b) => a.numeroCorte - b.numeroCorte),
+      .map((s) => ({ numero: s.seguimiento.numero, comentario: s.comentario, fecha: s.createdAt }))
+      .sort((a, b) => a.numero - b.numero),
     calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
   }));
 
@@ -157,8 +164,8 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
       const objetivosIndividuales = await db.objetivo.findMany({
         where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id },
         include: {
-          seguimientos: corteActual
-            ? { where: { corteId: corteActual.id }, take: 1 }
+          seguimientos: seguimientoReferenciaId
+            ? { where: { seguimientoId: seguimientoReferenciaId }, take: 1 }
             : { take: 0 },
         },
       });
@@ -167,7 +174,7 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
       const pendientes = objetivosIndividuales.filter(
         (o) => o.estadoAprobacion === "PENDIENTE_APROBACION",
       );
-      const conSeguimientoDelCorteActual = aprobados.filter((o) => o.seguimientos.length > 0).length;
+      const conSeguimientoDeReferencia = aprobados.filter((o) => o.seguimientos.length > 0).length;
 
       return {
         usuarioId: colaborador.id,
@@ -176,14 +183,14 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
         totalObjetivos: objetivosIndividuales.length,
         aprobados: aprobados.length,
         pendientes: pendientes.length,
-        conSeguimientoDelCorteActual,
+        conSeguimientoDeReferencia,
       };
     }),
   );
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre, estado: periodo.estado },
-    corteActual,
+    franjas,
     gerencia: { id: gerencia.id, nombre: gerencia.nombre },
     objetivos,
     colaboradores,

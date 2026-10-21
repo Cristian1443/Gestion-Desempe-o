@@ -1,26 +1,27 @@
 import { formatearFecha } from "@/lib/fecha";
-import { ReportarAvanceDialog } from "@/components/ReportarAvanceDialog";
+import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDialog";
+import { CumplimientoLectura } from "@/components/CumplimientoLectura";
+import type { FranjaUI } from "@/lib/franja-ui";
 import type {
   ColaboradorConsolidado,
   ObjetivoGerenciaVista,
 } from "@/server/services/gerencia.service";
-import { accionReportarAvanceGerencia } from "./actions";
+import { accionRegistrarSeguimientoGerencia } from "./actions";
 import { CalificacionGerenciaControl } from "./CalificacionGerenciaControl";
 
 export function ObjetivoGerenciaCard({
   objetivo,
   numero,
-  numeroCorteActual,
-  periodoEstado,
+  franja,
 }: {
   objetivo: ObjetivoGerenciaVista;
   numero: number;
-  numeroCorteActual: number | null;
-  periodoEstado: string;
+  franja: FranjaUI;
 }) {
-  const yaTieneSeguimientoDelCorte = objetivo.seguimientos.some(
-    (s) => s.numeroCorte === numeroCorteActual,
-  );
+  const enCurso = franja.seguimientoEnCurso;
+  const yaTieneRegistroDeEste = enCurso
+    ? objetivo.seguimientos.some((s) => s.numero === enCurso.numero)
+    : false;
 
   return (
     <article className="flex flex-col gap-3 rounded-card bg-iib-surface p-5 shadow-card">
@@ -47,9 +48,9 @@ export function ObjetivoGerenciaCard({
       ) : (
         <ul className="flex flex-col gap-2">
           {objetivo.seguimientos.map((s) => (
-            <li key={s.numeroCorte} className="rounded-md bg-iib-surface-sunken px-3 py-2">
+            <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="text-xs font-bold text-iib-foreground">Corte {s.numeroCorte}</span>
+                <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
                 <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
               </div>
               <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
@@ -58,23 +59,31 @@ export function ObjetivoGerenciaCard({
         </ul>
       )}
 
-      {periodoEstado === "EN_EVALUACION" ? (
+      {franja.cumplimientoEnCurso ? (
         <div className="flex justify-end pt-0.5">
           <CalificacionGerenciaControl objetivo={objetivo} />
         </div>
       ) : (
-        numeroCorteActual !== null && (
-          <div className="flex justify-end pt-0.5">
-            <ReportarAvanceDialog
-              objetivoId={objetivo.id}
-              tituloObjetivo={objetivo.titulo}
-              numeroCorte={numeroCorteActual}
-              etiquetaBoton={yaTieneSeguimientoDelCorte ? "Actualizar seguimiento" : "Registrar seguimiento"}
-              etiquetaEnviar="Guardar"
-              accion={accionReportarAvanceGerencia}
-            />
-          </div>
-        )
+        <>
+          <CumplimientoLectura calificacionFinal={objetivo.calificacionFinal} />
+          {enCurso && (
+            <div className="flex justify-end pt-0.5">
+              <RegistrarSeguimientoDialog
+                objetivoId={objetivo.id}
+                tituloObjetivo={objetivo.titulo}
+                numeroSeguimiento={enCurso.numero}
+                franja={enCurso.texto}
+                etiquetaBoton={
+                  yaTieneRegistroDeEste
+                    ? `Actualizar seguimiento ${enCurso.numero}`
+                    : `Registrar seguimiento ${enCurso.numero}`
+                }
+                etiquetaEnviar="Guardar"
+                accion={accionRegistrarSeguimientoGerencia}
+              />
+            </div>
+          )}
+        </>
       )}
     </article>
   );
@@ -104,8 +113,8 @@ export function ColaboradorConsolidadoRow({ colaborador }: { colaborador: Colabo
             </span>
             {colaborador.aprobados > 0 && (
               <span className="font-bold tabular-nums text-iib-foreground">
-                {colaborador.conSeguimientoDelCorteActual}/{colaborador.aprobados} con seguimiento del
-                corte actual
+                {colaborador.conSeguimientoDeReferencia}/{colaborador.aprobados} con registro en el
+                seguimiento en curso
               </span>
             )}
           </>

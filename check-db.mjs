@@ -3,7 +3,7 @@ const db = new PrismaClient();
 
 // Ver todos los periodos con sus fechas
 const periodos = await db.periodo.findMany({
-  include: { cortes: { orderBy: { numero: 'asc' } } },
+  include: { seguimientos: { orderBy: { numero: 'asc' } } },
   orderBy: { fechaInicio: 'desc' }
 });
 console.log('=== PERIODOS ===');
@@ -11,7 +11,7 @@ for (const p of periodos) {
   console.log(`ID: ${p.id}`);
   console.log(`  Nombre: ${p.nombre}, Estado: ${p.estado}`);
   console.log(`  Inicio: ${p.fechaInicio?.toISOString()}, Fin: ${p.fechaFin?.toISOString()}`);
-  console.log(`  Cortes: ${p.cortes.length}`);
+  console.log(`  Seguimientos: ${p.seguimientos.length}`);
 }
 
 // Ver objetivos por periodo

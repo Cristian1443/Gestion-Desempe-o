@@ -206,9 +206,9 @@ function BitacoraSeguimiento({ seguimientos }: { seguimientos: SeguimientoVista[
       </p>
       <ul className="flex flex-col gap-2.5">
         {seguimientos.map((s) => (
-          <li key={s.numeroCorte} className="rounded-md bg-iib-surface-sunken px-3 py-2.5">
+          <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2.5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="text-xs font-bold text-iib-foreground">Corte {s.numeroCorte}</span>
+              <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
               <span className="text-xs text-iib-secondary">
                 {formatearFecha(s.fecha)} · {s.registradoPorNombre}
               </span>
@@ -336,7 +336,7 @@ export function CalificacionFinalVista({ objetivo }: { objetivo: ObjetivoVista }
     if (objetivo.cumplioDesarrollo === null) return null;
     return (
       <p className="rounded-md bg-iib-surface-sunken px-3 py-2 text-sm font-medium">
-        Calificación final: {objetivo.cumplioDesarrollo ? "cumplido" : "no cumplido"}
+        Resultado: {objetivo.cumplioDesarrollo ? "cumplido" : "no cumplido"}
       </p>
     );
   }
@@ -345,7 +345,7 @@ export function CalificacionFinalVista({ objetivo }: { objetivo: ObjetivoVista }
   const cumple = cumpleCalificacion(objetivo.calificacionFinal);
   return (
     <p className="flex items-center gap-2 rounded-md bg-iib-surface-sunken px-3 py-2 text-sm font-medium">
-      Calificación final: {objetivo.calificacionFinal}
+      % de cumplimiento: {objetivo.calificacionFinal}%
       <span
         className={`rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${
           cumple ? "bg-success text-white" : "bg-danger text-white"
@@ -402,11 +402,6 @@ export function ObjetivoCorporativoRow({
       <div className="grid grid-cols-[1.2rem_1fr_auto_auto] items-center gap-x-3">
         <span className="text-xs tabular-nums text-iib-secondary">{numero}</span>
         <span className="text-sm font-medium">{objetivo.titulo}</span>
-        {ultimo?.porcentajeAvance !== null && ultimo?.porcentajeAvance !== undefined && (
-          <span className="w-fit rounded-full bg-iib-primary/10 px-2.5 py-1 text-xs font-bold tabular-nums text-iib-primary">
-            {ultimo.porcentajeAvance}% avance
-          </span>
-        )}
         {objetivo.calificacionFinal !== null && (
           <span
             className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -415,7 +410,7 @@ export function ObjetivoCorporativoRow({
                 : "bg-danger text-white"
             }`}
           >
-            {objetivo.calificacionFinal} · {cumpleCalificacion(objetivo.calificacionFinal) ? "Cumple" : "No cumple"}
+            {objetivo.calificacionFinal}% · {cumpleCalificacion(objetivo.calificacionFinal) ? "Cumple" : "No cumple"}
           </span>
         )}
         <span className="w-fit rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
@@ -424,7 +419,7 @@ export function ObjetivoCorporativoRow({
       </div>
       <p className="pl-[1.2rem] text-xs text-iib-secondary">
         {ultimo
-          ? `Último seguimiento: Corte ${ultimo.numeroCorte} · ${formatearFecha(ultimo.fecha)}`
+          ? `Último registro: Seguimiento ${ultimo.numero} · ${formatearFecha(ultimo.fecha)}`
           : "Aún sin seguimiento registrado"}
       </p>
     </div>

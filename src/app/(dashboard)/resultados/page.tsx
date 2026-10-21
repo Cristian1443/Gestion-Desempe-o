@@ -1,3 +1,4 @@
+import { formatearFecha } from "@/lib/fecha";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerResultados } from "@/server/services/resultados.service";
 import { FilaGerencia, FilaObjetivoSinSeguimiento, TarjetaKpi } from "./components";
@@ -21,13 +22,17 @@ export default async function ResultadosPage() {
         <h1 className="text-2xl font-bold text-iib-foreground">Tablero de resultados</h1>
         <p className="text-sm text-iib-secondary">
           Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
-          {datos.corteActual && (
+          {datos.seguimientoReferencia && (
             <>
               {" "}
-              · Corte <strong className="font-semibold text-iib-foreground">{datos.corteActual.numero}</strong>
+              · Seguimiento{" "}
+              <strong className="font-semibold text-iib-foreground">{datos.seguimientoReferencia.numero}</strong>{" "}
+              ({datos.seguimientoReferencia.enCurso ? "en curso" : "último"}, del{" "}
+              {formatearFecha(datos.seguimientoReferencia.fechaInicio)} al{" "}
+              {formatearFecha(datos.seguimientoReferencia.fechaFin)})
             </>
           )}{" "}
-          · cobertura de seguimiento del ciclo de evaluación en curso.
+          · cobertura de seguimiento del periodo.
         </p>
       </div>
 
@@ -47,10 +52,9 @@ export default async function ResultadosPage() {
           </div>
         </div>
         <p className="rounded-card border border-dashed border-iib-border bg-iib-surface px-4 py-3 text-xs text-iib-secondary">
-          Estas cifras muestran <strong>cuántos objetivos ya tienen un seguimiento registrado en el
-          corte actual</strong>, no la calificación final del periodo — esa es un juicio del evaluador
-          que se asigna al cierre, después de que existan los seguimientos de todos los cortes que
-          definió el administrador.
+          Estas cifras muestran <strong>cuántos objetivos ya tienen un registro en el seguimiento
+          indicado arriba</strong>, no el % de cumplimiento — ese es un juicio del evaluador que se
+          pone una sola vez, al final, dentro de su franja.
         </p>
       </section>
 
@@ -75,7 +79,7 @@ export default async function ResultadosPage() {
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Objetivos sin seguimiento del corte actual</h2>
+          <h2 className="text-base font-bold">Objetivos sin registro en el seguimiento</h2>
           <span className="text-sm text-iib-secondary">
             {datos.objetivosSinSeguimiento.length} objetivo
             {datos.objetivosSinSeguimiento.length === 1 ? "" : "s"}
@@ -84,7 +88,7 @@ export default async function ResultadosPage() {
 
         {datos.objetivosSinSeguimiento.length === 0 ? (
           <p className="text-sm text-iib-secondary">
-            Todos los objetivos ya tienen seguimiento registrado en este corte.
+            Todos los objetivos ya tienen registro en este seguimiento.
           </p>
         ) : (
           <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">

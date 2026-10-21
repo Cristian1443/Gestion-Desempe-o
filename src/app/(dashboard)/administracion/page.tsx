@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { FranjaBanner } from "@/components/FranjaBanner";
+import { aFranjaUI } from "@/lib/franja-ui";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerObjetivosCorporativosAdmin } from "@/server/services/corporativos.service";
 import { listarPeriodos } from "@/server/services/periodos.service";
@@ -25,7 +27,7 @@ export default async function AdministracionPage() {
           <p className="text-sm text-iib-secondary">
             {esAdmin
               ? "Objetivos corporativos y gestión de periodos de evaluación."
-              : "Registra el avance de los 8 objetivos corporativos en cada corte."}
+              : "Registra el seguimiento de los 8 objetivos corporativos dentro de cada franja."}
           </p>
         </div>
         {esAdmin && (
@@ -37,6 +39,8 @@ export default async function AdministracionPage() {
           </Link>
         )}
       </div>
+
+      {corporativos && <FranjaBanner periodo={corporativos.periodo.nombre} franjas={corporativos.franjas} />}
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
@@ -55,8 +59,7 @@ export default async function AdministracionPage() {
                 key={objetivo.id}
                 objetivo={objetivo}
                 numero={indice + 1}
-                numeroCorteActual={corporativos.corteActual?.numero ?? null}
-                periodoEstado={corporativos.periodo.estado}
+                franja={aFranjaUI(corporativos.franjas)}
                 puedeCalificar={esAdmin}
               />
             ))}

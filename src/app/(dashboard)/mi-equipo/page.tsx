@@ -1,3 +1,5 @@
+import { FranjaBanner } from "@/components/FranjaBanner";
+import { aFranjaUI } from "@/lib/franja-ui";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerMiEquipo } from "@/server/services/equipo.service";
 import { EquipoFiltrable } from "./EquipoFiltrable";
@@ -21,18 +23,10 @@ export default async function MiEquipoPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-iib-foreground">Mi equipo</h1>
         <p className="text-sm text-iib-secondary">
-          Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
-          {datos.corteActual && (
-            <>
-              {" "}
-              · Corte <strong className="font-semibold text-iib-foreground">{datos.corteActual.numero}</strong>
-            </>
-          )}{" "}
-          ·{" "}
-          {datos.periodo.estado === "EN_EVALUACION"
-            ? "todos los cortes están cerrados: registra la calificación final de cada colaborador."
-            : "aprueba los objetivos individuales de tus colaboradores y registra su seguimiento en cada corte."}
+          Aprueba los objetivos individuales de tus colaboradores, registra su seguimiento dentro de cada franja y
+          pon su % de cumplimiento al final.
         </p>
+        <FranjaBanner periodo={datos.periodo.nombre} franjas={datos.franjas} />
       </div>
 
       {datos.colaboradores.length === 0 ? (
@@ -40,8 +34,7 @@ export default async function MiEquipoPage() {
       ) : (
         <EquipoFiltrable
           colaboradores={datos.colaboradores}
-          numeroCorteActual={datos.corteActual?.numero ?? null}
-          periodoEstado={datos.periodo.estado}
+          franja={aFranjaUI(datos.franjas)}
           jefe={datos.jefe}
         />
       )}

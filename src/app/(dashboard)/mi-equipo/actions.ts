@@ -16,7 +16,7 @@ import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 import { ErrorSeguimiento, registrarSeguimientoIndividual } from "@/server/services/seguimientos.service";
 import { devolverObjetivosSchema } from "@/server/validations/aprobacion.schema";
 import { calificarDesarrolloSchema, calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
-import { reportarAvanceSchema } from "@/server/validations/seguimiento.schema";
+import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionEquipo = { ok: true } | { ok: false; error: string };
 
@@ -83,7 +83,7 @@ export async function accionRegistrarSeguimiento(
 ): Promise<EstadoAccionEquipo> {
   const jefe = await requireRol("JEFE");
 
-  const parsed = reportarAvanceSchema.safeParse({
+  const parsed = registrarSeguimientoSchema.safeParse({
     objetivoId,
     comentario: formData.get("comentario"),
   });
@@ -120,7 +120,7 @@ export async function accionCalificarDesempeno(
     await calificarObjetivoDesempeno({ ...parsed.data, jefeId: jefe.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar la calificación." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
   }
 
   revalidarVistas();
@@ -142,7 +142,7 @@ export async function accionCalificarDesarrollo(
     await calificarObjetivoDesarrollo({ ...parsed.data, jefeId: jefe.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar la calificación." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
   }
 
   revalidarVistas();

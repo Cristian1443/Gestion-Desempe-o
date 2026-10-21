@@ -21,12 +21,13 @@ antes de construir el esquema:
 1. **Flujo de aprobación de objetivos individuales:** el colaborador propone
    → el jefe directo aprueba, edita o devuelve con comentario
    (`Objetivo.estadoAprobacion`).
-2. **Cortes de seguimiento:** son una entidad explícita (`Corte`), configurada
-   por el admin por periodo (cuántos cortes y su fecha límite). Esto es lo que
-   permite validar reportes faltantes y disparar el recordatorio por correo.
+2. **Seguimientos numerados con franja de fechas:** son una entidad
+   explícita (`Seguimiento`), que Gestión Humana configura por periodo
+   (cuántos hay y la franja desde–hasta de cada uno). Se registran solo dentro
+   de su franja; ver "Seguimientos y % de cumplimiento" más abajo.
 3. **Seguimiento en niveles superiores:** los objetivos de gerencia y
-   corporativos también se reportan por corte (no solo con una nota final al
-   cierre), dando semáforo de avance en los 3 niveles.
+   corporativos también llevan seguimiento en cada franja (no solo una nota
+   final al cierre), en los 3 niveles.
 
 ## Decisiones técnicas y su razón
 
@@ -77,10 +78,10 @@ antes de construir el esquema:
   ambos casos con la misma fórmula: `Σ(peso_i / Σpeso_nivel × nota_i)`, así que
   el caso gerencia/corporativo es matemáticamente equivalente (pesos iguales
   entre sí) sin necesitar una fórmula distinta.
-- **`Seguimiento` es append-only con `version`:** un reporte devuelto por el
-  jefe no se edita — se crea una nueva fila con `version + 1` para el mismo
-  `(objetivoId, corteId)`. La vigente es siempre la de mayor versión. Así el
-  historial completo queda intacto para auditoría.
+- **`RegistroSeguimiento` es append-only con `version`:** corregir un
+  comentario no lo edita — se crea una nueva fila con `version + 1` para el
+  mismo `(objetivoId, seguimientoId)`. La vigente es siempre la de mayor
+  versión. Así el historial completo queda intacto para auditoría.
 - **`output: "standalone"` en Next.js:** necesario para que el `Dockerfile`
   multi-stage copie solo lo que se usa en runtime, sin todo `node_modules`.
 - **Auth.js dividido en dos configuraciones (`auth.config.ts` + `auth.ts`):**
@@ -115,7 +116,7 @@ Lo ya creado hasta esta fase:
 ```
 prisma/
   schema.prisma        Esquema completo (usuarios, gerencias, periodos,
-                        cortes, objetivos, seguimientos, evaluaciones, auditoría)
+                        seguimientos con franja, objetivos, registros, evaluaciones, auditoría)
   constraints.sql       CHECK constraints complementarios (ver arriba)
   seed.ts                Datos de ejemplo idempotentes para desarrollo local
                           (no es el script de migración real — eso es fase 5)
@@ -148,7 +149,7 @@ src/
         page.tsx             Módulo Gestión Humana/Admin: corporativos + periodos
         components.tsx        ObjetivoCorporativoCard + PeriodoRow
         CrearObjetivosCorporativosForm.tsx  Formulario de carga (Client)
-        CrearPeriodoForm.tsx / AgregarCorteForm.tsx  Formularios (Client)
+        CrearPeriodoForm.tsx / AgregarSeguimientoForm.tsx / FranjaCumplimientoForm.tsx  Formularios (Client)
         actions.ts             Server Actions: corporativos + ciclo de vida del periodo
         estructura/
           page.tsx               Gerencias + colaboradores + conexión jefe/gerencia
@@ -171,8 +172,8 @@ src/
     services/
       calculo-notas.ts    Motor de cálculo puro + tests (fase 2)
       semaforo.ts          Avance vs. tiempo transcurrido del periodo + tests
-      periodos.service.ts   Lectura (obtenerPeriodoActual/obtenerCorteActual) +
-                            administración (crear/abrir/cerrar periodo, agregar corte)
+      periodos.service.ts   Lectura (obtenerPeriodoActual/obtenerContextoFranjas) +
+                            administración (crear/abrir/cerrar periodo, seguimientos y franjas)
       objetivos.service.ts  Arma el modelo de vista de "Mis objetivos"
       seguimientos.service.ts  reportar avance (individual/gerencia/corporativo), validar/devolver
       aprobaciones.service.ts  proponer/aprobar/devolver objetivos individuales
@@ -188,7 +189,7 @@ src/
       gerencia.schema.ts     Zod: valida la carga de objetivos de gerencia
       corporativo.schema.ts  Zod: valida la carga de objetivos corporativos
       organizacion.schema.ts  Zod: valida alta/edición de usuarios y gerencias
-      periodo.schema.ts      Zod: valida creación de periodos y cortes
+      periodo.schema.ts      Zod: valida creación de periodos, seguimientos y franjas
     auth/
       auth.config.ts      Config "edge-safe" (sin Prisma) — la usa el Middleware
       rbac.ts             requireUsuarioAutenticado / requireRol / tieneRol
@@ -234,7 +235,7 @@ scripts/
      (falta "calificar al cierre" — ver nota al final de esa sección)
    - ✅ Mi gerencia (gerente) — cargar los 2 objetivos, reportar avance,
      consolidado del equipo
-   - ✅ Administración (Gestión Humana) — corporativos, periodos y cortes
+   - ✅ Administración (Gestión Humana) — corporativos, periodos y seguimientos con franja
    - ✅ Estructura organizacional — gerencias, alta de colaboradores,
      conexión empleado↔jefe, con vinculación automática al primer login
    - ✅ Tablero de resultados — avance global, cumplimiento por gerencia,
@@ -243,6 +244,35 @@ scripts/
 5. Pendiente: script de migración desde SharePoint (para masificar la carga
    de la estructura organizacional con datos reales) + calificar al cierre +
    exportación a Excel/PDF
+
+## Seguimientos y % de cumplimiento (modelo vigente)
+
+Esta sección reemplaza al antiguo modelo de "cortes". Los apartados de módulos
+de más abajo (Mis objetivos, Mi equipo, Mi gerencia, Administración) son el
+historial de cómo se construyeron y todavía mencionan cortes, validación y
+semáforo: describen el flujo anterior, no el actual.
+
+- **Seguimientos numerados.** Cada periodo tiene N seguimientos (Seguimiento 1,
+  2… N). Gestión Humana define cuántos hay y la **franja de fechas** (inicio y
+  fin, inclusivos) de cada uno desde *Administración*. Las franjas van en orden y
+  no se traslapan; cada seguimiento debe caer dentro del periodo.
+- **Se controla solo, por fechas.** Un seguimiento se puede registrar únicamente
+  dentro de su franja, con el periodo Abierto. Nadie abre ni cierra nada a mano.
+  "Hoy" se calcula en hora de Bogotá (UTC-5), no en la hora del servidor (UTC);
+  ver [src/lib/franja.ts](src/lib/franja.ts).
+- **Qué se registra.** Cada seguimiento de un objetivo es un comentario con fecha
+  y autor (`RegistroSeguimiento`); sin porcentaje. Quien lo hace: jefe directo
+  (individual), gerente (gerencia), Gestión Humana/Admin/Gestor corporativo
+  (corporativo). Corregir dentro de la franja crea una versión nueva.
+- **% de cumplimiento final.** Es la antigua "calificación final" (0-100, columna
+  `Objetivo.calificacionFinal`), con "Cumple" desde 80. Se pone una sola vez, al
+  final, y solo dentro de la **franja del % de cumplimiento** que Gestión Humana
+  define en el periodo (`Periodo.cumplimientoInicio/Fin`), que puede terminar
+  después del periodo. Los objetivos de desarrollo siguen siendo sí/no.
+- **Periodo.** Borrador → Abierto → Cerrado. Abrir exige al menos un seguimiento y
+  la franja del % final; cerrar exige que todos los objetivos tengan su %. Ya no
+  existe "En evaluación" ni "Pasar a evaluación": la franja lo reemplaza.
+- Los seguimientos nunca alimentan la nota ponderada (`calculo-notas.ts`).
 
 ## Módulo "Mis objetivos" (fase 4, primera entrega)
 
@@ -466,7 +496,7 @@ Administración, hasta que hizo falta de verdad.
 la migración real (`scripts/migracion-sharepoint/importar-estructura-real.mjs`)
 contra el directorio de Entra ID. El seed solo crea lo mínimo para arrancar un
 ambiente nuevo: la cuenta de arranque de Gestión Humana/Admin, el periodo
-anual `2026` con 4 cortes trimestrales, y 8 objetivos corporativos de
+anual `2026` con 4 seguimientos con franja, la franja del % de cumplimiento, y 8 objetivos corporativos de
 contenido genérico — es idempotente, se puede correr varias veces:
 
 ```bash

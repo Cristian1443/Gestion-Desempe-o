@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
-export type EstadoAccionAvance = { ok: true } | { ok: false; error: string };
+export type EstadoAccionSeguimiento = { ok: true } | { ok: false; error: string };
 
-const ESTADO_INICIAL: EstadoAccionAvance = { ok: true };
+const ESTADO_INICIAL: EstadoAccionSeguimiento = { ok: true };
 
 function BotonEnviar({ etiqueta, etiquetaEnviando }: { etiqueta: string; etiquetaEnviando: string }) {
   const { pending } = useFormStatus();
@@ -20,36 +20,34 @@ function BotonEnviar({ etiqueta, etiquetaEnviando }: { etiqueta: string; etiquet
   );
 }
 
-// Diálogo de seguimiento compartido entre Individual, Gerencia y
-// Corporativo: la Server Action que realmente valida y persiste el
-// Seguimiento se recibe como prop, así la única diferencia entre los tres
-// usos es a qué función se conecta, no el formulario en sí. El seguimiento
-// es solo comentario + fecha (la fecha la pone el servidor) — no lleva
-// porcentaje de avance ni estado: la calificación real es un juicio aparte
-// que se asigna al cierre del periodo.
-export function ReportarAvanceDialog({
+// Diálogo de seguimiento compartido entre Individual, Gerencia y Corporativo:
+// la Server Action que realmente valida y persiste el registro se recibe como
+// prop, así la única diferencia entre los tres usos es a qué función se
+// conecta, no el formulario en sí. Cada registro es solo comentario + fecha
+// (la fecha la pone el servidor); el % de cumplimiento es un juicio aparte que
+// se pone una sola vez, al final, dentro de su franja.
+export function RegistrarSeguimientoDialog({
   objetivoId,
   tituloObjetivo,
-  numeroCorte,
+  numeroSeguimiento,
+  franja,
   etiquetaBoton = "Registrar seguimiento",
   etiquetaEnviar = "Guardar",
   etiquetaEnviando = "Guardando…",
-  incluirAvance = false,
   accion,
 }: {
   objetivoId: string;
   tituloObjetivo: string;
-  numeroCorte: number;
+  numeroSeguimiento: number;
+  // Franja del seguimiento en curso, ya formateada (ej. "16 mar 2026 al 31 mar 2026").
+  franja: string;
   etiquetaBoton?: string;
   etiquetaEnviar?: string;
   etiquetaEnviando?: string;
-  // Solo para objetivos CORPORATIVO: agrega un campo de % de avance (0-100),
-  // visible luego para toda la organización, además del comentario.
-  incluirAvance?: boolean;
   accion: (
-    estadoPrevio: EstadoAccionAvance,
+    estadoPrevio: EstadoAccionSeguimiento,
     formData: FormData,
-  ) => Promise<EstadoAccionAvance>;
+  ) => Promise<EstadoAccionSeguimiento>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -87,25 +85,11 @@ export function ReportarAvanceDialog({
           }}
           className="flex flex-col gap-3.5 p-6"
         >
-          <h3 className="text-base font-semibold">Seguimiento — Corte {numeroCorte}</h3>
+          <h3 className="text-base font-semibold">Seguimiento {numeroSeguimiento}</h3>
           <p className="-mt-2 text-sm text-iib-secondary">{tituloObjetivo}</p>
+          <p className="-mt-2 text-xs text-iib-secondary">Franja: {franja}</p>
 
           <input type="hidden" name="objetivoId" value={objetivoId} />
-
-          {incluirAvance && (
-            <label className="flex flex-col gap-1 text-sm text-iib-secondary">
-              % de avance (0-100)
-              <input
-                type="number"
-                name="porcentajeAvance"
-                min={0}
-                max={100}
-                step={1}
-                required
-                className="rounded-md border border-iib-border bg-iib-background px-2.5 py-2 text-sm font-bold tabular-nums text-iib-foreground"
-              />
-            </label>
-          )}
 
           <label className="flex flex-col gap-1 text-sm text-iib-secondary">
             Comentario
@@ -113,7 +97,7 @@ export function ReportarAvanceDialog({
               name="comentario"
               rows={4}
               required
-              placeholder="Describe el avance logrado en este corte…"
+              placeholder="Describe cómo va este objetivo en este seguimiento…"
               className="resize-y rounded-md border border-iib-border bg-iib-background px-2.5 py-2 text-sm text-iib-foreground"
             />
           </label>

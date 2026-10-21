@@ -1,6 +1,10 @@
 import { db } from "@/server/db";
 import { validarObjetivosCorporativos } from "@/server/services/calculo-notas";
-import { obtenerCorteActual, obtenerPeriodoActual } from "@/server/services/periodos.service";
+import {
+  obtenerContextoFranjas,
+  obtenerPeriodoActual,
+  type ContextoFranjas,
+} from "@/server/services/periodos.service";
 
 export class ErrorCorporativo extends Error {
   constructor(message: string) {
@@ -68,12 +72,9 @@ export async function crearObjetivosCorporativos(
 }
 
 export interface SeguimientoCorporativoVista {
-  numeroCorte: number;
+  numero: number;
   comentario: string;
   fecha: Date;
-  // 0-100, visible para toda la organización. Puede ser `null` en registros
-  // creados antes de que existiera este campo.
-  porcentajeAvance: number | null;
 }
 
 export interface ObjetivoCorporativoVista {
@@ -83,8 +84,8 @@ export interface ObjetivoCorporativoVista {
   meta: string;
   indicador: string;
   peso: number;
-  // Un registro por corte (el más reciente, si hubo correcciones), ordenado
-  // por número de corte ascendente.
+  // Un registro por seguimiento (el más reciente, si hubo correcciones),
+  // ordenado por número de seguimiento ascendente.
   seguimientos: SeguimientoCorporativoVista[];
   // Calificación final (0-100) asignada por Gestión Humana/Admin al cierre
   // del periodo — ver calificaciones.service.ts.
@@ -93,7 +94,7 @@ export interface ObjetivoCorporativoVista {
 
 export interface ObjetivosCorporativos {
   periodo: { id: string; nombre: string; estado: string };
-  corteActual: { id: string; numero: number; fechaLimite: Date } | null;
+  franjas: ContextoFranjas;
   objetivos: ObjetivoCorporativoVista[];
 }
 
@@ -101,15 +102,15 @@ export async function obtenerObjetivosCorporativosAdmin(): Promise<ObjetivosCorp
   const periodo = await obtenerPeriodoActual();
   if (!periodo) return null;
 
-  const corteActual = await obtenerCorteActual(periodo.id);
+  const franjas = await obtenerContextoFranjas(periodo.id);
 
   const objetivos = await db.objetivo.findMany({
     where: { periodoId: periodo.id, nivel: "CORPORATIVO" },
     include: {
       seguimientos: {
-        orderBy: [{ corteId: "asc" }, { version: "desc" }],
-        distinct: ["corteId"],
-        include: { corte: { select: { numero: true } } },
+        orderBy: [{ seguimientoId: "asc" }, { version: "desc" }],
+        distinct: ["seguimientoId"],
+        include: { seguimiento: { select: { numero: true } } },
       },
     },
     orderBy: { createdAt: "asc" },
@@ -117,7 +118,7 @@ export async function obtenerObjetivosCorporativosAdmin(): Promise<ObjetivosCorp
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre, estado: periodo.estado },
-    corteActual,
+    franjas,
     objetivos: objetivos.map((o) => ({
       id: o.id,
       titulo: o.titulo,
@@ -129,12 +130,11 @@ export async function obtenerObjetivosCorporativosAdmin(): Promise<ObjetivosCorp
       peso: o.peso.toNumber(),
       seguimientos: o.seguimientos
         .map((s) => ({
-          numeroCorte: s.corte.numero,
+          numero: s.seguimiento.numero,
           comentario: s.comentario,
           fecha: s.createdAt,
-          porcentajeAvance: s.porcentajeAvance,
         }))
-        .sort((a, b) => a.numeroCorte - b.numeroCorte),
+        .sort((a, b) => a.numero - b.numero),
       calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
     })),
   };

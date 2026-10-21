@@ -92,9 +92,3 @@ ALTER TABLE objetivos
 ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_cumplido_solo_desarrollo
   CHECK (cumplio_desarrollo IS NULL OR tipo_individual = 'DESARROLLO');
-
--- porcentaje_avance de un Seguimiento siempre entre 0 y 100 (cuando aplica —
--- solo lo usan los seguimientos de objetivos CORPORATIVO).
-ALTER TABLE seguimientos
-  ADD CONSTRAINT chk_seguimiento_porcentaje_rango
-  CHECK (porcentaje_avance IS NULL OR (porcentaje_avance >= 0 AND porcentaje_avance <= 100));
