@@ -207,6 +207,15 @@ nice -n 10 npm run build
 `constraints.sql` usa `ADD CONSTRAINT` sin `IF NOT EXISTS`: si se corre dos
 veces, falla. Es solo de la primera instalación.
 
+Una instalación nueva aplica las **9 migraciones** desde cero. Se probó el
+2026-10-21 sobre una base vacía: `migrate deploy`, `constraints.sql` y el seed
+terminan sin errores y `prisma migrate diff` no encuentra diferencias con el
+esquema. Para comprobarlo en el servidor:
+
+```bash
+npx prisma migrate status      # "Database schema is up to date" y 9 migraciones
+```
+
 ### 3.8 Datos iniciales (solo la primera vez)
 
 ```bash
@@ -214,10 +223,11 @@ npx prisma db seed
 ```
 
 El seed crea la cuenta de arranque `iibservices2@investinbogota.org`
-(Gestión Humana + Admin) y el periodo `2026` con 4 seguimientos con franja y la franja del %
-de cumplimiento. No crea indicadores de la empresa: los carga el Gestor corporativo desde la
-pestaña Indicadores. Para eso, la persona encargada debe tener el rol *Gestor de objetivos
-corporativos* (Administración → Estructura organizacional).
+(Gestión Humana + Admin) y el periodo `2026` **ya Abierto**, con 4 seguimientos de
+ejemplo (16-31 de marzo, junio, septiembre y diciembre) y una franja de ejemplo para
+el % de cumplimiento (5-25 de enero de 2027). Esas fechas son un punto de partida:
+Gestión Humana las ajusta a las reales en la sección 3.9. El seed no crea
+indicadores ni objetivos de ningún nivel.
 
 **No volver a correr el seed en producción.** Sus `upsert` restauran valores:
 reabrirían el periodo 2026 aunque ya esté cerrado, devolverían los seguimientos a sus
@@ -238,6 +248,36 @@ Y siempre, para traer a todo el grupo `Usuarios_activos`:
 ```bash
 node --env-file=.env scripts/migracion-sharepoint/sincronizar-grupo.mjs
 ```
+
+### 3.9 Puesta en marcha funcional (la hace Gestión Humana)
+
+Con la app arriba, entrar con la cuenta de arranque y dejar listo el periodo. Hasta
+que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
+
+1. **Seguimientos (Administración → periodo).** Gestión Humana decide cuántos hay
+   (3 al año o los que quiera) y la **franja de fechas** de cada uno: inclusivas, en
+   orden, sin traslaparse y dentro del periodo. Reemplazar las fechas de ejemplo del
+   seed. Un seguimiento solo se puede registrar dentro de su franja; nadie lo abre
+   ni lo cierra a mano.
+2. **Franja del % de cumplimiento final.** Debe empezar después del último
+   seguimiento (puede terminar después del periodo). Dentro de ella: el jefe pone el
+   % de cada objetivo individual y se marca Cumple / No cumple en los indicadores.
+3. **Roles (Administración → Estructura organizacional).**
+   - *Gestor de objetivos corporativos* a **Andrea Jimenez Fandiño**: carga y hace
+     el seguimiento de los indicadores de la empresa.
+   - Cada gerencia con su **gerente** asignado: carga y hace el seguimiento de los
+     indicadores de su gerencia.
+4. **Indicadores de la empresa:** Andrea carga los **8** en la pestaña *Indicadores*
+   y registra cada mes el avance (% acumulado y comentario). No se puede cargar un
+   noveno.
+5. **Indicadores de la gerencia:** cada gerente carga los **2** de su gerencia en
+   *Mi gerencia* y los sigue en cada seguimiento (% acumulado y comentario).
+6. **Cierre del periodo.** Solo se cierra cuando están los 8 de la empresa, los 2
+   de cada gerencia con gerente y el resultado de todos los objetivos e indicadores;
+   si falta algo, el mensaje dice qué.
+
+La nota final ponderada **no** está conectada: `calculo-notas.ts` no se usa en
+ninguna pantalla todavía.
 
 ---
 
@@ -394,6 +434,15 @@ En el navegador:
 3. Con la cuenta de arranque: *Administración* y *Estructura organizacional*
    cargan, y el conteo de colaboradores coincide con el grupo de Entra ID.
 4. Se ven las fotos/iniciales de los colaboradores.
+5. Las pestañas **Indicadores** (para todos) y **Mi gerencia** (para gerentes)
+   cargan, y sin sesión redirigen a `/login`.
+
+Y en la base (debe dar 9 migraciones y las tres reglas nuevas):
+
+```bash
+psql "${DATABASE_URL%%\?*}" -At -c "select count(*) from _prisma_migrations"
+psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_objetivo_cumplido_solo_indicadores','chk_objetivo_indicador_sin_calificacion','chk_registro_seguimiento_porcentaje_rango') order by 1"
+```
 
 ### Que Compras y Contratación siguen sanos
 
@@ -440,7 +489,11 @@ Luego repite la sección 7. **No** vuelvas a correr `db seed` ni `constraints.sq
 
 Como la migración corre mientras la versión anterior sigue sirviendo, las
 migraciones deben ser compatibles hacia atrás (agregar columnas, no borrar ni
-renombrar en el mismo release).
+renombrar en el mismo release). Las migraciones de octubre de 2026 (las que
+convirtieron los cortes en seguimientos con franja y crearon los indicadores)
+renombraron y borraron columnas, pero eso solo afecta a bases que vengan de un
+esquema anterior, como QA, que ya está al día; producción arranca de cero y no
+las sufre. De aquí en adelante, cada migración nueva debe respetar la regla.
 
 ### Rollback
 
@@ -468,6 +521,9 @@ backup tomado antes de migrar (`pg_restore`). Conserva las 3 últimas carpetas d
 | `redirect_uri_mismatch` de Microsoft | `AUTH_URL` o el redirect de Entra ID no coinciden exactamente (https, puerto, sin barra final) | Alinear los dos |
 | El login dejó de funcionar sin tocar nada | Venció el client secret de Entra ID | Crear un secret nuevo, actualizar `shared/.env`, `pm2 restart` |
 | Aparece o desaparece gente en *Estructura organizacional* | Es el resultado de `sincronizar-grupo.mjs` (la fuente de verdad es Entra ID) | Revisar el grupo `Usuarios_activos` y `sync-directorio.log` |
+| "No hay un seguimiento en curso" al registrar | Hoy no cae dentro de la franja de ningún seguimiento | Gestión Humana agrega o ajusta un seguimiento que incluya la fecha de hoy (3.9) |
+| Cumple / No cumple o el % de cumplimiento no se habilitan, o "Gestión Humana todavía no definió la franja" | Falta la franja del % final, o hoy está fuera de ella | Definirla o ajustarla en Administración (3.9) |
+| El periodo no se deja cerrar: "Faltan por cargar…" | No están los 8 indicadores de la empresa o los 2 de alguna gerencia | Cargarlos (Andrea y los gerentes) y marcar todos los resultados |
 | Aviso `"next start" does not work with "output: standalone"` en el log | `next.config.mjs` tiene `output: "standalone"` (hecho para Docker) | Inofensivo (QA corre así hace semanas); ver pendientes |
 
 ---
