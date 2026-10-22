@@ -277,6 +277,11 @@ que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
 6. **Cierre del periodo.** Solo se cierra cuando están los 8 de la empresa, los 2
    de cada gerencia con gerente y el resultado de todos los objetivos e indicadores;
    si falta algo, el mensaje dice qué.
+7. **Consolidado en PDF.** Con el periodo cerrado, Gestión Humana descarga desde
+   *Administración* el PDF con los objetivos individuales (por gerencia y persona), los
+   indicadores de gerencia y los de la empresa, con su seguimiento y resultado. Antes de
+   cerrar el periodo el botón no aparece. Lo genera la propia app con `pdfkit`, que
+   `npm ci` instala; no hace falta nada más en el servidor.
 
 La nota final ponderada **no** está conectada: `calculo-notas.ts` no se usa en
 ninguna pantalla todavía.
@@ -439,11 +444,11 @@ En el navegador:
 5. Las pestañas **Indicadores** (para todos) y **Mi gerencia** (para gerentes)
    cargan, y sin sesión redirigen a `/login`.
 
-Y en la base (debe dar 10 migraciones y las reglas nuevas):
+Y en la base (debe dar 10 migraciones y las tres reglas):
 
 ```bash
 psql "${DATABASE_URL%%\?*}" -At -c "select count(*) from _prisma_migrations"
-psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_objetivo_cumplido_solo_indicadores','chk_objetivo_indicador_sin_calificacion','chk_registro_seguimiento_porcentaje_rango','chk_objetivo_cumplido_no_desarrollo','chk_objetivo_sin_calificacion_numerica') order by 1"
+psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_registro_seguimiento_porcentaje_rango','chk_objetivo_cumplido_no_desarrollo','chk_objetivo_sin_calificacion_numerica') order by 1"
 ```
 
 ### Que Compras y Contratación siguen sanos
