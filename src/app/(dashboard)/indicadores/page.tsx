@@ -2,8 +2,10 @@ import { formatearFecha } from "@/lib/fecha";
 import { etiquetaMes } from "@/lib/mes";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerIndicadores } from "@/server/services/indicadores.service";
-import { AgregarIndicador } from "./AgregarIndicador";
-import { IndicadorCard, TarjetaResumen } from "./components";
+import { AgregarIndicador } from "@/components/AgregarIndicador";
+import { TarjetaResumen } from "@/components/indicador-ui";
+import { accionCrearIndicador } from "./actions";
+import { IndicadorCard } from "./components";
 
 const ROLES_EDITORES = ["GESTOR_CORPORATIVO", "GESTION_HUMANA", "ADMIN"] as const;
 
@@ -21,7 +23,8 @@ export default async function IndicadoresPage() {
     );
   }
 
-  const { indicadores, cumplimiento, mesActual, mesesRegistrables, meses, responsables } = datos;
+  const { indicadores, cumplimiento, mesActual, mesesRegistrables, meses, responsables, tope } = datos;
+  const faltanPorCargar = Math.max(0, tope - indicadores.length);
 
   const cumplen = indicadores.filter((i) => i.estado === "CUMPLE").length;
   const noCumplen = indicadores.filter((i) => i.estado === "NO_CUMPLE").length;
@@ -39,8 +42,8 @@ export default async function IndicadoresPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-iib-foreground">Indicadores de la empresa</h1>
         <p className="max-w-3xl text-sm text-iib-secondary">
-          Aplican a toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un comentario
-          y al final se marca si cumple o no cumple.
+          Son {tope} para toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un
+          comentario y al final se marca si cumple o no cumple.
         </p>
         <p className="text-sm text-iib-secondary">
           Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
@@ -69,11 +72,20 @@ export default async function IndicadoresPage() {
       </div>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Resumen de indicadores">
-        <TarjetaResumen etiqueta="Indicadores" valor={indicadores.length} />
+        <TarjetaResumen etiqueta="Indicadores" valor={`${indicadores.length} de ${tope}`} />
         <TarjetaResumen etiqueta="Cumplen" valor={cumplen} />
         <TarjetaResumen etiqueta="No cumplen" valor={noCumplen} />
         <TarjetaResumen etiqueta="En seguimiento" valor={enSeguimiento} destacada />
       </section>
+
+      {puedeEditar && faltanPorCargar > 0 && (
+        <div className="rounded-md border-l-4 border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
+          <p className="font-semibold">
+            Faltan {faltanPorCargar} indicador{faltanPorCargar === 1 ? "" : "es"} por cargar
+          </p>
+          <p className="mt-0.5 text-warning/90">Deben ser {tope}; el periodo no se puede cerrar con menos.</p>
+        </div>
+      )}
 
       {puedeEditar && sinAvanceEsteMes.length > 0 && (
         <div className="rounded-md border-l-4 border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
@@ -99,7 +111,7 @@ export default async function IndicadoresPage() {
         {indicadores.length === 0 ? (
           <p className="text-sm text-iib-secondary">
             {puedeEditar
-              ? "Todavía no hay indicadores. Agrega el primero para empezar el seguimiento."
+              ? `Todavía no hay indicadores. Agrega los ${tope} para empezar el seguimiento.`
               : "Todavía no se han cargado los indicadores del periodo."}
           </p>
         ) : (
@@ -118,7 +130,7 @@ export default async function IndicadoresPage() {
           </div>
         )}
 
-        {puedeEditar && <AgregarIndicador />}
+        {puedeEditar && faltanPorCargar > 0 && <AgregarIndicador accion={accionCrearIndicador} />}
       </section>
     </>
   );

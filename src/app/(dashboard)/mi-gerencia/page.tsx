@@ -1,9 +1,10 @@
 import { FranjaBanner } from "@/components/FranjaBanner";
-import { aFranjaUI } from "@/lib/franja-ui";
+import { AgregarIndicador } from "@/components/AgregarIndicador";
+import { TarjetaResumen } from "@/components/indicador-ui";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerMiGerencia } from "@/server/services/gerencia.service";
-import { ColaboradorConsolidadoRow, ObjetivoGerenciaCard } from "./components";
-import { CrearObjetivosGerenciaForm } from "./CrearObjetivosGerenciaForm";
+import { accionCrearIndicadorGerencia } from "./actions";
+import { ColaboradorConsolidadoRow, IndicadorGerenciaCard } from "./components";
 
 export default async function MiGerenciaPage() {
   const gerente = await requireRol("GERENTE");
@@ -20,6 +21,12 @@ export default async function MiGerenciaPage() {
     );
   }
 
+  const { indicadores, tope, franjas } = datos;
+  const cumplen = indicadores.filter((i) => i.estado === "CUMPLE").length;
+  const noCumplen = indicadores.filter((i) => i.estado === "NO_CUMPLE").length;
+  const enSeguimiento = indicadores.length - cumplen - noCumplen;
+  const faltanPorCargar = Math.max(0, tope - indicadores.length);
+
   return (
     <>
       <div className="flex flex-col gap-2">
@@ -31,26 +38,43 @@ export default async function MiGerenciaPage() {
         <FranjaBanner periodo={datos.periodo.nombre} franjas={datos.franjas} />
       </div>
 
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Resumen de indicadores">
+        <TarjetaResumen etiqueta="Indicadores" valor={`${indicadores.length} de ${tope}`} />
+        <TarjetaResumen etiqueta="Cumplen" valor={cumplen} />
+        <TarjetaResumen etiqueta="No cumplen" valor={noCumplen} />
+        <TarjetaResumen etiqueta="En seguimiento" valor={enSeguimiento} destacada />
+      </section>
+
+      {faltanPorCargar > 0 && (
+        <div className="rounded-md border-l-4 border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
+          <p className="font-semibold">
+            Faltan {faltanPorCargar} indicador{faltanPorCargar === 1 ? "" : "es"} de la gerencia por cargar
+          </p>
+          <p className="mt-0.5 text-warning/90">Deben ser {tope}; el periodo no se puede cerrar con menos.</p>
+        </div>
+      )}
+
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Objetivos de gerencia</h2>
-          <span className="text-sm text-iib-secondary">2 objetivos · 15% cada uno</span>
+          <h2 className="text-base font-bold">Indicadores de la gerencia</h2>
+          <span className="text-sm text-iib-secondary">
+            Sin peso · en cada seguimiento registras su avance y al final marcas Cumple o No cumple
+          </span>
         </div>
 
-        {datos.objetivos.length === 0 ? (
-          <CrearObjetivosGerenciaForm />
+        {indicadores.length === 0 ? (
+          <p className="text-sm text-iib-secondary">
+            Todavía no hay indicadores. Agrega los {tope} para empezar el seguimiento.
+          </p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {datos.objetivos.map((objetivo, indice) => (
-              <ObjetivoGerenciaCard
-                key={objetivo.id}
-                objetivo={objetivo}
-                numero={indice + 1}
-                franja={aFranjaUI(datos.franjas)}
-              />
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {indicadores.map((indicador) => (
+              <IndicadorGerenciaCard key={indicador.id} indicador={indicador} franjas={franjas} />
             ))}
           </div>
         )}
+
+        {faltanPorCargar > 0 && <AgregarIndicador accion={accionCrearIndicadorGerencia} />}
       </section>
 
       <section className="flex flex-col gap-4">

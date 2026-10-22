@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { errorDeFranjas, estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
+import { CANTIDAD_OBJETIVOS_CORPORATIVOS, CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
 
 // El periodo "actual" es el ABIERTO. Solo debería haber uno a la vez en la
 // práctica, pero si hubiera más de uno (transición entre periodos), se toma el
@@ -22,6 +23,9 @@ export interface SeguimientoVista {
 }
 
 export interface ContextoFranjas {
+  // Todos los seguimientos del periodo, en orden, con su estado de hoy. Sirve
+  // para dibujar la tira de seguimientos de los indicadores de gerencia.
+  todos: Array<SeguimientoVista & { estado: EstadoFranja }>;
   // El seguimiento cuya franja incluye hoy (a lo más uno: las franjas no se
   // traslapan). Si es null, nadie puede registrar seguimiento hoy.
   seguimientoEnCurso: SeguimientoVista | null;
@@ -59,6 +63,7 @@ export async function obtenerContextoFranjas(
   const iniciados = conEstado.filter((s) => s.estado !== "PROXIMA");
 
   return {
+    todos: conEstado.map((s) => ({ ...s.vista, estado: s.estado })),
     seguimientoEnCurso: enCurso,
     proximoSeguimiento: proximo,
     seguimientoReferencia: enCurso ?? iniciados[iniciados.length - 1]?.vista ?? null,
@@ -250,9 +255,10 @@ export async function abrirPeriodo(periodoId: string) {
 
 // No se cierra un periodo con evaluaciones a medias: todo objetivo debe tener su
 // resultado. Un objetivo DESARROLLO se considera calificado por
-// `cumplioDesarrollo` (sí/no); un indicador de la empresa (CORPORATIVO) por
-// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO, GERENCIA) por su % de
-// cumplimiento (`calificacionFinal`).
+// `cumplioDesarrollo` (sí/no); un indicador (de la empresa o de gerencia) por
+// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO) por su % de
+// cumplimiento (`calificacionFinal`). Además tienen que estar cargados todos los
+// indicadores: 8 de la empresa y 2 por cada gerencia con gerente.
 export async function cerrarPeriodo(periodoId: string) {
   const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
   if (!periodo) {
@@ -262,12 +268,38 @@ export async function cerrarPeriodo(periodoId: string) {
     throw new ErrorPeriodo("Solo se puede cerrar un periodo que esté abierto.");
   }
 
-  const objetivos = await db.objetivo.findMany({
-    where: { periodoId },
-    select: { nivel: true, tipoIndividual: true, calificacionFinal: true, cumplioDesarrollo: true, cumplido: true },
-  });
+  const [objetivos, gerencias] = await Promise.all([
+    db.objetivo.findMany({
+      where: { periodoId },
+      select: {
+        nivel: true,
+        gerenciaId: true,
+        tipoIndividual: true,
+        calificacionFinal: true,
+        cumplioDesarrollo: true,
+        cumplido: true,
+      },
+    }),
+    db.gerencia.findMany({ where: { gerenteId: { not: null } }, select: { id: true, nombre: true } }),
+  ]);
+
+  const faltantes: string[] = [];
+  const corporativos = objetivos.filter((o) => o.nivel === "CORPORATIVO").length;
+  if (corporativos < CANTIDAD_OBJETIVOS_CORPORATIVOS) {
+    faltantes.push(`indicadores de la empresa (${corporativos} de ${CANTIDAD_OBJETIVOS_CORPORATIVOS})`);
+  }
+  for (const gerencia of gerencias) {
+    const cargados = objetivos.filter((o) => o.nivel === "GERENCIA" && o.gerenciaId === gerencia.id).length;
+    if (cargados < CANTIDAD_OBJETIVOS_GERENCIA) {
+      faltantes.push(`indicadores de ${gerencia.nombre} (${cargados} de ${CANTIDAD_OBJETIVOS_GERENCIA})`);
+    }
+  }
+  if (faltantes.length > 0) {
+    throw new ErrorPeriodo(`Faltan por cargar: ${faltantes.join("; ")}.`);
+  }
+
   const sinCalificar = objetivos.filter((o) => {
-    if (o.nivel === "CORPORATIVO") return o.cumplido === null;
+    if (o.nivel === "CORPORATIVO" || o.nivel === "GERENCIA") return o.cumplido === null;
     return o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null;
   });
   if (sinCalificar.length > 0) {

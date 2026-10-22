@@ -261,9 +261,9 @@ semáforo: describen el flujo anterior, no el actual.
   "Hoy" se calcula en hora de Bogotá (UTC-5), no en la hora del servidor (UTC);
   ver [src/lib/franja.ts](src/lib/franja.ts).
 - **Qué se registra.** Cada seguimiento de un objetivo es un comentario con fecha
-  y autor (`RegistroSeguimiento`); sin porcentaje. Quien lo hace: jefe directo
-  (individual), gerente (gerencia), Gestión Humana/Admin/Gestor corporativo
-  (corporativo). Corregir dentro de la franja crea una versión nueva.
+  y autor (`RegistroSeguimiento`); sin porcentaje, salvo en los indicadores de
+  gerencia (ver abajo). Quien lo hace: jefe directo (individual) o gerente
+  (gerencia). Corregir dentro de la franja crea una versión nueva.
 - **% de cumplimiento final.** Es la antigua "calificación final" (0-100, columna
   `Objetivo.calificacionFinal`), con "Cumple" desde 80. Se pone una sola vez, al
   final, y solo dentro de la **franja del % de cumplimiento** que Gestión Humana
@@ -279,8 +279,9 @@ semáforo: describen el flujo anterior, no el actual.
 Los objetivos corporativos se llaman **indicadores** y funcionan distinto al resto.
 Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todos.
 
-- **Sin peso.** Solo Cumple / No cumple. `Objetivo.peso` queda en 0 y la cantidad
-  ya no es fija en 8.
+- **Sin peso.** Solo Cumple / No cumple. `Objetivo.peso` queda en 0. **Siempre son
+  8** para toda la Corporación: no se puede cargar un noveno y el periodo no se
+  cierra con menos de 8.
 - **Seguimiento mensual**, sin franjas: un registro por mes calendario con el
   **% acumulado** (0-100) y un comentario (`AvanceIndicador`, ej. "en octubre vamos
   en 60%"). Se puede registrar el mes en curso y completar o corregir meses
@@ -298,6 +299,27 @@ Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todo
 - Los registros de seguimiento viejos de objetivos corporativos (los del modelo
   anterior de franjas) siguen en la tabla `registros_seguimiento`, pero ya no se
   muestran.
+
+### Indicadores de la gerencia
+
+Los objetivos de gerencia hacen lo mismo que los indicadores de la empresa, con una
+diferencia: el seguimiento no es mensual sino por los **seguimientos con franja**
+que define Gestión Humana (3 al año o los que diga). Viven en *Mi gerencia*.
+
+- **Sin peso** (`Objetivo.peso` en 0, ya no son 15% cada uno), cumple o no cumple.
+- **2 por gerencia**, cargados de a uno por el **gerente de esa gerencia**, que
+  también los edita, los elimina (solo si no tienen seguimientos ni resultado), les
+  hace el seguimiento y marca el resultado. No pasan por aprobación.
+- **Cada seguimiento** lleva el **% de avance acumulado** (0-100, columna
+  `RegistroSeguimiento.porcentaje`, obligatoria para estos indicadores) y un
+  comentario. Solo se registra el seguimiento en curso por fecha; corregir crea una
+  versión nueva.
+- **Resultado final.** El gerente marca Cumple / No cumple (`Objetivo.cumplido`)
+  dentro de la franja del % de cumplimiento.
+- **Cierre del periodo.** Exige los 8 indicadores de la empresa, los 2 de cada
+  gerencia con gerente, y el resultado de todos.
+- La nota final sigue sin conectarse: `calculo-notas.ts` conserva sus reglas de
+  peso (15 y 3.75) como código sin usar.
 
 ## Módulo "Mis objetivos" (fase 4, primera entrega)
 

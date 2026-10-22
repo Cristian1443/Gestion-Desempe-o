@@ -211,7 +211,10 @@ function BitacoraSeguimiento({ seguimientos }: { seguimientos: SeguimientoVista[
         {seguimientos.map((s) => (
           <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2.5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
+              <span className="text-xs font-bold text-iib-foreground">
+                Seguimiento {s.numero}
+                {s.porcentaje !== null ? ` · ${s.porcentaje}%` : ""}
+              </span>
               <span className="text-xs text-iib-secondary">
                 {formatearFecha(s.fecha)} · {s.registradoPorNombre}
               </span>
@@ -344,6 +347,22 @@ export function CalificacionFinalVista({ objetivo }: { objetivo: ObjetivoVista }
     );
   }
 
+  // Indicadores de gerencia: sin % de calificación, solo Cumple / No cumple.
+  if (objetivo.cumplido !== null) {
+    return (
+      <p className="flex items-center gap-2 rounded-md bg-iib-surface-sunken px-3 py-2 text-sm font-medium">
+        Resultado final:
+        <span
+          className={`rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${
+            objetivo.cumplido ? "bg-success text-white" : "bg-danger text-white"
+          }`}
+        >
+          {objetivo.cumplido ? "Cumple" : "No cumple"}
+        </span>
+      </p>
+    );
+  }
+
   if (objetivo.calificacionFinal === null) return null;
   const cumple = cumpleCalificacion(objetivo.calificacionFinal);
   return (
@@ -373,8 +392,8 @@ export function ObjetivoSoloLecturaCard({
         <span className="grid h-7 w-7 place-items-center rounded-md bg-iib-surface-sunken text-xs font-bold text-iib-secondary">
           {numero}
         </span>
-        <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
-          {objetivo.peso}%
+        <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold text-iib-secondary">
+          Sin peso
         </span>
       </div>
 

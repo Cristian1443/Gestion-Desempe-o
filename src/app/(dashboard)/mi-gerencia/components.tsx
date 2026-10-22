@@ -1,90 +1,107 @@
+import { AccionesIndicador } from "@/components/AccionesIndicador";
+import { CumplimientoControl } from "@/components/CumplimientoControl";
+import { BarraAvance, CabeceraIndicador } from "@/components/indicador-ui";
 import { formatearFecha } from "@/lib/fecha";
-import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDialog";
-import { CumplimientoLectura } from "@/components/CumplimientoLectura";
-import type { FranjaUI } from "@/lib/franja-ui";
+import type { ContextoFranjas } from "@/server/services/periodos.service";
 import type {
   ColaboradorConsolidado,
-  ObjetivoGerenciaVista,
+  IndicadorGerenciaVista,
 } from "@/server/services/gerencia.service";
-import { accionRegistrarSeguimientoGerencia } from "./actions";
-import { CalificacionGerenciaControl } from "./CalificacionGerenciaControl";
+import {
+  accionEditarIndicadorGerencia,
+  accionEliminarIndicadorGerencia,
+  accionMarcarCumplimientoGerencia,
+} from "./actions";
+import { TiraSeguimientosEditable, type CasillaSeguimiento } from "./TiraSeguimientosEditable";
 
-export function ObjetivoGerenciaCard({
-  objetivo,
-  numero,
-  franja,
+export function IndicadorGerenciaCard({
+  indicador,
+  franjas,
 }: {
-  objetivo: ObjetivoGerenciaVista;
-  numero: number;
-  franja: FranjaUI;
+  indicador: IndicadorGerenciaVista;
+  franjas: ContextoFranjas;
 }) {
-  const enCurso = franja.seguimientoEnCurso;
-  const yaTieneRegistroDeEste = enCurso
-    ? objetivo.seguimientos.some((s) => s.numero === enCurso.numero)
-    : false;
+  const casillas: CasillaSeguimiento[] = franjas.todos.map((f) => {
+    const registro = indicador.seguimientos.find((s) => s.numero === f.numero);
+    return {
+      numero: f.numero,
+      franja: `${formatearFecha(f.fechaInicio)} al ${formatearFecha(f.fechaFin)}`,
+      estado: f.estado,
+      porcentaje: registro?.porcentaje ?? null,
+      comentario: registro?.comentario ?? null,
+    };
+  });
+
+  const ultimo = [...indicador.seguimientos].reverse().find((s) => s.porcentaje !== null);
+  const cumplimientoEnCurso = franjas.cumplimiento?.estado === "EN_CURSO";
 
   return (
-    <article className="flex flex-col gap-3 rounded-card bg-iib-surface p-5 shadow-card">
-      <div className="flex items-center gap-2.5">
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-iib-surface-sunken text-xs font-bold text-iib-secondary">
-          {numero}
-        </span>
-        <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
-          {objetivo.peso}%
-        </span>
-      </div>
+    <article className="flex flex-col gap-4 rounded-card bg-iib-surface p-5 shadow-card">
+      <CabeceraIndicador
+        titulo={indicador.titulo}
+        descripcion={indicador.descripcion}
+        meta={indicador.meta}
+        unidadMedida={indicador.unidadMedida}
+        indicador={indicador.indicador}
+        estado={indicador.estado}
+      />
 
-      <h3 className="text-balance text-[0.98rem] font-semibold leading-snug">{objetivo.titulo}</h3>
+      <BarraAvance
+        titulo={indicador.titulo}
+        porcentaje={indicador.ultimoPorcentaje}
+        estado={indicador.estado}
+        pie={ultimo ? `en el seguimiento ${ultimo.numero}` : null}
+      />
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-1 text-sm">
-        <dt className="text-iib-secondary">Indicador</dt>
-        <dd className="font-medium">{objetivo.indicador}</dd>
-        <dt className="text-iib-secondary">Meta</dt>
-        <dd className="font-medium">{objetivo.meta}</dd>
-      </dl>
-
-      {objetivo.seguimientos.length === 0 ? (
-        <p className="text-xs text-iib-secondary">Aún sin seguimiento registrado.</p>
+      {casillas.length === 0 ? (
+        <p className="text-sm text-iib-secondary">Gestión Humana todavía no definió los seguimientos del periodo.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {objetivo.seguimientos.map((s) => (
-            <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
-                <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
-              </div>
-              <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
-            </li>
-          ))}
-        </ul>
+        <TiraSeguimientosEditable objetivoId={indicador.id} tituloIndicador={indicador.titulo} casillas={casillas} />
       )}
 
-      {franja.cumplimientoEnCurso ? (
-        <div className="flex justify-end pt-0.5">
-          <CalificacionGerenciaControl objetivo={objetivo} />
-        </div>
-      ) : (
-        <>
-          <CumplimientoLectura calificacionFinal={objetivo.calificacionFinal} />
-          {enCurso && (
-            <div className="flex justify-end pt-0.5">
-              <RegistrarSeguimientoDialog
-                objetivoId={objetivo.id}
-                tituloObjetivo={objetivo.titulo}
-                numeroSeguimiento={enCurso.numero}
-                franja={enCurso.texto}
-                etiquetaBoton={
-                  yaTieneRegistroDeEste
-                    ? `Actualizar seguimiento ${enCurso.numero}`
-                    : `Registrar seguimiento ${enCurso.numero}`
-                }
-                etiquetaEnviar="Guardar"
-                accion={accionRegistrarSeguimientoGerencia}
-              />
-            </div>
-          )}
-        </>
+      {cumplimientoEnCurso && (
+        <CumplimientoControl
+          objetivoId={indicador.id}
+          cumplido={indicador.cumplido}
+          accion={accionMarcarCumplimientoGerencia}
+        />
       )}
+
+      {indicador.seguimientos.length > 0 && (
+        <details className="group rounded-md border border-iib-border">
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-iib-secondary hover:text-iib-foreground">
+            Historial de seguimientos ({indicador.seguimientos.length})
+          </summary>
+          <ul className="flex flex-col gap-2 border-t border-iib-border p-3">
+            {[...indicador.seguimientos].reverse().map((s) => (
+              <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                  <span className="text-xs font-bold text-iib-foreground">
+                    Seguimiento {s.numero}
+                    {s.porcentaje !== null ? ` · ${s.porcentaje}%` : ""}
+                  </span>
+                  <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
+                </div>
+                <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <AccionesIndicador
+        objetivoId={indicador.id}
+        datos={{
+          titulo: indicador.titulo,
+          descripcion: indicador.descripcion,
+          meta: indicador.meta,
+          unidadMedida: indicador.unidadMedida ?? "",
+          indicador: indicador.indicador,
+        }}
+        puedeEliminar={indicador.seguimientos.length === 0 && indicador.cumplido === null}
+        accionEditar={accionEditarIndicadorGerencia}
+        accionEliminar={accionEliminarIndicadorGerencia}
+      />
     </article>
   );
 }

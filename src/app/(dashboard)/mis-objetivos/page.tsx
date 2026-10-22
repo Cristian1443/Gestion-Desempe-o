@@ -107,7 +107,7 @@ export default async function MisObjetivosPage({
               resumen={
                 gerencia.objetivos.length === 0
                   ? "Aún no cargados"
-                  : `${gerencia.objetivos.length} objetivos · 30% de la nota`
+                  : `${gerencia.objetivos.length} indicadores · cumple o no cumple`
               }
               detalle={gerencia.nombreGerencia}
             />
@@ -146,11 +146,8 @@ export default async function MisObjetivosPage({
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2 id="nivel-gerencia" className="text-base font-bold">
-                    Objetivos de gerencia
+                    Indicadores de la gerencia
                   </h2>
-                  <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    30% de la nota final
-                  </span>
                 </div>
                 <span className="rounded-full border border-iib-border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
                   Solo lectura
@@ -162,7 +159,7 @@ export default async function MisObjetivosPage({
 
               {gerencia.objetivos.length === 0 ? (
                 <p className="text-sm text-iib-secondary">
-                  Gestión Humana aún no ha cargado los objetivos de tu gerencia para este periodo.
+                  El gerente aún no ha cargado los indicadores de tu gerencia para este periodo.
                 </p>
               ) : (
                 <div className="flex flex-col gap-4">

@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { accionEditarIndicador, accionEliminarIndicador } from "./actions";
+type Resultado = { ok: true } | { ok: false; error: string };
 import { FormularioIndicador, type DatosFormularioIndicador } from "./FormularioIndicador";
 
-// Editar y eliminar un indicador. Eliminar solo se ofrece mientras no tenga
-// avances ni resultado.
+// Editar y eliminar un indicador (de la empresa o de gerencia). Eliminar solo se
+// ofrece mientras no tenga avances ni resultado. Las Server Actions llegan por prop.
 export function AccionesIndicador({
   objetivoId,
   datos,
   puedeEliminar,
+  accionEditar,
+  accionEliminar,
 }: {
   objetivoId: string;
   datos: DatosFormularioIndicador;
   puedeEliminar: boolean;
+  accionEditar: (input: DatosFormularioIndicador & { objetivoId: string }) => Promise<Resultado>;
+  accionEliminar: (objetivoId: string) => Promise<Resultado>;
 }) {
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -23,7 +27,7 @@ export function AccionesIndicador({
   function eliminar() {
     setError(null);
     startTransition(async () => {
-      const resultado = await accionEliminarIndicador(objetivoId);
+      const resultado = await accionEliminar(objetivoId);
       if (!resultado.ok) {
         setError(resultado.error);
         setConfirmando(false);
@@ -38,7 +42,7 @@ export function AccionesIndicador({
         etiquetaGuardar="Guardar cambios"
         onCancelar={() => setEditando(false)}
         onGuardar={async (nuevos) => {
-          const resultado = await accionEditarIndicador({ objetivoId, ...nuevos });
+          const resultado = await accionEditar({ objetivoId, ...nuevos });
           if (resultado.ok) setEditando(false);
           return resultado;
         }}

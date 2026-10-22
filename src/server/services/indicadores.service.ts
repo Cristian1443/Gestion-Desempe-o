@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
 import { claveMes, mesActual, mesesDelPeriodo, mesesRegistrables, primerDiaDelMes } from "@/lib/mes";
+import { CANTIDAD_OBJETIVOS_CORPORATIVOS } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 
@@ -46,8 +47,15 @@ async function obtenerIndicadorOFalla(objetivoId: string) {
   return objetivo;
 }
 
+// Siempre son 8 indicadores para toda la Corporación: no se puede cargar un
+// noveno (y el periodo no se cierra con menos, ver `cerrarPeriodo`).
 export async function crearIndicador(input: DatosIndicador & { creadoPor: string }) {
   const periodo = await periodoAbiertoOFalla();
+
+  const cargados = await db.objetivo.count({ where: { periodoId: periodo.id, nivel: "CORPORATIVO" } });
+  if (cargados >= CANTIDAD_OBJETIVOS_CORPORATIVOS) {
+    throw new ErrorIndicador(`Ya están los ${CANTIDAD_OBJETIVOS_CORPORATIVOS} indicadores de la empresa.`);
+  }
 
   return db.objetivo.create({
     data: {
@@ -186,6 +194,8 @@ export interface IndicadorVista {
 
 export interface Indicadores {
   periodo: { id: string; nombre: string };
+  // Siempre deben ser `tope` (8); `indicadores.length` dice cuántos van.
+  tope: number;
   // Todos los meses del periodo, para dibujar la tira.
   meses: string[];
   mesActual: string;
@@ -248,6 +258,7 @@ export async function obtenerIndicadores(): Promise<Indicadores | null> {
 
   return {
     periodo: { id: periodo.id, nombre: periodo.nombre },
+    tope: CANTIDAD_OBJETIVOS_CORPORATIVOS,
     meses: mesesDelPeriodo(periodo.fechaInicio, periodo.fechaFin),
     mesActual: mesActual(hoy),
     mesesRegistrables: mesesRegistrables(periodo.fechaInicio, periodo.fechaFin, hoy),

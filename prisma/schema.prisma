@@ -326,10 +326,12 @@ model Objetivo {
 
 // Bitácora de seguimiento: en cada seguimiento del periodo, quien le hace
 // seguimiento al objetivo (el jefe para individuales, el gerente para los de
-// gerencia, el encargado de objetivos corporativos para esos) deja un
-// comentario con fecha. Es una nota de proceso, sin porcentaje: el % de
-// cumplimiento (`Objetivo.calificacionFinal`) es un juicio aparte que se pone
-// una sola vez, al final, dentro de la franja del periodo.
+// gerencia) deja un comentario con fecha. Para individuales es una nota de
+// proceso, sin porcentaje: su % de cumplimiento (`Objetivo.calificacionFinal`)
+// es un juicio aparte que se pone una sola vez, al final, dentro de la franja
+// del periodo. Los indicadores de gerencia, en cambio, llevan además el % de
+// avance acumulado de ese seguimiento (`porcentaje`, obligatorio para ellos en
+// el servicio; el CHECK de 0-100 vive en la migración).
 //
 // Cada seguimiento puede tener más de un registro por objetivo: quien lo hace
 // puede corregir su comentario creando una versión nueva en vez de editar la
@@ -343,6 +345,7 @@ model RegistroSeguimiento {
   seguimiento   Seguimiento @relation(fields: [seguimientoId], references: [id])
   version       Int         @default(1)
 
+  porcentaje Int?
   comentario String
 
   registradoPor String  @map("registrado_por")

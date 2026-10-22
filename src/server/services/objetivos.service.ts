@@ -8,6 +8,8 @@ import {
 
 export interface SeguimientoVista {
   numero: number;
+  // % de avance acumulado: solo lo llevan los indicadores de gerencia.
+  porcentaje: number | null;
   comentario: string;
   fecha: Date;
   registradoPorNombre: string;
@@ -32,9 +34,11 @@ export interface ObjetivoVista {
   // del periodo, no solo el último.
   seguimientos: SeguimientoVista[];
   // Calificación final asignada por el evaluador al cierre del periodo:
-  // numérica para DESEMPENO/GERENCIA/CORPORATIVO, sí/no para DESARROLLO.
+  // numérica para DESEMPENO, sí/no para DESARROLLO. Los indicadores de gerencia
+  // no llevan % sino `cumplido` (Cumple / No cumple).
   calificacionFinal: number | null;
   cumplioDesarrollo: boolean | null;
+  cumplido: boolean | null;
 }
 
 export interface MisObjetivos {
@@ -67,6 +71,7 @@ function aVista(objetivo: {
   estadoAprobacion: EstadoAprobacionObjetivo;
   comentarioAprobacion: string | null;
   seguimientos: Array<{
+    porcentaje: number | null;
     comentario: string;
     createdAt: Date;
     seguimiento: { numero: number };
@@ -74,6 +79,7 @@ function aVista(objetivo: {
   }>;
   calificacionFinal: { toNumber(): number } | null;
   cumplioDesarrollo: boolean | null;
+  cumplido: boolean | null;
 }): ObjetivoVista {
   return {
     id: objetivo.id,
@@ -92,6 +98,7 @@ function aVista(objetivo: {
     seguimientos: objetivo.seguimientos
       .map((s) => ({
         numero: s.seguimiento.numero,
+        porcentaje: s.porcentaje,
         comentario: s.comentario,
         fecha: s.createdAt,
         registradoPorNombre: s.registrador.nombre,
@@ -99,6 +106,7 @@ function aVista(objetivo: {
       .sort((a, b) => a.numero - b.numero),
     calificacionFinal: objetivo.calificacionFinal?.toNumber() ?? null,
     cumplioDesarrollo: objetivo.cumplioDesarrollo,
+    cumplido: objetivo.cumplido,
   };
 }
 

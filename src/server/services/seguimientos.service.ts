@@ -2,7 +2,10 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { formatearFecha } from "@/lib/fecha";
 import { obtenerContextoFranjas } from "@/server/services/periodos.service";
-import type { RegistrarSeguimientoInput } from "@/server/validations/seguimiento.schema";
+import type {
+  RegistrarSeguimientoGerenciaInput,
+  RegistrarSeguimientoInput,
+} from "@/server/validations/seguimiento.schema";
 
 export class ErrorSeguimiento extends Error {
   constructor(message: string) {
@@ -40,6 +43,7 @@ async function crearSiguienteVersionRegistro(
   seguimientoId: string,
   registradoPor: string,
   comentario: string,
+  porcentaje: number | null = null,
 ) {
   const ultimo = await db.registroSeguimiento.findFirst({
     where: { objetivoId, seguimientoId },
@@ -52,6 +56,7 @@ async function crearSiguienteVersionRegistro(
         objetivoId,
         seguimientoId,
         version: ultimo ? ultimo.version + 1 : 1,
+        porcentaje,
         comentario,
         registradoPor,
       },
@@ -94,10 +99,11 @@ export async function registrarSeguimientoIndividual(
   return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.jefeId, input.comentario);
 }
 
-// Seguimiento de un objetivo de GERENCIA, hecho por el gerente del área (no
-// hay un dueño individual: el objetivo aplica a toda la gerencia).
+// Seguimiento de un indicador de GERENCIA, hecho por el gerente del área (no
+// hay un dueño individual: el indicador aplica a toda la gerencia). Lleva el %
+// de avance acumulado y un comentario.
 export async function registrarSeguimientoGerencia(
-  input: RegistrarSeguimientoInput & { gerenteId: string },
+  input: RegistrarSeguimientoGerenciaInput & { gerenteId: string },
 ) {
   const objetivo = await db.objetivo.findUnique({
     where: { id: input.objetivoId },
@@ -116,5 +122,11 @@ export async function registrarSeguimientoGerencia(
 
   const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
 
-  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.gerenteId, input.comentario);
+  return crearSiguienteVersionRegistro(
+    objetivo.id,
+    seguimiento.id,
+    input.gerenteId,
+    input.comentario,
+    input.porcentaje,
+  );
 }

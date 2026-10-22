@@ -2,81 +2,102 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRol } from "@/server/auth/rbac";
-import { ErrorCalificacion, calificarObjetivoGerencia } from "@/server/services/calificaciones.service";
-import { ErrorGerencia, crearObjetivosGerencia } from "@/server/services/gerencia.service";
+import {
+  ErrorGerencia,
+  crearIndicadorGerencia,
+  editarIndicadorGerencia,
+  eliminarIndicadorGerencia,
+  marcarCumplimientoGerencia,
+} from "@/server/services/gerencia.service";
 import { ErrorSeguimiento, registrarSeguimientoGerencia } from "@/server/services/seguimientos.service";
-import { calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
-import { objetivosGerenciaSchema } from "@/server/validations/gerencia.schema";
-import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
+import {
+  crearIndicadorSchema,
+  cumplimientoSchema,
+  editarIndicadorSchema,
+  indicadorIdSchema,
+} from "@/server/validations/indicador.schema";
+import { registrarSeguimientoGerenciaSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionGerencia = { ok: true } | { ok: false; error: string };
 
-export async function accionCrearObjetivosGerencia(objetivos: unknown): Promise<EstadoAccionGerencia> {
+function revalidarVistas() {
+  revalidatePath("/mi-gerencia");
+  revalidatePath("/mis-objetivos");
+  revalidatePath("/resultados");
+}
+
+// Solo el gerente de la gerencia carga y hace seguimiento a sus indicadores; que
+// sea el gerente *de esa* gerencia lo valida el servicio.
+async function ejecutar<T>(
+  schema: { safeParse(input: unknown): { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } } },
+  input: unknown,
+  accion: (datos: T, gerenteId: string) => Promise<unknown>,
+  mensajeInesperado: string,
+): Promise<EstadoAccionGerencia> {
   const gerente = await requireRol("GERENTE");
 
-  const parsed = objetivosGerenciaSchema.safeParse({ objetivos });
+  const parsed = schema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
   try {
-    await crearObjetivosGerencia(gerente.usuarioId, parsed.data.objetivos);
+    await accion(parsed.data, gerente.usuarioId);
   } catch (error) {
-    if (error instanceof ErrorGerencia) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al cargar los objetivos." };
+    if (error instanceof ErrorGerencia || error instanceof ErrorSeguimiento) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: false, error: mensajeInesperado };
   }
 
-  revalidatePath("/mi-gerencia");
-  revalidatePath("/mis-objetivos");
+  revalidarVistas();
   return { ok: true };
 }
 
-export async function accionCalificarGerencia(
+export async function accionCrearIndicadorGerencia(input: unknown): Promise<EstadoAccionGerencia> {
+  return ejecutar(
+    crearIndicadorSchema,
+    input,
+    (datos, gerenteId) => crearIndicadorGerencia(gerenteId, datos),
+    "Ocurrió un error inesperado al agregar el indicador.",
+  );
+}
+
+export async function accionEditarIndicadorGerencia(input: unknown): Promise<EstadoAccionGerencia> {
+  return ejecutar(
+    editarIndicadorSchema,
+    input,
+    ({ objetivoId, ...datos }, gerenteId) => editarIndicadorGerencia(gerenteId, objetivoId, datos),
+    "Ocurrió un error inesperado al editar el indicador.",
+  );
+}
+
+export async function accionEliminarIndicadorGerencia(objetivoId: string): Promise<EstadoAccionGerencia> {
+  return ejecutar(
+    indicadorIdSchema,
+    { objetivoId },
+    (datos, gerenteId) => eliminarIndicadorGerencia(gerenteId, datos.objetivoId),
+    "Ocurrió un error inesperado al eliminar el indicador.",
+  );
+}
+
+export async function accionRegistrarSeguimientoGerencia(input: unknown): Promise<EstadoAccionGerencia> {
+  return ejecutar(
+    registrarSeguimientoGerenciaSchema,
+    input,
+    (datos, gerenteId) => registrarSeguimientoGerencia({ ...datos, gerenteId }),
+    "Ocurrió un error inesperado al guardar el seguimiento.",
+  );
+}
+
+export async function accionMarcarCumplimientoGerencia(
   objetivoId: string,
-  calificacionFinal: number,
+  cumple: boolean,
 ): Promise<EstadoAccionGerencia> {
-  const gerente = await requireRol("GERENTE");
-
-  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, calificacionFinal });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await calificarObjetivoGerencia({ ...parsed.data, gerenteId: gerente.usuarioId });
-  } catch (error) {
-    if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
-  }
-
-  revalidatePath("/mi-gerencia");
-  revalidatePath("/mis-objetivos");
-  return { ok: true };
-}
-
-export async function accionRegistrarSeguimientoGerencia(
-  _estadoPrevio: EstadoAccionGerencia,
-  formData: FormData,
-): Promise<EstadoAccionGerencia> {
-  const gerente = await requireRol("GERENTE");
-
-  const parsed = registrarSeguimientoSchema.safeParse({
-    objetivoId: formData.get("objetivoId"),
-    comentario: formData.get("comentario"),
-  });
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
-  }
-
-  try {
-    await registrarSeguimientoGerencia({ ...parsed.data, gerenteId: gerente.usuarioId });
-  } catch (error) {
-    if (error instanceof ErrorSeguimiento) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el seguimiento." };
-  }
-
-  revalidatePath("/mi-gerencia");
-  revalidatePath("/mis-objetivos");
-  return { ok: true };
+  return ejecutar(
+    cumplimientoSchema,
+    { objetivoId, cumple },
+    (datos, gerenteId) => marcarCumplimientoGerencia({ ...datos, gerenteId }),
+    "Ocurrió un error inesperado al guardar el resultado.",
+  );
 }

@@ -93,34 +93,3 @@ export async function calificarObjetivoDesarrollo(input: {
     },
   });
 }
-
-// Calificación final de objetivos GERENCIA — la pone el gerente dueño de esa
-// gerencia sobre sus propios 2 objetivos. A diferencia de INDIVIDUAL, estos
-// objetivos siempre nacen APROBADO (no pasan por flujo de aprobación, ver
-// gerencia.service.ts), así que no hace falta ese chequeo aquí.
-export async function calificarObjetivoGerencia(input: {
-  objetivoId: string;
-  calificacionFinal: number;
-  gerenteId: string;
-}) {
-  const objetivo = await db.objetivo.findUnique({
-    where: { id: input.objetivoId },
-    include: { periodo: true, gerencia: true },
-  });
-  if (!objetivo || objetivo.nivel !== "GERENCIA" || !objetivo.gerencia) {
-    throw new ErrorCalificacion("El objetivo no existe.");
-  }
-  if (objetivo.gerencia.gerenteId !== input.gerenteId) {
-    throw new ErrorCalificacion("No eres el gerente de esta gerencia.");
-  }
-  exigirFranjaCumplimiento(objetivo.periodo);
-
-  return db.objetivo.update({
-    where: { id: input.objetivoId },
-    data: {
-      calificacionFinal: input.calificacionFinal,
-      calificadoPor: input.gerenteId,
-      fechaCalificacion: new Date(),
-    },
-  });
-}
