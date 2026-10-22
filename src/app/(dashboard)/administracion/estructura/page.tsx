@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { BotonLink } from "@/components/ui/Boton";
+import { EstadoVacio } from "@/components/ui/EstadoVacio";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Seccion } from "@/components/ui/Seccion";
+import { Tarjeta } from "@/components/ui/Tarjeta";
+import { pluralizar } from "@/lib/pendientes";
 import { requireRol } from "@/server/auth/rbac";
 import { listarGerencias, listarUsuarios } from "@/server/services/organizacion.service";
 import { GerenciaRow, UsuarioRow } from "./components";
@@ -22,39 +28,35 @@ export default async function EstructuraOrganizacionalPage({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-iib-foreground">Estructura organizacional</h1>
-        <p className="text-sm text-iib-secondary">
-          Gerencias, colaboradores, y la relación de cada uno con su jefe directo.
-        </p>
-      </div>
+      <PageHeader
+        titulo="Estructura organizacional"
+        subtitulo="Gerencias, colaboradores, y la relación de cada uno con su jefe directo."
+        acciones={
+          <BotonLink href="/administracion" variante="secundario">
+            ← Volver a Administración
+          </BotonLink>
+        }
+      />
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Gerencias</h2>
-          <span className="text-sm text-iib-secondary">
-            {gerencias.length} gerencia{gerencias.length === 1 ? "" : "s"}
-          </span>
-        </div>
-
+      <Seccion titulo="Gerencias" contador={pluralizar(gerencias.length, "gerencia", "gerencias")}>
         <CrearGerenciaForm />
 
         {gerencias.length === 0 ? (
-          <p className="text-sm text-iib-secondary">No hay gerencias creadas todavía.</p>
+          <EstadoVacio titulo="Todavía no hay gerencias">Crea la primera arriba para asignarle su gerente.</EstadoVacio>
         ) : (
-          <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
+          <Tarjeta relleno="ninguno" className="overflow-hidden">
             {gerencias.map((gerencia) => (
               <GerenciaRow key={gerencia.id} gerencia={gerencia} usuariosDisponibles={usuariosActivos} />
             ))}
-          </div>
+          </Tarjeta>
         )}
-      </section>
+      </Seccion>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Colaboradores</h2>
-          <span className="text-sm text-iib-secondary">
-            {usuariosVisibles.length} usuario{usuariosVisibles.length === 1 ? "" : "s"}
+      <Seccion
+        titulo="Colaboradores"
+        contador={
+          <>
+            {pluralizar(usuariosVisibles.length, "usuario", "usuarios")}
             {cantidadInactivos > 0 && (
               <>
                 {" · "}
@@ -64,16 +66,16 @@ export default async function EstructuraOrganizacionalPage({
                 >
                   {mostrarInactivos
                     ? "Ocultar inactivos"
-                    : `Mostrar ${cantidadInactivos} inactivo${cantidadInactivos === 1 ? "" : "s"}`}
+                    : `Mostrar ${pluralizar(cantidadInactivos, "inactivo", "inactivos")}`}
                 </Link>
               </>
             )}
-          </span>
-        </div>
-
+          </>
+        }
+      >
         <CrearUsuarioForm gerencias={gerencias} usuarios={usuariosActivos} />
 
-        <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
+        <Tarjeta relleno="ninguno" className="overflow-hidden">
           {usuariosVisibles.map((usuario) => (
             <UsuarioRow
               key={usuario.id}
@@ -82,8 +84,8 @@ export default async function EstructuraOrganizacionalPage({
               usuarios={usuariosActivos}
             />
           ))}
-        </div>
-      </section>
+        </Tarjeta>
+      </Seccion>
     </>
   );
 }

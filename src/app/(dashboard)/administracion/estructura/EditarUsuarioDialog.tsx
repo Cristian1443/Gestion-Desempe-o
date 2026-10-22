@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { accionActualizarUsuario } from "./actions";
 
 const ROLES = [
@@ -78,13 +79,9 @@ export function EditarUsuarioDialog({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={abrirConEstadoActual}
-        className="rounded-md border border-iib-border px-3 py-1.5 text-xs font-medium transition hover:bg-iib-surface-sunken"
-      >
+      <Boton variante="secundario" tamano="sm" onClick={abrirConEstadoActual}>
         Editar
-      </button>
+      </Boton>
 
       <dialog
         ref={dialogRef}
@@ -158,21 +155,12 @@ export function EditarUsuarioDialog({
           {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
           <div className="mt-1 flex justify-end gap-2.5">
-            <button
-              type="button"
-              className="rounded-md border border-iib-border px-3.5 py-2 text-sm font-medium transition hover:bg-iib-surface-sunken"
-              onClick={() => dialogRef.current?.close()}
-            >
+            <Boton variante="secundario" onClick={() => dialogRef.current?.close()}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={guardar}
-              disabled={pending}
-              className="rounded-md bg-iib-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            </Boton>
+            <Boton onClick={guardar} disabled={pending}>
               {pending ? "Guardando…" : "Guardar cambios"}
-            </button>
+            </Boton>
           </div>
         </div>
       </dialog>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { accionCrearPeriodo } from "./actions";
 
 export function CrearPeriodoForm() {
@@ -46,14 +47,9 @@ export function CrearPeriodoForm() {
           onChange={(e) => setFechaFin(e.target.value)}
           className="rounded-md border border-iib-border bg-iib-background px-2.5 py-2 text-sm"
         />
-        <button
-          type="button"
-          onClick={enviar}
-          disabled={pending || !nombre || !fechaInicio || !fechaFin}
-          className="rounded-md bg-iib-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Boton onClick={enviar} disabled={pending || !nombre || !fechaInicio || !fechaFin}>
           {pending ? "Creando…" : "Crear"}
-        </button>
+        </Boton>
       </div>
       {error && <p className="text-sm font-medium text-danger">{error}</p>}
     </div>

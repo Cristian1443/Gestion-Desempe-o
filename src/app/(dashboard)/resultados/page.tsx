@@ -1,4 +1,10 @@
+import { Callout } from "@/components/ui/Callout";
+import { EstadoVacio } from "@/components/ui/EstadoVacio";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Seccion } from "@/components/ui/Seccion";
+import { Tarjeta } from "@/components/ui/Tarjeta";
 import { formatearFecha } from "@/lib/fecha";
+import { pluralizar } from "@/lib/pendientes";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerResultados } from "@/server/services/resultados.service";
 import { FilaGerencia, FilaObjetivoSinSeguimiento, TarjetaKpi } from "./components";
@@ -10,94 +16,85 @@ export default async function ResultadosPage() {
 
   if (!datos) {
     return (
-      <div className="rounded-card bg-iib-surface p-6 text-center shadow-card">
-        <p className="text-sm text-iib-secondary">No hay un periodo abierto en este momento.</p>
-      </div>
+      <>
+        <PageHeader titulo="Tablero de resultados" />
+        <EstadoVacio titulo="No hay un periodo abierto" accion={{ href: "/administracion", etiqueta: "Ir a Administración" }}>
+          Cuando haya un periodo abierto verás aquí quién ya hizo su seguimiento.
+        </EstadoVacio>
+      </>
     );
   }
 
+  const referencia = datos.seguimientoReferencia;
+
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-iib-foreground">Tablero de resultados</h1>
-        <p className="text-sm text-iib-secondary">
-          Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
-          {datos.seguimientoReferencia && (
-            <>
-              {" "}
-              · Seguimiento{" "}
-              <strong className="font-semibold text-iib-foreground">{datos.seguimientoReferencia.numero}</strong>{" "}
-              ({datos.seguimientoReferencia.enCurso ? "en curso" : "último"}, del{" "}
-              {formatearFecha(datos.seguimientoReferencia.fechaInicio)} al{" "}
-              {formatearFecha(datos.seguimientoReferencia.fechaFin)})
-            </>
-          )}{" "}
-          · cobertura de seguimiento del periodo.
-        </p>
-      </div>
+      <PageHeader
+        titulo="Tablero de resultados"
+        subtitulo={
+          <>
+            Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
+            {referencia && (
+              <>
+                {" "}
+                · Seguimiento <strong className="font-semibold text-iib-foreground">{referencia.numero}</strong> (
+                {referencia.enCurso ? "en curso" : "último"}, del {formatearFecha(referencia.fechaInicio)} al{" "}
+                {formatearFecha(referencia.fechaFin)})
+              </>
+            )}
+            {" "}
+            · cobertura de seguimiento del periodo.
+          </>
+        }
+      />
 
-      <section className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <TarjetaKpi etiqueta="Con seguimiento — Individual" cobertura={datos.coberturaIndividual} />
-          <TarjetaKpi etiqueta="Con seguimiento — Gerencia" cobertura={datos.coberturaGerencia} />
-          <TarjetaKpi etiqueta="Indicadores con avance del mes" cobertura={datos.coberturaCorporativo} />
-          <div className="flex flex-col gap-1.5 rounded-card bg-iib-surface p-5 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">
-              Colaboradores con objetivos
-            </p>
-            <p className="text-3xl font-bold tabular-nums text-iib-foreground">
-              {datos.totalColaboradoresConObjetivos}
-              <span className="text-lg text-iib-secondary">/{datos.totalColaboradores}</span>
-            </p>
-          </div>
-        </div>
-        <p className="rounded-card border border-dashed border-iib-border bg-iib-surface px-4 py-3 text-xs text-iib-secondary">
-          Estas cifras muestran <strong>cuántos objetivos ya tienen un registro en el seguimiento
-          indicado arriba</strong>, no el % de cumplimiento — ese es un juicio del evaluador que se
-          pone una sola vez, al final, dentro de su franja.
-        </p>
+      <Callout tono="info" titulo="Qué miden estas cifras">
+        Cuántos objetivos ya tienen un registro en el seguimiento indicado arriba. No es el % de cumplimiento: ese es un
+        juicio del evaluador que se pone una sola vez, al final, dentro de su franja.
+      </Callout>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Cobertura por nivel">
+        <TarjetaKpi etiqueta="Con seguimiento — Individual" cobertura={datos.coberturaIndividual} />
+        <TarjetaKpi etiqueta="Con seguimiento — Gerencia" cobertura={datos.coberturaGerencia} />
+        <TarjetaKpi etiqueta="Indicadores con avance del mes" cobertura={datos.coberturaCorporativo} />
+        <Tarjeta className="flex flex-col gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Colaboradores con objetivos</p>
+          <p className="text-3xl font-bold tabular-nums text-iib-foreground">
+            {datos.totalColaboradoresConObjetivos}
+            <span className="text-lg text-iib-secondary">/{datos.totalColaboradores}</span>
+          </p>
+          <p className="text-sm text-iib-secondary">han propuesto sus objetivos</p>
+        </Tarjeta>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Cobertura por gerencia</h2>
-          <span className="text-sm text-iib-secondary">
-            {datos.porGerencia.length} gerencia{datos.porGerencia.length === 1 ? "" : "s"}
-          </span>
-        </div>
-
+      <Seccion titulo="Cobertura por gerencia" contador={pluralizar(datos.porGerencia.length, "gerencia", "gerencias")}>
         {datos.porGerencia.length === 0 ? (
-          <p className="text-sm text-iib-secondary">No hay gerencias creadas todavía.</p>
+          <EstadoVacio titulo="No hay gerencias creadas" accion={{ href: "/administracion/estructura", etiqueta: "Crear gerencias" }}>
+            Se crean en Estructura organizacional.
+          </EstadoVacio>
         ) : (
-          <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
+          <Tarjeta relleno="ninguno" className="overflow-hidden">
             {datos.porGerencia.map((gerencia) => (
               <FilaGerencia key={gerencia.gerenciaId} gerencia={gerencia} />
             ))}
-          </div>
+          </Tarjeta>
         )}
-      </section>
+      </Seccion>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Objetivos e indicadores sin registro</h2>
-          <span className="text-sm text-iib-secondary">
-            {datos.objetivosSinSeguimiento.length} objetivo
-            {datos.objetivosSinSeguimiento.length === 1 ? "" : "s"}
-          </span>
-        </div>
-
+      <Seccion
+        titulo="Objetivos e indicadores sin registro"
+        contador={pluralizar(datos.objetivosSinSeguimiento.length, "objetivo", "objetivos")}
+      >
         {datos.objetivosSinSeguimiento.length === 0 ? (
-          <p className="text-sm text-iib-secondary">
-            Todos los objetivos y los indicadores tienen su registro al día.
-          </p>
+          <EstadoVacio titulo="Todo al día">Todos los objetivos y los indicadores tienen su registro.</EstadoVacio>
         ) : (
-          <div className="overflow-hidden rounded-card bg-iib-surface shadow-card">
+          <Tarjeta relleno="ninguno" className="overflow-hidden">
             {datos.objetivosSinSeguimiento.map((objetivo) => (
               <FilaObjetivoSinSeguimiento key={objetivo.id} objetivo={objetivo} />
             ))}
-          </div>
+          </Tarjeta>
         )}
-      </section>
+      </Seccion>
     </>
   );
 }

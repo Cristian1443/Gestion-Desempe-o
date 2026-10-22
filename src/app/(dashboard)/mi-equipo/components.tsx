@@ -1,105 +1,105 @@
-import Link from "next/link";
-import { formatearFecha } from "@/lib/fecha";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
-import type { ColaboradorEquipo, MiEquipo, ObjetivoEquipoVista } from "@/server/services/equipo.service";
+import { formatearFecha } from "@/lib/fecha";
+import { pluralizar } from "@/lib/pendientes";
+import type { ColaboradorEquipo, ObjetivoEquipoVista } from "@/server/services/equipo.service";
 import { accionAprobarObjetivos, accionDevolverObjetivos, accionRegistrarSeguimiento } from "./actions";
 import { BotonAccionSimple, DialogDevolverConComentario } from "@/components/AccionesSimples";
 import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDialog";
 import { CumplimientoLectura } from "@/components/CumplimientoLectura";
+import { Chip } from "@/components/ui/Chip";
+import { Tarjeta } from "@/components/ui/Tarjeta";
 import type { FranjaUI } from "@/lib/franja-ui";
 import { Avatar } from "@/components/Avatar";
 import { CalificacionFinalControl } from "./CalificacionFinalControl";
 
-// Verde: todo al día. Rojo: necesita atención (propuesta pendiente de
-// aprobar, o le falta el registro del seguimiento de referencia). Gris: aún sin
-// objetivos propuestos para el periodo.
-type EstadoColaborador = "AL_DIA" | "NECESITA_ATENCION" | "SIN_OBJETIVOS";
+// Qué necesita cada persona del equipo, escrito en palabras: es lo primero que
+// el jefe ve en la lista, para no tener que abrir a cada uno para descubrirlo.
+export type NivelColaborador = "ATENCION" | "AL_DIA" | "SIN_OBJETIVOS";
 
-function estadoColaborador(
-  colaborador: ColaboradorEquipo,
-  referenciaNumero: number | null,
-): EstadoColaborador {
-  if (colaborador.objetivos.length === 0) return "SIN_OBJETIVOS";
+export interface ResumenColaborador {
+  nivel: NivelColaborador;
+  motivos: string[];
+}
 
-  const tienePendientes = colaborador.objetivos.some((o) => o.estadoAprobacion === "PENDIENTE_APROBACION");
-  if (tienePendientes) return "NECESITA_ATENCION";
+function objetivoSinResultado(o: ObjetivoEquipoVista): boolean {
+  return o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null;
+}
+
+export function resumenColaborador(colaborador: ColaboradorEquipo, franja: FranjaUI): ResumenColaborador {
+  if (colaborador.objetivos.length === 0) {
+    return { nivel: "SIN_OBJETIVOS", motivos: ["Aún no propone objetivos"] };
+  }
+
+  const motivos: string[] = [];
+
+  const porAprobar = colaborador.objetivos.filter((o) => o.estadoAprobacion === "PENDIENTE_APROBACION");
+  if (porAprobar.length > 0) {
+    motivos.push(`${pluralizar(porAprobar.length, "objetivo", "objetivos")} por aprobar`);
+  }
 
   const aprobados = colaborador.objetivos.filter((o) => o.estadoAprobacion === "APROBADO");
-  const faltaSeguimiento =
-    referenciaNumero !== null &&
-    aprobados.some((o) => !o.seguimientos.some((s) => s.numero === referenciaNumero));
-  if (faltaSeguimiento) return "NECESITA_ATENCION";
 
-  return "AL_DIA";
+  if (franja.referenciaNumero !== null) {
+    const referencia = franja.referenciaNumero;
+    const sinRegistro = aprobados.filter((o) => !o.seguimientos.some((s) => s.numero === referencia)).length;
+    if (sinRegistro > 0) {
+      motivos.push(`Falta el seguimiento ${referencia} en ${pluralizar(sinRegistro, "objetivo", "objetivos")}`);
+    }
+  }
+
+  if (franja.cumplimientoEnCurso) {
+    const sinResultado = aprobados.filter(objetivoSinResultado).length;
+    if (sinResultado > 0) {
+      motivos.push(`Falta el % de cumplimiento en ${pluralizar(sinResultado, "objetivo", "objetivos")}`);
+    }
+  }
+
+  return motivos.length > 0 ? { nivel: "ATENCION", motivos } : { nivel: "AL_DIA", motivos: [] };
 }
 
-const CLASE_PUNTO_ESTADO: Record<EstadoColaborador, string> = {
-  AL_DIA: "bg-success",
-  NECESITA_ATENCION: "bg-danger",
-  SIN_OBJETIVOS: "bg-iib-secondary",
-};
-
-export function TarjetaJefe({ jefe }: { jefe: MiEquipo["jefe"] }) {
-  return (
-    <Link
-      href="/mis-objetivos"
-      className="flex items-center gap-4 rounded-card bg-iib-surface p-5 shadow-card transition hover:shadow-lg"
-    >
-      <Avatar
-        usuarioId={jefe.usuarioId}
-        nombre={jefe.nombre}
-        tieneFoto={jefe.tieneFoto}
-        size="h-14 w-14"
-        fallbackClassName="bg-iib-primary text-white"
-        fallbackTextSize="text-lg"
-      />
-      <div className="flex flex-col gap-0.5">
-        <p className="text-base font-semibold text-iib-foreground">{jefe.nombre}</p>
-        {jefe.cargo && <p className="text-sm text-iib-secondary">{jefe.cargo}</p>}
-        {jefe.gerenciaNombre && <p className="text-xs text-iib-secondary">{jefe.gerenciaNombre}</p>}
-      </div>
-      <span className="ml-auto shrink-0 rounded-md border border-iib-border px-3 py-1.5 text-xs font-semibold text-iib-foreground">
-        Ver mis objetivos →
-      </span>
-    </Link>
-  );
-}
-
-export function TarjetaColaborador({
+// Una persona del equipo en la lista: quién es y qué necesita de ti.
+export function FilaColaborador({
   colaborador,
-  referenciaNumero,
+  resumen,
   seleccionado,
   onClick,
 }: {
   colaborador: ColaboradorEquipo;
-  referenciaNumero: number | null;
+  resumen: ResumenColaborador;
   seleccionado: boolean;
   onClick: () => void;
 }) {
-  const estado = estadoColaborador(colaborador, referenciaNumero);
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-card border bg-iib-surface p-4 text-left shadow-card transition hover:shadow-lg ${
+      aria-pressed={seleccionado}
+      className={`flex w-full items-start gap-3 rounded-card border bg-iib-surface p-3.5 text-left shadow-card transition hover:shadow-lg ${
         seleccionado ? "border-iib-primary ring-2 ring-iib-primary/20" : "border-transparent"
       }`}
     >
-      <div className="relative shrink-0">
-        <Avatar
-          usuarioId={colaborador.usuarioId}
-          nombre={colaborador.nombre}
-          tieneFoto={colaborador.tieneFoto}
-          size="h-11 w-11"
-          fallbackClassName="bg-iib-surface-sunken text-iib-secondary"
-        />
-        <span
-          className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-iib-surface ${CLASE_PUNTO_ESTADO[estado]}`}
-        />
-      </div>
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="truncate text-sm font-semibold text-iib-foreground">{colaborador.nombre}</p>
-        {colaborador.cargo && <p className="truncate text-xs text-iib-secondary">{colaborador.cargo}</p>}
+      <Avatar
+        usuarioId={colaborador.usuarioId}
+        nombre={colaborador.nombre}
+        tieneFoto={colaborador.tieneFoto}
+        size="h-11 w-11"
+        fallbackClassName="bg-iib-surface-sunken text-iib-secondary"
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-iib-foreground">{colaborador.nombre}</p>
+          {colaborador.cargo && <p className="truncate text-xs text-iib-secondary">{colaborador.cargo}</p>}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {resumen.nivel === "AL_DIA" && <Chip tono="exito">Al día</Chip>}
+          {resumen.nivel === "SIN_OBJETIVOS" && <Chip tono="neutro">{resumen.motivos[0]}</Chip>}
+          {resumen.nivel === "ATENCION" &&
+            resumen.motivos.map((motivo) => (
+              <Chip key={motivo} tono="aviso">
+                {motivo}
+              </Chip>
+            ))}
+        </div>
       </div>
     </button>
   );
@@ -294,16 +294,16 @@ export function ColaboradorPanel({ colaborador, franja }: { colaborador: Colabor
       : aprobados.filter((o) => !o.seguimientos.some((s) => s.numero === franja.referenciaNumero)).length;
 
   return (
-    <article className="flex flex-col gap-4 rounded-card bg-iib-surface p-5 shadow-card">
+    <Tarjeta como="article" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-base font-semibold">{colaborador.nombre}</h3>
           {colaborador.cargo && <p className="text-xs text-iib-secondary">{colaborador.cargo}</p>}
         </div>
         {sinRegistroDeReferencia > 0 && franja.referenciaNumero !== null && (
-          <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
+          <Chip tono="aviso">
             {sinRegistroDeReferencia} sin registro en el seguimiento {franja.referenciaNumero}
-          </span>
+          </Chip>
         )}
       </div>
 
@@ -355,6 +355,6 @@ export function ColaboradorPanel({ colaborador, franja }: { colaborador: Colabor
           </div>
         </div>
       )}
-    </article>
+    </Tarjeta>
   );
 }
