@@ -55,14 +55,3 @@ export function contarPorAmbito(pendientes: Pendiente[]): Partial<Record<AmbitoP
   }
   return conteo;
 }
-
-// "168 objetivos individuales sin resultado", "8 indicadores de la empresa sin resultado".
-export function textoSinResultado(nivel: string, cantidad: number): string {
-  const [singular, plural] =
-    nivel === "CORPORATIVO"
-      ? ["indicador de la empresa", "indicadores de la empresa"]
-      : nivel === "GERENCIA"
-        ? ["indicador de gerencia", "indicadores de gerencia"]
-        : ["objetivo individual", "objetivos individuales"];
-  return `${pluralizar(cantidad, singular, plural)} sin resultado`;
-}

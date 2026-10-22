@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
-import { Chip, type TonoChip } from "@/components/ui/Chip";
 import { formatearFecha } from "@/lib/fecha";
 import type { EstadoFranja } from "@/lib/franja";
 import { accionEditarSeguimiento, accionEliminarSeguimiento } from "./actions";
@@ -14,10 +12,10 @@ const ETIQUETA_ESTADO: Record<EstadoFranja, string> = {
   FINALIZADA: "Finalizado",
 };
 
-const TONO_ESTADO: Record<EstadoFranja, TonoChip> = {
-  PROXIMA: "neutro",
-  EN_CURSO: "exito",
-  FINALIZADA: "neutro",
+const CLASES_ESTADO: Record<EstadoFranja, string> = {
+  PROXIMA: "bg-iib-surface-sunken text-iib-secondary",
+  EN_CURSO: "bg-success-bg text-success",
+  FINALIZADA: "bg-iib-surface-sunken text-iib-secondary",
 };
 
 // Un seguimiento del periodo con su franja. El estado se calcula por fecha en
@@ -84,27 +82,46 @@ export function SeguimientoRow({
           </span>
         </span>
         <div className="flex flex-wrap items-center gap-2">
-          <Chip tono={TONO_ESTADO[estado]}>{ETIQUETA_ESTADO[estado]}</Chip>
+          <span className={`rounded-full px-2 py-0.5 text-[0.7rem] font-semibold ${CLASES_ESTADO[estado]}`}>
+            {ETIQUETA_ESTADO[estado]}
+          </span>
           {!periodoCerrado && (
             <>
-              <Boton variante="secundario" tamano="sm" onClick={() => setEditando(true)}>
+              <button
+                type="button"
+                onClick={() => setEditando(true)}
+                className="rounded-md border border-iib-border px-2.5 py-1 text-xs font-medium transition hover:bg-iib-surface"
+              >
                 Editar fechas
-              </Boton>
+              </button>
               {registros === 0 &&
                 (confirmandoBorrado ? (
                   <>
                     <span className="text-xs text-iib-secondary">¿Eliminar?</span>
-                    <Boton variante="peligro" tamano="sm" disabled={pending} onClick={eliminar}>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={eliminar}
+                      className="rounded-md border border-danger/40 px-2.5 py-1 text-xs font-semibold text-danger transition hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-60"
+                    >
                       {pending ? "Eliminando…" : "Sí, eliminar"}
-                    </Boton>
-                    <Boton variante="secundario" tamano="sm" onClick={() => setConfirmandoBorrado(false)}>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmandoBorrado(false)}
+                      className="rounded-md border border-iib-border px-2.5 py-1 text-xs font-medium transition hover:bg-iib-surface"
+                    >
                       No
-                    </Boton>
+                    </button>
                   </>
                 ) : (
-                  <Boton variante="peligro" tamano="sm" onClick={() => setConfirmandoBorrado(true)}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmandoBorrado(true)}
+                    className="rounded-md border border-danger/40 px-2.5 py-1 text-xs font-medium text-danger transition hover:bg-danger-bg"
+                  >
                     Eliminar
-                  </Boton>
+                  </button>
                 ))}
             </>
           )}

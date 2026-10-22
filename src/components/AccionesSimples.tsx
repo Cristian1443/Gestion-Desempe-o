@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
 
 export type EstadoAccionSimple = { ok: true } | { ok: false; error: string };
 
@@ -23,10 +22,15 @@ export function BotonAccionSimple({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const clases =
+    variante === "primary"
+      ? "bg-iib-primary text-white hover:bg-iib-primary-hover"
+      : "border border-iib-border text-iib-foreground hover:bg-iib-surface-sunken";
+
   return (
     <div className="flex flex-col items-end gap-1">
-      <Boton
-        variante={variante === "primary" ? "primario" : "secundario"}
+      <button
+        type="button"
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -35,9 +39,10 @@ export function BotonAccionSimple({
             if (!resultado.ok) setError(resultado.error);
           })
         }
+        className={`rounded-md px-3.5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${clases}`}
       >
         {pending ? etiquetaEnviando : etiqueta}
-      </Boton>
+      </button>
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
     </div>
   );
@@ -76,9 +81,13 @@ export function DialogDevolverConComentario({
 
   return (
     <>
-      <Boton variante="peligro" onClick={() => dialogRef.current?.showModal()}>
+      <button
+        type="button"
+        onClick={() => dialogRef.current?.showModal()}
+        className="rounded-md border border-danger/40 px-3.5 py-2 text-sm font-semibold text-danger transition hover:bg-danger-bg"
+      >
         {etiquetaBoton}
-      </Boton>
+      </button>
 
       <dialog
         ref={dialogRef}
@@ -95,16 +104,21 @@ export function DialogDevolverConComentario({
           />
           {error && <p className="text-sm font-medium text-danger">{error}</p>}
           <div className="flex justify-end gap-2.5">
-            <Boton variante="secundario" onClick={() => dialogRef.current?.close()}>
+            <button
+              type="button"
+              className="rounded-md border border-iib-border px-3.5 py-2 text-sm font-medium transition hover:bg-iib-surface-sunken"
+              onClick={() => dialogRef.current?.close()}
+            >
               Cancelar
-            </Boton>
-            <Boton
-              className="!bg-danger hover:!opacity-90"
+            </button>
+            <button
+              type="button"
               disabled={pending || comentario.trim().length === 0}
               onClick={enviar}
+              className="rounded-md bg-danger px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {pending ? "Enviando…" : "Confirmar devolución"}
-            </Boton>
+            </button>
           </div>
         </div>
       </dialog>

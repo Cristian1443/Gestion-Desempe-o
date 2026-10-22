@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
 import { accionCrearUsuario } from "./actions";
 
 const ROLES = [
@@ -124,9 +123,14 @@ export function CrearUsuarioForm({
       {error && <p className="text-sm font-medium text-danger">{error}</p>}
       {exito && <p className="text-sm font-medium text-success">{exito}</p>}
 
-      <Boton className="self-end" onClick={enviar} disabled={pending || !nombre.trim() || !email.trim()}>
+      <button
+        type="button"
+        onClick={enviar}
+        disabled={pending || !nombre.trim() || !email.trim()}
+        className="self-end rounded-md bg-iib-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+      >
         {pending ? "Creando…" : "Dar de alta"}
-      </Boton>
+      </button>
     </div>
   );
 }

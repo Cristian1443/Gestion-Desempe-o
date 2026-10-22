@@ -6,7 +6,6 @@ import {
   ordenarPendientes,
   pluralizar,
   prioridadPorDias,
-  textoSinResultado,
   type AmbitoPendiente,
   type Pendiente,
 } from "@/lib/pendientes";
@@ -381,7 +380,7 @@ export async function obtenerPendientes(usuario: UsuarioSesion): Promise<Resumen
               ? "Todos los indicadores están cargados y todos los objetivos tienen su resultado."
               : [
                   ...faltaCargar.map((f) => `Falta cargar ${f}`),
-                  ...Object.entries(sinResultado).map(([nivel, n]) => textoSinResultado(nivel, n)),
+                  ...Object.entries(sinResultado).map(([nivel, n]) => `${n} ${nivel.toLowerCase()} sin resultado`),
                 ].join(" · "),
           href: "/administracion",
           accion: faltantes === 0 ? "Cerrar el periodo" : "Ver el periodo",

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { Boton } from "@/components/ui/Boton";
 
 export type EstadoAccionSeguimiento = { ok: true } | { ok: false; error: string };
 
@@ -11,9 +10,13 @@ const ESTADO_INICIAL: EstadoAccionSeguimiento = { ok: true };
 function BotonEnviar({ etiqueta, etiquetaEnviando }: { etiqueta: string; etiquetaEnviando: string }) {
   const { pending } = useFormStatus();
   return (
-    <Boton type="submit" disabled={pending}>
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded-md bg-iib-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+    >
       {pending ? etiquetaEnviando : etiqueta}
-    </Boton>
+    </button>
   );
 }
 
@@ -62,7 +65,13 @@ export function RegistrarSeguimientoDialog({
 
   return (
     <>
-      <Boton onClick={() => dialogRef.current?.showModal()}>{etiquetaBoton}</Boton>
+      <button
+        type="button"
+        className="rounded-md bg-iib-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover"
+        onClick={() => dialogRef.current?.showModal()}
+      >
+        {etiquetaBoton}
+      </button>
 
       <dialog
         ref={dialogRef}
@@ -98,9 +107,13 @@ export function RegistrarSeguimientoDialog({
           )}
 
           <div className="mt-1 flex justify-end gap-2.5">
-            <Boton variante="secundario" onClick={() => dialogRef.current?.close()}>
+            <button
+              type="button"
+              className="rounded-md border border-iib-border px-3.5 py-2 text-sm font-medium transition hover:bg-iib-surface-sunken"
+              onClick={() => dialogRef.current?.close()}
+            >
               Cancelar
-            </Boton>
+            </button>
             <BotonEnviar etiqueta={etiquetaEnviar} etiquetaEnviando={etiquetaEnviando} />
           </div>
         </form>

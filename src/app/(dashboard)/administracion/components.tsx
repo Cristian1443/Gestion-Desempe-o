@@ -1,10 +1,6 @@
-import { BotonAccionSimple } from "@/components/AccionesSimples";
-import { Callout } from "@/components/ui/Callout";
-import { Chip, type TonoChip } from "@/components/ui/Chip";
-import { Tarjeta } from "@/components/ui/Tarjeta";
 import { formatearFecha } from "@/lib/fecha";
 import { estadoFranja, hoyEnBogota } from "@/lib/franja";
-import { textoSinResultado } from "@/lib/pendientes";
+import { BotonAccionSimple } from "@/components/AccionesSimples";
 import { accionAbrirPeriodo, accionCerrarPeriodo } from "./actions";
 import { AgregarSeguimientoForm } from "./AgregarSeguimientoForm";
 import { FranjaCumplimientoForm } from "./FranjaCumplimientoForm";
@@ -16,67 +12,14 @@ const ETIQUETA_ESTADO_PERIODO: Record<string, string> = {
   CERRADO: "Cerrado",
 };
 
-const TONO_ESTADO_PERIODO: Record<string, TonoChip> = {
-  BORRADOR: "neutro",
-  ABIERTO: "exito",
-  CERRADO: "neutro",
+const CLASES_ESTADO_PERIODO: Record<string, string> = {
+  BORRADOR: "bg-iib-surface-sunken text-iib-secondary",
+  ABIERTO: "bg-success-bg text-success",
+  CERRADO: "bg-iib-surface-sunken text-iib-secondary",
 };
-
-export interface CierrePeriodo {
-  faltaCargar: string[];
-  sinResultado: Record<string, number>;
-}
-
-// Los pasos para dejar un periodo funcionando, en orden, con el estado de cada
-// uno: así Gestión Humana ve de un vistazo qué falta y qué sigue.
-function PasosPeriodo({ pasos }: { pasos: Array<{ titulo: string; detalle: string; hecho: boolean }> }) {
-  const actual = pasos.findIndex((p) => !p.hecho);
-  return (
-    <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Pasos del periodo">
-      {pasos.map((paso, i) => {
-        const esActual = i === actual;
-        return (
-          <li
-            key={paso.titulo}
-            className={`flex gap-3 rounded-md border px-3.5 py-3 ${
-              esActual ? "border-iib-primary bg-iib-primary/5" : "border-iib-border bg-iib-surface"
-            }`}
-          >
-            <span
-              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                paso.hecho
-                  ? "bg-success text-white"
-                  : esActual
-                    ? "bg-iib-primary text-white"
-                    : "border-2 border-iib-border text-iib-secondary"
-              }`}
-              aria-hidden
-            >
-              {paso.hecho ? "✓" : i + 1}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-iib-foreground">{paso.titulo}</p>
-              <p className="text-xs text-iib-secondary">{paso.hecho ? "Listo" : esActual ? "Es lo que sigue" : paso.detalle}</p>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function EncabezadoBloque({ titulo, ayuda }: { titulo: string; ayuda?: string }) {
-  return (
-    <div>
-      <h4 className="text-sm font-bold text-iib-foreground">{titulo}</h4>
-      {ayuda && <p className="text-xs text-iib-secondary">{ayuda}</p>}
-    </div>
-  );
-}
 
 export function PeriodoRow({
   periodo,
-  cierre,
 }: {
   periodo: {
     id: string;
@@ -94,8 +37,6 @@ export function PeriodoRow({
       _count: { registros: number };
     }>;
   };
-  // Qué falta para cerrar; solo se calcula para el periodo abierto.
-  cierre: CierrePeriodo | null;
 }) {
   const hoy = hoyEnBogota();
   const cerrado = periodo.estado === "CERRADO";
@@ -104,61 +45,29 @@ export function PeriodoRow({
       ? { inicio: periodo.cumplimientoInicio, fin: periodo.cumplimientoFin }
       : null;
 
-  const faltanteCierre = cierre
-    ? [
-        ...cierre.faltaCargar.map((f) => `Falta cargar ${f}`),
-        ...Object.entries(cierre.sinResultado).map(([nivel, n]) => textoSinResultado(nivel, n)),
-      ]
-    : [];
-
   return (
-    <Tarjeta className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3 border-b border-iib-border p-4 last:border-b-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-iib-foreground">Periodo {periodo.nombre}</h3>
-          <p className="text-sm text-iib-secondary">
+          <p className="text-sm font-semibold">{periodo.nombre}</p>
+          <p className="text-xs text-iib-secondary">
             {formatearFecha(periodo.fechaInicio)} – {formatearFecha(periodo.fechaFin)}
           </p>
         </div>
-        <Chip tono={TONO_ESTADO_PERIODO[periodo.estado] ?? "neutro"}>{ETIQUETA_ESTADO_PERIODO[periodo.estado]}</Chip>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${CLASES_ESTADO_PERIODO[periodo.estado]}`}
+        >
+          {ETIQUETA_ESTADO_PERIODO[periodo.estado]}
+        </span>
       </div>
 
-      <PasosPeriodo
-        pasos={[
-          {
-            titulo: "Seguimientos",
-            detalle: "Agrega al menos uno, con su franja",
-            hecho: periodo.seguimientos.length > 0,
-          },
-          { titulo: "Franja del % final", detalle: "Define cuándo se pone", hecho: franjaCumplimiento !== null },
-          { titulo: "Abrir el periodo", detalle: "Cuando lo anterior esté listo", hecho: periodo.estado !== "BORRADOR" },
-          { titulo: "Cerrar el periodo", detalle: "Al terminar la evaluación", hecho: cerrado },
-        ]}
-      />
-
-      {periodo.estado === "ABIERTO" && cierre && (
-        faltanteCierre.length === 0 ? (
-          <Callout tono="exito" titulo="El periodo está listo para cerrarse">
-            Todos los indicadores están cargados y todos los objetivos tienen su resultado.
-          </Callout>
-        ) : (
-          <Callout tono="info" titulo="Antes de cerrar el periodo falta:">
-            <ul className="list-disc pl-5">
-              {faltanteCierre.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          </Callout>
-        )
-      )}
-
-      <div className="flex flex-col gap-3">
-        <EncabezadoBloque
-          titulo="Seguimientos del periodo"
-          ayuda="Cada uno solo se puede registrar dentro de su franja de fechas; nadie lo abre ni lo cierra a mano."
-        />
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Seguimientos del periodo</p>
         {periodo.seguimientos.length === 0 ? (
-          <p className="text-sm text-iib-secondary">Todavía no hay seguimientos. Agrega el primero con su franja.</p>
+          <p className="text-xs text-iib-secondary">
+            Todavía no hay seguimientos. Agrega cada uno con su franja de fechas: solo se podrá registrar dentro de
+            esas fechas.
+          </p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {periodo.seguimientos.map((seguimiento) => (
@@ -175,21 +84,21 @@ export function PeriodoRow({
         {!cerrado && <AgregarSeguimientoForm periodoId={periodo.id} />}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <EncabezadoBloque
-          titulo="% de cumplimiento final"
-          ayuda="El rango de fechas en que jefes, gerentes y Gestión Humana lo ponen en cada objetivo."
-        />
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">
+          % de cumplimiento final
+        </p>
         {franjaCumplimiento ? (
           <p className="text-sm">
             Del {formatearFecha(franjaCumplimiento.inicio)} al {formatearFecha(franjaCumplimiento.fin)}
           </p>
         ) : (
-          <p className="text-sm text-warning">
+          <p className="text-xs text-iib-secondary">
             Sin franja.{" "}
             {periodo.estado === "BORRADOR"
-              ? "Defínela para poder abrir el periodo."
-              : "Nadie puede poner el % de cumplimiento hasta que la definas."}
+              ? "Defínela para poder abrir el periodo: "
+              : "Nadie puede poner el % de cumplimiento hasta que la definas: "}
+            es el rango de fechas en que jefes, gerentes y Gestión Humana lo ponen en cada objetivo.
           </p>
         )}
         {!cerrado && (
@@ -202,7 +111,7 @@ export function PeriodoRow({
       </div>
 
       {periodo.estado === "BORRADOR" && (
-        <div className="flex justify-end border-t border-iib-border pt-4">
+        <div className="flex justify-end">
           <BotonAccionSimple
             etiqueta="Abrir periodo"
             etiquetaEnviando="Abriendo…"
@@ -212,7 +121,7 @@ export function PeriodoRow({
       )}
 
       {periodo.estado === "ABIERTO" && (
-        <div className="flex justify-end border-t border-iib-border pt-4">
+        <div className="flex justify-end">
           <BotonAccionSimple
             etiqueta="Cerrar periodo"
             etiquetaEnviando="Cerrando…"
@@ -221,6 +130,6 @@ export function PeriodoRow({
           />
         </div>
       )}
-    </Tarjeta>
+    </div>
   );
 }

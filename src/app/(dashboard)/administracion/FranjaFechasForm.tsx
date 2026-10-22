@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
 
 type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -68,13 +67,22 @@ export function FranjaFechasForm({
             className="rounded-md border border-iib-border bg-iib-background px-2.5 py-1.5 text-sm text-iib-foreground"
           />
         </label>
-        <Boton variante="secundario" onClick={enviar} disabled={pending || !inicio || !fin}>
+        <button
+          type="button"
+          onClick={enviar}
+          disabled={pending || !inicio || !fin}
+          className="rounded-md border border-iib-border px-3 py-1.5 text-sm font-medium transition hover:bg-iib-surface-sunken disabled:cursor-not-allowed disabled:opacity-60"
+        >
           {pending ? etiquetaGuardando : etiquetaGuardar}
-        </Boton>
+        </button>
         {onCancelar && (
-          <Boton variante="fantasma" onClick={onCancelar}>
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="rounded-md border border-iib-border px-3 py-1.5 text-sm font-medium transition hover:bg-iib-surface"
+          >
             Cancelar
-          </Boton>
+          </button>
         )}
       </div>
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
