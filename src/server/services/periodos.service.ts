@@ -253,21 +253,13 @@ export async function abrirPeriodo(periodoId: string) {
   return db.periodo.update({ where: { id: periodoId }, data: { estado: "ABIERTO" } });
 }
 
-// No se cierra un periodo con evaluaciones a medias: todo objetivo debe tener su
-// resultado. Un objetivo DESARROLLO se considera calificado por
-// `cumplioDesarrollo` (sí/no); un indicador (de la empresa o de gerencia) por
-// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO) por su % de
-// cumplimiento (`calificacionFinal`). Además tienen que estar cargados todos los
-// indicadores: 8 de la empresa y 2 por cada gerencia con gerente.
-export async function cerrarPeriodo(periodoId: string) {
-  const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
-  if (!periodo) {
-    throw new ErrorPeriodo("El periodo no existe.");
-  }
-  if (periodo.estado !== "ABIERTO") {
-    throw new ErrorPeriodo("Solo se puede cerrar un periodo que esté abierto.");
-  }
-
+// Qué falta para poder cerrar un periodo: indicadores sin cargar (8 de la
+// empresa y 2 por cada gerencia con gerente) y objetivos sin resultado. Lo usan
+// `cerrarPeriodo` y el aviso de "listo para cerrar" de Inicio.
+export async function evaluarCierre(periodoId: string): Promise<{
+  faltaCargar: string[];
+  sinResultado: Record<string, number>;
+}> {
   const [objetivos, gerencias] = await Promise.all([
     db.objetivo.findMany({
       where: { periodoId },
@@ -283,31 +275,53 @@ export async function cerrarPeriodo(periodoId: string) {
     db.gerencia.findMany({ where: { gerenteId: { not: null } }, select: { id: true, nombre: true } }),
   ]);
 
-  const faltantes: string[] = [];
+  const faltaCargar: string[] = [];
   const corporativos = objetivos.filter((o) => o.nivel === "CORPORATIVO").length;
   if (corporativos < CANTIDAD_OBJETIVOS_CORPORATIVOS) {
-    faltantes.push(`indicadores de la empresa (${corporativos} de ${CANTIDAD_OBJETIVOS_CORPORATIVOS})`);
+    faltaCargar.push(`indicadores de la empresa (${corporativos} de ${CANTIDAD_OBJETIVOS_CORPORATIVOS})`);
   }
   for (const gerencia of gerencias) {
     const cargados = objetivos.filter((o) => o.nivel === "GERENCIA" && o.gerenciaId === gerencia.id).length;
     if (cargados < CANTIDAD_OBJETIVOS_GERENCIA) {
-      faltantes.push(`indicadores de ${gerencia.nombre} (${cargados} de ${CANTIDAD_OBJETIVOS_GERENCIA})`);
+      faltaCargar.push(`indicadores de ${gerencia.nombre} (${cargados} de ${CANTIDAD_OBJETIVOS_GERENCIA})`);
     }
   }
-  if (faltantes.length > 0) {
-    throw new ErrorPeriodo(`Faltan por cargar: ${faltantes.join("; ")}.`);
+
+  const sinResultado: Record<string, number> = {};
+  for (const o of objetivos) {
+    const sinCalificar =
+      o.nivel === "CORPORATIVO" || o.nivel === "GERENCIA"
+        ? o.cumplido === null
+        : o.tipoIndividual === "DESARROLLO"
+          ? o.cumplioDesarrollo === null
+          : o.calificacionFinal === null;
+    if (sinCalificar) sinResultado[o.nivel] = (sinResultado[o.nivel] ?? 0) + 1;
   }
 
-  const sinCalificar = objetivos.filter((o) => {
-    if (o.nivel === "CORPORATIVO" || o.nivel === "GERENCIA") return o.cumplido === null;
-    return o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null;
-  });
-  if (sinCalificar.length > 0) {
-    const porNivel = sinCalificar.reduce<Record<string, number>>((acumulado, o) => {
-      acumulado[o.nivel] = (acumulado[o.nivel] ?? 0) + 1;
-      return acumulado;
-    }, {});
-    const detalle = Object.entries(porNivel)
+  return { faltaCargar, sinResultado };
+}
+
+// No se cierra un periodo con evaluaciones a medias: todo objetivo debe tener su
+// resultado. Un objetivo DESARROLLO se considera calificado por
+// `cumplioDesarrollo` (sí/no); un indicador (de la empresa o de gerencia) por
+// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO) por su % de
+// cumplimiento (`calificacionFinal`). Además tienen que estar cargados todos los
+// indicadores: 8 de la empresa y 2 por cada gerencia con gerente.
+export async function cerrarPeriodo(periodoId: string) {
+  const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
+  if (!periodo) {
+    throw new ErrorPeriodo("El periodo no existe.");
+  }
+  if (periodo.estado !== "ABIERTO") {
+    throw new ErrorPeriodo("Solo se puede cerrar un periodo que esté abierto.");
+  }
+
+  const { faltaCargar, sinResultado } = await evaluarCierre(periodoId);
+  if (faltaCargar.length > 0) {
+    throw new ErrorPeriodo(`Faltan por cargar: ${faltaCargar.join("; ")}.`);
+  }
+  if (Object.keys(sinResultado).length > 0) {
+    const detalle = Object.entries(sinResultado)
       .map(([nivel, cantidad]) => `${cantidad} ${nivel}`)
       .join(", ");
     throw new ErrorPeriodo(

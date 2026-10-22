@@ -1,9 +1,15 @@
-import { formatearFecha } from "@/lib/fecha";
-import { etiquetaMes } from "@/lib/mes";
-import { requireUsuarioAutenticado } from "@/server/auth/rbac";
-import { obtenerIndicadores } from "@/server/services/indicadores.service";
 import { AgregarIndicador } from "@/components/AgregarIndicador";
 import { TarjetaResumen } from "@/components/indicador-ui";
+import { Callout } from "@/components/ui/Callout";
+import { Chip } from "@/components/ui/Chip";
+import { EstadoVacio } from "@/components/ui/EstadoVacio";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Seccion } from "@/components/ui/Seccion";
+import { formatearFecha } from "@/lib/fecha";
+import { etiquetaMes } from "@/lib/mes";
+import { pluralizar } from "@/lib/pendientes";
+import { requireUsuarioAutenticado } from "@/server/auth/rbac";
+import { obtenerIndicadores } from "@/server/services/indicadores.service";
 import { accionCrearIndicador } from "./actions";
 import { IndicadorCard } from "./components";
 
@@ -17,9 +23,12 @@ export default async function IndicadoresPage() {
 
   if (!datos) {
     return (
-      <div className="rounded-card bg-iib-surface p-6 text-center shadow-card">
-        <p className="text-sm text-iib-secondary">No hay un periodo de evaluación abierto en este momento.</p>
-      </div>
+      <>
+        <PageHeader titulo="Indicadores de la empresa" />
+        <EstadoVacio titulo="No hay un periodo de evaluación abierto">
+          Cuando Gestión Humana abra el periodo, aquí verás los indicadores y su avance mes a mes.
+        </EstadoVacio>
+      </>
     );
   }
 
@@ -39,37 +48,66 @@ export default async function IndicadoresPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-iib-foreground">Indicadores de la empresa</h1>
-        <p className="max-w-3xl text-sm text-iib-secondary">
-          Son {tope} para toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un
-          comentario y al final se marca si cumple o no cumple.
-        </p>
-        <p className="text-sm text-iib-secondary">
-          Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>
-          {" · "}
-          Mes en curso{" "}
-          <strong className="font-semibold capitalize text-iib-foreground">{etiquetaMes(mesActual)}</strong>
-          {" · "}
-          {responsables.length > 0 ? (
-            <>
-              Responsable del seguimiento:{" "}
-              <strong className="font-semibold text-iib-foreground">{responsables.join(", ")}</strong>
-            </>
-          ) : (
-            "Sin responsable asignado todavía (rol Gestor de objetivos corporativos)."
-          )}
-        </p>
-        <p className="text-sm text-iib-secondary">
-          {cumplimiento
-            ? cumplimiento.estado === "EN_CURSO"
-              ? `Resultado final: ya se puede marcar Cumple o No cumple, hasta el ${formatearFecha(cumplimiento.fin)}.`
-              : cumplimiento.estado === "PROXIMA"
-                ? `Resultado final: se marca del ${formatearFecha(cumplimiento.inicio)} al ${formatearFecha(cumplimiento.fin)}.`
-                : `La franja del resultado final terminó el ${formatearFecha(cumplimiento.fin)}.`
-            : "Gestión Humana todavía no definió la franja del resultado final."}
-        </p>
-      </div>
+      <PageHeader
+        titulo="Indicadores de la empresa"
+        subtitulo={`Son ${tope} para toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un comentario y al final se marca si cumple o no cumple.`}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip tono="neutro" conSimbolo={false}>
+            Periodo {datos.periodo.nombre}
+          </Chip>
+          <Chip tono="info">
+            Mes en curso: <span className="capitalize">{etiquetaMes(mesActual)}</span>
+          </Chip>
+          <Chip tono="neutro" conSimbolo={false}>
+            {responsables.length > 0
+              ? `Responsable: ${responsables.join(", ")}`
+              : "Sin responsable asignado (rol Gestor de objetivos corporativos)"}
+          </Chip>
+        </div>
+      </PageHeader>
+
+      {puedeEditar && faltanPorCargar > 0 && (
+        <Callout
+          tono="aviso"
+          titulo={`Faltan ${pluralizar(faltanPorCargar, "indicador", "indicadores")} por cargar`}
+        >
+          Deben ser {tope}; el periodo no se puede cerrar con menos.
+        </Callout>
+      )}
+
+      {puedeEditar && sinAvanceEsteMes.length > 0 && (
+        <Callout
+          tono="aviso"
+          titulo={`Falta registrar el avance de ${etiquetaMes(mesActual)} en ${pluralizar(sinAvanceEsteMes.length, "indicador", "indicadores")}`}
+        >
+          {sinAvanceEsteMes
+            .slice(0, 5)
+            .map((i) => i.titulo)
+            .join(" · ")}
+          {sinAvanceEsteMes.length > 5 ? ` · y ${sinAvanceEsteMes.length - 5} más` : ""}
+        </Callout>
+      )}
+
+      {cumplimiento ? (
+        cumplimientoEnCurso ? (
+          <Callout tono="info" titulo="Ya se puede marcar el resultado final">
+            Marca Cumple o No cumple en cada indicador hasta el {formatearFecha(cumplimiento.fin)}.
+          </Callout>
+        ) : cumplimiento.estado === "PROXIMA" ? (
+          <Callout tono="info" titulo="El resultado final se marca más adelante">
+            Será del {formatearFecha(cumplimiento.inicio)} al {formatearFecha(cumplimiento.fin)}.
+          </Callout>
+        ) : (
+          <Callout tono="aviso" titulo="La franja del resultado final ya terminó">
+            Terminó el {formatearFecha(cumplimiento.fin)}.
+          </Callout>
+        )
+      ) : (
+        <Callout tono="aviso" titulo="Falta definir la franja del resultado final">
+          Gestión Humana todavía no la definió; sin ella no se puede marcar Cumple o No cumple.
+        </Callout>
+      )}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Resumen de indicadores">
         <TarjetaResumen etiqueta="Indicadores" valor={`${indicadores.length} de ${tope}`} />
@@ -78,42 +116,16 @@ export default async function IndicadoresPage() {
         <TarjetaResumen etiqueta="En seguimiento" valor={enSeguimiento} destacada />
       </section>
 
-      {puedeEditar && faltanPorCargar > 0 && (
-        <div className="rounded-md border-l-4 border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
-          <p className="font-semibold">
-            Faltan {faltanPorCargar} indicador{faltanPorCargar === 1 ? "" : "es"} por cargar
-          </p>
-          <p className="mt-0.5 text-warning/90">Deben ser {tope}; el periodo no se puede cerrar con menos.</p>
-        </div>
-      )}
-
-      {puedeEditar && sinAvanceEsteMes.length > 0 && (
-        <div className="rounded-md border-l-4 border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
-          <p className="font-semibold">
-            Faltan por registrar el avance de <span className="capitalize">{etiquetaMes(mesActual)}</span>
-          </p>
-          <p className="mt-0.5 text-warning/90">
-            {sinAvanceEsteMes
-              .slice(0, 5)
-              .map((i) => i.titulo)
-              .join(" · ")}
-            {sinAvanceEsteMes.length > 5 ? ` · y ${sinAvanceEsteMes.length - 5} más` : ""}
-          </p>
-        </div>
-      )}
-
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Seguimiento mes a mes</h2>
-          {puedeEditar && <span className="text-sm text-iib-secondary">Toca un mes para registrar su avance.</span>}
-        </div>
-
+      <Seccion
+        titulo="Seguimiento mes a mes"
+        descripcion={puedeEditar ? "Toca un mes para registrar o corregir su avance." : undefined}
+      >
         {indicadores.length === 0 ? (
-          <p className="text-sm text-iib-secondary">
+          <EstadoVacio titulo={puedeEditar ? "Todavía no hay indicadores" : "Todavía no se han cargado los indicadores"}>
             {puedeEditar
-              ? `Todavía no hay indicadores. Agrega los ${tope} para empezar el seguimiento.`
-              : "Todavía no se han cargado los indicadores del periodo."}
-          </p>
+              ? `Agrega los ${tope} indicadores de la empresa para empezar el seguimiento.`
+              : "Cuando se carguen, verás aquí su avance mes a mes."}
+          </EstadoVacio>
         ) : (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {indicadores.map((indicador) => (
@@ -131,7 +143,7 @@ export default async function IndicadoresPage() {
         )}
 
         {puedeEditar && faltanPorCargar > 0 && <AgregarIndicador accion={accionCrearIndicador} />}
-      </section>
+      </Seccion>
     </>
   );
 }

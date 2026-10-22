@@ -1,5 +1,6 @@
 "use client";
 
+import { Boton } from "@/components/ui/Boton";
 import { forwardRef, useId, useImperativeHandle, useRef, useState, useTransition } from "react";
 
 type Resultado = { ok: true } | { ok: false; error: string };
@@ -116,21 +117,12 @@ export const DialogoAvance = forwardRef<
         {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
         <div className="mt-1 flex justify-end gap-2.5">
-          <button
-            type="button"
-            onClick={() => dialogRef.current?.close()}
-            className="rounded-md border border-iib-border px-3.5 py-2 text-sm font-medium transition hover:bg-iib-surface-sunken"
-          >
+          <Boton variante="secundario" onClick={() => dialogRef.current?.close()}>
             Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={pending || porcentaje === "" || comentario.trim() === ""}
-            onClick={guardar}
-            className="rounded-md bg-iib-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          </Boton>
+          <Boton disabled={pending || porcentaje === "" || comentario.trim() === ""} onClick={guardar}>
             {pending ? "Guardando…" : corrigiendo ? "Guardar corrección" : "Guardar avance"}
-          </button>
+          </Boton>
         </div>
       </div>
     </dialog>

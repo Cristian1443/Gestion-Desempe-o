@@ -2,6 +2,8 @@
 // los de la gerencia (/mi-gerencia): hacen lo mismo y se ven igual; solo cambia
 // cómo se dibuja su seguimiento (12 meses vs. seguimientos con franja).
 
+import { Chip, type TonoChip } from "@/components/ui/Chip";
+
 export type EstadoIndicadorUI = "CUMPLE" | "NO_CUMPLE" | "EN_SEGUIMIENTO";
 
 const ETIQUETA_ESTADO: Record<EstadoIndicadorUI, string> = {
@@ -10,10 +12,10 @@ const ETIQUETA_ESTADO: Record<EstadoIndicadorUI, string> = {
   EN_SEGUIMIENTO: "En seguimiento",
 };
 
-const CLASES_ESTADO: Record<EstadoIndicadorUI, string> = {
-  CUMPLE: "bg-success text-white",
-  NO_CUMPLE: "bg-danger text-white",
-  EN_SEGUIMIENTO: "bg-iib-surface-sunken text-iib-secondary",
+const TONO_ESTADO: Record<EstadoIndicadorUI, TonoChip> = {
+  CUMPLE: "exito",
+  NO_CUMPLE: "peligro",
+  EN_SEGUIMIENTO: "info",
 };
 
 const CLASE_BARRA: Record<EstadoIndicadorUI, string> = {
@@ -24,8 +26,8 @@ const CLASE_BARRA: Record<EstadoIndicadorUI, string> = {
 
 export function TarjetaResumen({ etiqueta, valor, destacada = false }: { etiqueta: string; valor: number | string; destacada?: boolean }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-card bg-iib-surface px-4 py-3 shadow-card">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">{etiqueta}</p>
+    <div className="flex flex-col gap-0.5 rounded-card bg-iib-surface px-4 py-3.5 shadow-card">
+      <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">{etiqueta}</p>
       <p className={`text-2xl font-bold tabular-nums ${destacada ? "text-iib-primary" : "text-iib-foreground"}`}>{valor}</p>
     </div>
   );
@@ -51,9 +53,9 @@ export function CabeceraIndicador({
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="min-w-0 flex-1 text-balance text-base font-semibold leading-snug">{titulo}</h3>
-        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${CLASES_ESTADO[estado]}`}>
+        <Chip tono={TONO_ESTADO[estado]} className="shrink-0">
           {ETIQUETA_ESTADO[estado]}
-        </span>
+        </Chip>
       </div>
 
       <p className="-mt-2 text-sm leading-relaxed text-iib-secondary">{descripcion}</p>

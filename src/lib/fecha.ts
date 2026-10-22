@@ -12,3 +12,11 @@ export function formatearFecha(fecha: Date): string {
     timeZone: "UTC",
   }).format(fecha);
 }
+
+// "16 mar" — para etiquetas angostas (líneas de tiempo, chips). Misma regla de
+// zona horaria que formatearFecha.
+export function formatearFechaCorta(fecha: Date): string {
+  return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", timeZone: "UTC" })
+    .format(fecha)
+    .replace(".", "");
+}

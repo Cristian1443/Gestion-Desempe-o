@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Boton } from "@/components/ui/Boton";
 type Resultado = { ok: true } | { ok: false; error: string };
 import { FormularioIndicador, type DatosFormularioIndicador } from "./FormularioIndicador";
 
@@ -53,41 +54,24 @@ export function AccionesIndicador({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setEditando(true)}
-          className="rounded-md border border-iib-border px-2.5 py-1 text-xs font-medium transition hover:bg-iib-surface-sunken"
-        >
+        <Boton variante="secundario" tamano="sm" onClick={() => setEditando(true)}>
           Editar
-        </button>
+        </Boton>
         {puedeEliminar &&
           (confirmando ? (
             <>
               <span className="text-xs text-iib-secondary">¿Eliminar este indicador?</span>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={eliminar}
-                className="rounded-md border border-danger/40 px-2.5 py-1 text-xs font-semibold text-danger transition hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <Boton variante="peligro" tamano="sm" disabled={pending} onClick={eliminar}>
                 {pending ? "Eliminando…" : "Sí, eliminar"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmando(false)}
-                className="rounded-md border border-iib-border px-2.5 py-1 text-xs font-medium transition hover:bg-iib-surface-sunken"
-              >
+              </Boton>
+              <Boton variante="secundario" tamano="sm" onClick={() => setConfirmando(false)}>
                 No
-              </button>
+              </Boton>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmando(true)}
-              className="rounded-md border border-danger/40 px-2.5 py-1 text-xs font-medium text-danger transition hover:bg-danger-bg"
-            >
+            <Boton variante="peligro" tamano="sm" onClick={() => setConfirmando(true)}>
               Eliminar
-            </button>
+            </Boton>
           ))}
       </div>
       {error && <p className="text-xs font-medium text-danger">{error}</p>}

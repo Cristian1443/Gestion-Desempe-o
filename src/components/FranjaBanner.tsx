@@ -1,18 +1,7 @@
 import type { ReactNode } from "react";
 import { formatearFecha } from "@/lib/fecha";
-import { fechaISO, hoyEnBogota } from "@/lib/franja";
+import { diasHasta, textoDias } from "@/lib/franja";
 import type { ContextoFranjas } from "@/server/services/periodos.service";
-
-const MS_POR_DIA = 24 * 60 * 60 * 1000;
-
-function diasRestantes(fin: Date): number {
-  return Math.round((Date.parse(fechaISO(fin)) - Date.parse(hoyEnBogota())) / MS_POR_DIA);
-}
-
-function textoDias(dias: number): string {
-  if (dias <= 0) return "termina hoy";
-  return dias === 1 ? "queda 1 día" : `quedan ${dias} días`;
-}
 
 // Resume qué está en curso hoy: el seguimiento (o cuándo es el próximo) y la
 // franja del % de cumplimiento.
@@ -21,7 +10,7 @@ export function FranjaItems({ franjas }: { franjas: ContextoFranjas }) {
   const items: Array<{ clave: string; urgente?: boolean; contenido: ReactNode }> = [];
 
   if (seguimientoEnCurso) {
-    const dias = diasRestantes(seguimientoEnCurso.fechaFin);
+    const dias = diasHasta(seguimientoEnCurso.fechaFin);
     items.push({
       clave: "seguimiento",
       urgente: dias <= 3,
@@ -48,7 +37,7 @@ export function FranjaItems({ franjas }: { franjas: ContextoFranjas }) {
 
   if (cumplimiento) {
     if (cumplimiento.estado === "EN_CURSO") {
-      const dias = diasRestantes(cumplimiento.fin);
+      const dias = diasHasta(cumplimiento.fin);
       items.push({
         clave: "cumplimiento",
         urgente: dias <= 3,

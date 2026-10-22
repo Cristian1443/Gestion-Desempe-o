@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { LINEAS_ESTRATEGICAS, CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
 import {
   CANTIDAD_OBJETIVOS_DESARROLLO,
@@ -423,14 +424,16 @@ export function ProponerObjetivosForm({
 
       {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
-      <button
-        type="button"
-        onClick={enviar}
-        disabled={pending || !puedeEnviar}
-        className="self-end rounded-md bg-iib-primary px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {pending ? "Enviando…" : "Enviar a mi jefe"}
-      </button>
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        {!puedeEnviar && (
+          <p className="text-sm text-warning">
+            Los pesos de desempeño deben sumar {PESO_TOTAL_DESEMPENO} para poder enviar (hoy suman {sumaDesempeno}).
+          </p>
+        )}
+        <Boton onClick={enviar} disabled={pending || !puedeEnviar}>
+          {pending ? "Enviando…" : "Enviar a mi jefe"}
+        </Boton>
+      </div>
     </div>
   );
 }
