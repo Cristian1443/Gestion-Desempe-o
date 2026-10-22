@@ -1,7 +1,154 @@
+import Link from "next/link";
 import { cumpleCalificacion } from "@/lib/calificacion";
 import { formatearFecha as formatearFechaBase } from "@/lib/fecha";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
 import type { ObjetivoVista, SeguimientoVista } from "@/server/services/objetivos.service";
+
+const COLORES_CATEGORIA = {
+  corporativo: {
+    texto: "text-emerald-700",
+    borde: "border-emerald-700",
+    iconoBg: "bg-emerald-50",
+    iconoTexto: "text-emerald-700",
+  },
+  gerencia: {
+    texto: "text-amber-700",
+    borde: "border-amber-700",
+    iconoBg: "bg-amber-50",
+    iconoTexto: "text-amber-700",
+  },
+  desempeno: {
+    texto: "text-iib-primary",
+    borde: "border-iib-primary",
+    iconoBg: "bg-iib-primary/10",
+    iconoTexto: "text-iib-primary",
+  },
+  desarrollo: {
+    texto: "text-blue-700",
+    borde: "border-blue-700",
+    iconoBg: "bg-blue-50",
+    iconoTexto: "text-blue-700",
+  },
+} as const;
+
+function IconoCategoria({ categoria, className }: { categoria: keyof typeof COLORES_CATEGORIA; className?: string }) {
+  const props = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (categoria) {
+    case "corporativo":
+      return (
+        <svg {...props}>
+          <path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16" />
+          <path d="M14 21v-9h5a1 1 0 0 1 1 1v8" />
+          <path d="M8 8h.01M11 8h.01M8 11h.01M11 11h.01M8 14h.01M11 14h.01" />
+        </svg>
+      );
+    case "gerencia":
+      return (
+        <svg {...props}>
+          <rect x="3" y="7.5" width="18" height="12" rx="1.5" />
+          <path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5" />
+          <path d="M3 12.5h18" />
+        </svg>
+      );
+    case "desempeno":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="4.5" />
+          <circle cx="12" cy="12" r="0.75" fill="currentColor" />
+        </svg>
+      );
+    case "desarrollo":
+      return (
+        <svg {...props}>
+          <path d="M4 20 10 12l4 3 6-8" />
+          <path d="M15 6h5v5" />
+        </svg>
+      );
+  }
+}
+
+export function TarjetaCategoria({
+  categoria,
+  titulo,
+  resumen,
+  detalle,
+  href,
+  deshabilitada = false,
+}: {
+  categoria: keyof typeof COLORES_CATEGORIA;
+  titulo: string;
+  resumen: string;
+  detalle?: string;
+  // A dónde lleva la tarjeta; por omisión, al detalle de la categoría.
+  href?: string;
+  deshabilitada?: boolean;
+}) {
+  const color = COLORES_CATEGORIA[categoria];
+
+  const contenido = (
+    <article
+      className={`group flex h-full flex-col gap-4 rounded-card border-t-4 bg-iib-surface p-6 shadow-card transition ${color.borde} ${
+        deshabilitada ? "opacity-60" : "hover:-translate-y-0.5 hover:shadow-lg"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${color.iconoBg} ${color.iconoTexto}`}>
+          <IconoCategoria categoria={categoria} className="h-6 w-6" />
+        </div>
+        {!deshabilitada && (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4 shrink-0 text-iib-secondary/50 transition group-hover:translate-x-0.5 group-hover:text-iib-secondary"
+            aria-hidden
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={`text-[0.7rem] font-bold uppercase tracking-wide ${color.texto}`}>{titulo}</span>
+        <p className="text-sm font-semibold text-iib-foreground">{resumen}</p>
+        {detalle && <p className="text-xs text-iib-secondary">{detalle}</p>}
+      </div>
+    </article>
+  );
+
+  if (deshabilitada) return contenido;
+
+  return (
+    <Link href={href ?? `/mis-objetivos?categoria=${categoria}`} className="block h-full">
+      {contenido}
+    </Link>
+  );
+}
+
+export function VolverASelectorLink() {
+  return (
+    <Link
+      href="/mis-objetivos"
+      className="flex w-fit items-center gap-1.5 text-sm font-semibold text-iib-primary hover:underline"
+    >
+      ← Volver a mis objetivos
+    </Link>
+  );
+}
 
 function clasificacion(objetivo: ObjetivoVista): {
   tipoTexto: string;

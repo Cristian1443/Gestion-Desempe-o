@@ -19,8 +19,6 @@ const config: Config = {
         success: { DEFAULT: "#3F8F5F", bg: "#E8F3EC" },
         warning: { DEFAULT: "#C67C1E", bg: "#FAF0DD" },
         danger: { DEFAULT: "#A6291D", bg: "#F7E7E5" },
-        // Información neutral (no es alerta ni éxito): avisos de contexto y "en curso".
-        info: { DEFAULT: "#2F5D8C", bg: "#E8EFF7" },
       },
       fontFamily: {
         sans: [

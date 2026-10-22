@@ -1,29 +1,32 @@
-import { FranjaBanner } from "@/components/FranjaBanner";
-import { BotonLink } from "@/components/ui/Boton";
-import { Callout } from "@/components/ui/Callout";
-import { EstadoVacio } from "@/components/ui/EstadoVacio";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Seccion } from "@/components/ui/Seccion";
-import { Tarjeta } from "@/components/ui/Tarjeta";
-import { formatearFecha } from "@/lib/fecha";
-import { pluralizar } from "@/lib/pendientes";
+import { FranjaItems } from "@/components/FranjaBanner";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
-import { ObjetivoIndividualCard, ObjetivoSoloLecturaCard } from "./components";
+import {
+  ObjetivoIndividualCard,
+  ObjetivoSoloLecturaCard,
+  TarjetaCategoria,
+  VolverASelectorLink,
+} from "./components";
 import { ProponerObjetivosForm } from "./ProponerObjetivosForm";
 
-export default async function MisObjetivosPage() {
+type Categoria = "gerencia" | "desempeno" | "desarrollo";
+
+export default async function MisObjetivosPage({
+  searchParams,
+}: {
+  searchParams: { categoria?: string };
+}) {
   const usuario = await requireUsuarioAutenticado();
   const datos = await obtenerMisObjetivos(usuario.usuarioId);
 
   if (!datos) {
     return (
-      <>
-        <PageHeader titulo="Mis objetivos" />
-        <EstadoVacio titulo="No hay un periodo de evaluación abierto">
-          Cuando Gestión Humana abra el periodo, tus objetivos aparecerán aquí.
-        </EstadoVacio>
-      </>
+      <div className="rounded-card bg-iib-surface p-6 text-center shadow-card">
+        <p className="text-sm text-iib-secondary">
+          No hay un periodo de evaluación abierto en este momento. Cuando Gestión
+          Humana abra el periodo, tus objetivos aparecerán aquí.
+        </p>
+      </div>
     );
   }
 
@@ -31,141 +34,193 @@ export default async function MisObjetivosPage() {
 
   const desempeno = individuales.filter((o) => o.tipoIndividual === "DESEMPENO");
   const desarrollo = individuales.filter((o) => o.tipoIndividual === "DESARROLLO");
-  const devueltos = individuales.filter((o) => o.estadoAprobacion === "DEVUELTO");
-  const porAprobar = individuales.filter((o) => o.estadoAprobacion === "PENDIENTE_APROBACION");
   // El conjunto de individuales se propone/corrige de una sola vez (desempeño +
-  // desarrollo juntos, ver ProponerObjetivosForm): mientras no haya ninguno, o
-  // todos estén devueltos, se muestra el formulario combinado en vez de las
-  // tarjetas por categoría.
-  const individualesSinResolver = individuales.length === 0 || individuales.every((o) => o.estadoAprobacion === "DEVUELTO");
-  const todosAprobados = individuales.length > 0 && individuales.every((o) => o.estadoAprobacion === "APROBADO");
+  // desarrollo juntos, ver ProponerObjetivosForm) — mientras eso no exista
+  // todavía, no tiene sentido separar sus tarjetas en el selector: cualquiera
+  // de las dos lleva al mismo formulario combinado.
+  const individualesSinResolver =
+    individuales.length === 0 || individuales.every((o) => o.estadoAprobacion === "DEVUELTO");
 
-  const cumplimiento = franjas.cumplimiento;
+  const categoria = (
+    ["gerencia", "desempeno", "desarrollo"] as Categoria[]
+  ).includes(searchParams.categoria as Categoria)
+    ? (searchParams.categoria as Categoria)
+    : undefined;
 
   return (
     <>
-      <PageHeader
-        titulo="Mis objetivos"
-        subtitulo={
-          <>
-            {gerencia.nombreGerencia && (
-              <>
-                Gerencia <strong className="font-semibold text-iib-foreground">{gerencia.nombreGerencia}</strong>
-              </>
-            )}
-            {gerencia.nombreGerencia && nombreJefe && " · "}
-            {nombreJefe && (
-              <>
+      <div className="flex flex-col gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-iib-foreground">Mis objetivos</h1>
+          <p className="mt-1 text-sm text-iib-secondary">
+            Consulta y propone tus objetivos del periodo, organizados por categoría.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-full border border-iib-border bg-iib-surface px-5 py-2.5 text-xs text-iib-secondary shadow-card">
+          <span>
+            Periodo <strong className="font-semibold text-iib-foreground">{periodo.nombre}</strong>
+            {" · "}
+            {periodo.estado === "ABIERTO" ? "Abierto" : periodo.estado}
+          </span>
+
+          <FranjaItems franjas={franjas} />
+
+          {gerencia.nombreGerencia && (
+            <>
+              <span className="h-3 w-px bg-iib-border" aria-hidden />
+              <span>
+                Gerencia{" "}
+                <strong className="font-semibold text-iib-foreground">{gerencia.nombreGerencia}</strong>
+              </span>
+            </>
+          )}
+
+          {nombreJefe && (
+            <>
+              <span className="h-3 w-px bg-iib-border" aria-hidden />
+              <span>
                 Jefe <strong className="font-semibold text-iib-foreground">{nombreJefe}</strong>
-              </>
-            )}
-          </>
-        }
-      >
-        <FranjaBanner periodo={periodo.nombre} franjas={franjas} />
-      </PageHeader>
+              </span>
+            </>
+          )}
+        </div>
+      </div>
 
-      {/* El siguiente paso, según en qué punto estás. */}
-      {individuales.length === 0 ? (
-        <Callout tono="aviso" titulo="Propón tus objetivos del periodo" accion={{ href: "#proponer", etiqueta: "Ir al formulario" }}>
-          Son 4 de desempeño y 2 de desarrollo. Tu jefe los revisa y los aprueba; hasta entonces no se les puede hacer
-          seguimiento.
-        </Callout>
-      ) : devueltos.length > 0 ? (
-        <Callout tono="urgente" titulo={`Tu jefe devolvió ${pluralizar(devueltos.length, "objetivo", "objetivos")}`} accion={{ href: "#proponer", etiqueta: "Corregir" }}>
-          Revisa sus comentarios, ajusta y vuelve a enviar el conjunto completo.
-        </Callout>
-      ) : porAprobar.length > 0 ? (
-        <Callout tono="info" titulo="Tus objetivos esperan la aprobación de tu jefe">
-          {nombreJefe ? `${nombreJefe} los está revisando.` : "Tu jefe los está revisando."} Te avisamos aquí cuando estén
-          aprobados.
-        </Callout>
-      ) : todosAprobados ? (
-        <Callout tono="exito" titulo="Tus objetivos están aprobados">
-          {franjas.seguimientoEnCurso
-            ? `Tu jefe registra el seguimiento ${franjas.seguimientoEnCurso.numero} hasta el ${formatearFecha(franjas.seguimientoEnCurso.fechaFin)}.`
-            : cumplimiento?.estado === "EN_CURSO"
-              ? `Tu jefe está poniendo tu % de cumplimiento hasta el ${formatearFecha(cumplimiento.fin)}.`
-              : "Tu jefe les hará seguimiento en cada etapa del periodo."}
-        </Callout>
-      ) : null}
+      {!categoria ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <TarjetaCategoria
+            categoria="corporativo"
+            titulo="Indicadores"
+            href="/indicadores"
+            resumen={
+              indicadoresTotal === 0
+                ? "Aún no cargados"
+                : `${indicadoresTotal} indicador${indicadoresTotal === 1 ? "" : "es"}`
+            }
+            detalle="Aplican a toda la Corporación · cumple o no cumple"
+          />
+          {gerencia.nombreGerencia ? (
+            <TarjetaCategoria
+              categoria="gerencia"
+              titulo="Gerencia"
+              resumen={
+                gerencia.objetivos.length === 0
+                  ? "Aún no cargados"
+                  : `${gerencia.objetivos.length} indicadores · cumple o no cumple`
+              }
+              detalle={gerencia.nombreGerencia}
+            />
+          ) : null}
+          <TarjetaCategoria
+            categoria="desempeno"
+            titulo="Desempeño"
+            resumen={
+              individualesSinResolver
+                ? individuales.length === 0
+                  ? "Aún no propuestos"
+                  : "Devueltos por tu jefe"
+                : `${desempeno.length} objetivos · 40% de la nota`
+            }
+            detalle="Van contra una línea estratégica"
+          />
+          <TarjetaCategoria
+            categoria="desarrollo"
+            titulo="Desarrollo"
+            resumen={
+              individualesSinResolver
+                ? individuales.length === 0
+                  ? "Aún no propuestos"
+                  : "Devueltos por tu jefe"
+                : `${desarrollo.length} objetivos · sin peso`
+            }
+            detalle="Van contra una competencia a fortalecer"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <VolverASelectorLink />
 
-      {individualesSinResolver ? (
-        <section id="proponer" className="scroll-mt-32">
-          <Seccion
-            titulo="Mis objetivos individuales"
-            descripcion="Se proponen juntos: 4 de desempeño (40 % de la nota) y 2 de desarrollo (sin peso)."
-          >
-            {individuales.length === 0 ? (
-              <ProponerObjetivosForm />
-            ) : (
-              <>
+          {categoria === "gerencia" && gerencia.nombreGerencia && (
+            <section className="flex flex-col gap-4" aria-labelledby="nivel-gerencia">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 id="nivel-gerencia" className="text-base font-bold">
+                    Indicadores de la gerencia
+                  </h2>
+                </div>
+                <span className="rounded-full border border-iib-border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
+                  Solo lectura
+                </span>
+              </div>
+              <p className="-mt-2.5 text-sm text-iib-secondary">
+                Aplican a todo el equipo de {gerencia.nombreGerencia}.
+              </p>
+
+              {gerencia.objetivos.length === 0 ? (
+                <p className="text-sm text-iib-secondary">
+                  El gerente aún no ha cargado los indicadores de tu gerencia para este periodo.
+                </p>
+              ) : (
                 <div className="flex flex-col gap-4">
-                  {individuales.map((objetivo, indice) => (
+                  {gerencia.objetivos.map((objetivo, indice) => (
+                    <ObjetivoSoloLecturaCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {(categoria === "desempeno" || categoria === "desarrollo") && (
+            <section
+              className="flex flex-col gap-4"
+              aria-labelledby={`nivel-${categoria}`}
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 id={`nivel-${categoria}`} className="text-base font-bold">
+                    {categoria === "desempeno" ? "Objetivos de desempeño" : "Objetivos de desarrollo"}
+                  </h2>
+                  <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
+                    {categoria === "desempeno" ? "40% de la nota final" : "Sin peso"}
+                  </span>
+                </div>
+                <span className="text-sm text-iib-secondary">
+                  {individualesSinResolver
+                    ? "Se proponen junto con los de la otra categoría individual"
+                    : `${(categoria === "desempeno" ? desempeno : desarrollo).length} objetivo${
+                        (categoria === "desempeno" ? desempeno : desarrollo).length === 1 ? "" : "s"
+                      }`}
+                </span>
+              </div>
+
+              {individualesSinResolver ? (
+                individuales.length === 0 ? (
+                  <ProponerObjetivosForm />
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-4">
+                      {individuales.map((objetivo, indice) => (
+                        <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
+                      ))}
+                    </div>
+                    <p className="text-sm font-medium text-iib-foreground">
+                      Tu jefe devolvió tu propuesta. Ajusta y vuelve a enviar el conjunto completo:
+                    </p>
+                    <ProponerObjetivosForm objetivosPrevios={individuales} />
+                  </>
+                )
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {(categoria === "desempeno" ? desempeno : desarrollo).map((objetivo, indice) => (
                     <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
                   ))}
                 </div>
-                <p className="text-sm font-medium text-iib-foreground">
-                  Ajusta tu propuesta y vuelve a enviar el conjunto completo:
-                </p>
-                <ProponerObjetivosForm objetivosPrevios={individuales} />
-              </>
-            )}
-          </Seccion>
-        </section>
-      ) : (
-        <>
-          <Seccion titulo="Desempeño" contador={pluralizar(desempeno.length, "objetivo", "objetivos")} descripcion="Van contra una línea estratégica · 40 % de la nota final.">
-            <div className="flex flex-col gap-4">
-              {desempeno.map((objetivo, indice) => (
-                <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
-              ))}
-            </div>
-          </Seccion>
-
-          <Seccion titulo="Desarrollo" contador={pluralizar(desarrollo.length, "objetivo", "objetivos")} descripcion="Van contra una competencia a fortalecer · sin peso.">
-            <div className="flex flex-col gap-4">
-              {desarrollo.map((objetivo, indice) => (
-                <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
-              ))}
-            </div>
-          </Seccion>
-        </>
-      )}
-
-      {gerencia.nombreGerencia && (
-        <Seccion
-          titulo="Indicadores de mi gerencia"
-          contador="Solo lectura"
-          descripcion={`Aplican a todo el equipo de ${gerencia.nombreGerencia}. Los carga y les hace seguimiento tu gerente.`}
-        >
-          {gerencia.objetivos.length === 0 ? (
-            <EstadoVacio titulo="Tu gerente todavía no los ha cargado">
-              Cuando los cargue, los verás aquí con su avance en cada seguimiento.
-            </EstadoVacio>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {gerencia.objetivos.map((objetivo, indice) => (
-                <ObjetivoSoloLecturaCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
-              ))}
-            </div>
+              )}
+            </section>
           )}
-        </Seccion>
-      )}
-
-      <Tarjeta className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0">
-          <h2 className="text-base font-bold text-iib-foreground">Indicadores de la empresa</h2>
-          <p className="mt-0.5 text-sm text-iib-secondary">
-            {indicadoresTotal === 0
-              ? "Todavía no se han cargado."
-              : `${pluralizar(indicadoresTotal, "indicador", "indicadores")} para toda la Corporación · cumple o no cumple.`}
-          </p>
         </div>
-        <BotonLink href="/indicadores" variante="secundario">
-          Ver indicadores
-        </BotonLink>
-      </Tarjeta>
+      )}
     </>
   );
 }

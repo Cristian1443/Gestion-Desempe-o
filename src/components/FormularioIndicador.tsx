@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
 
 export interface DatosFormularioIndicador {
   titulo: string;
@@ -94,12 +93,21 @@ export function FormularioIndicador({
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
 
       <div className="flex justify-end gap-2">
-        <Boton variante="secundario" onClick={onCancelar}>
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="rounded-md border border-iib-border px-3 py-1.5 text-sm font-medium transition hover:bg-iib-surface-sunken"
+        >
           Cancelar
-        </Boton>
-        <Boton disabled={pending || !completo} onClick={enviar}>
+        </button>
+        <button
+          type="button"
+          disabled={pending || !completo}
+          onClick={enviar}
+          className="rounded-md bg-iib-primary px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
           {pending ? "Guardando…" : etiquetaGuardar}
-        </Boton>
+        </button>
       </div>
     </div>
   );

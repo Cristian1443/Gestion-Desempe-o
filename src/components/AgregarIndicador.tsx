@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Boton } from "@/components/ui/Boton";
 import { FormularioIndicador, type DatosFormularioIndicador } from "./FormularioIndicador";
 
 type Resultado = { ok: true } | { ok: false; error: string };
@@ -18,7 +17,13 @@ export function AgregarIndicador({
   if (!abierto) {
     return (
       <div>
-        <Boton onClick={() => setAbierto(true)}>Agregar indicador</Boton>
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          className="rounded-md bg-iib-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover"
+        >
+          Agregar indicador
+        </button>
       </div>
     );
   }

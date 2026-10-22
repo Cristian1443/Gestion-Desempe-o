@@ -1,23 +1,6 @@
 import Image from "next/image";
 import { signIn } from "@/auth";
-import { Callout } from "@/components/ui/Callout";
-import { claseBoton } from "@/components/ui/Boton";
 import { db } from "@/server/db";
-
-// Auth.js manda al login con ?error=<código> cuando algo falla. Se traduce a algo
-// que la persona pueda entender y le diga qué hacer.
-function mensajeDeError(codigo: string): { titulo: string; detalle: string } {
-  if (codigo === "AccessDenied") {
-    return {
-      titulo: "Tu cuenta no está habilitada",
-      detalle: "Tu cuenta de Microsoft es válida, pero no está registrada en el sistema. Escribe a Gestión Humana para que te den acceso.",
-    };
-  }
-  return {
-    titulo: "No pudimos iniciar tu sesión",
-    detalle: "Inténtalo de nuevo. Si vuelve a pasar, escribe a Gestión Humana.",
-  };
-}
 
 function IconoMicrosoft() {
   return (
@@ -33,10 +16,9 @@ function IconoMicrosoft() {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
+  searchParams: Promise<{ callbackUrl?: string }>;
 }) {
-  const { callbackUrl, error } = await searchParams;
-  const fallo = error ? mensajeDeError(error) : null;
+  const { callbackUrl } = await searchParams;
   const esDesarrollo = process.env.NODE_ENV !== "production";
 
   const usuariosDePrueba = esDesarrollo
@@ -89,18 +71,10 @@ export default async function LoginPage({
               Invest in Bogotá
             </span>
 
-            <h1 className="text-balance text-3xl font-bold tracking-tight text-iib-foreground">Bienvenido</h1>
-            <p className="mt-2 text-sm leading-relaxed text-iib-secondary">
-              Ingresa con tu cuenta corporativa de Invest in Bogotá para ver qué tienes pendiente.
+            <h1 className="text-2xl font-bold text-iib-foreground">Iniciar sesión</h1>
+            <p className="mt-2 text-sm text-iib-secondary">
+              Ingresa con tu cuenta corporativa para continuar.
             </p>
-
-            {fallo && (
-              <div className="mt-6">
-                <Callout tono="urgente" titulo={fallo.titulo}>
-                  {fallo.detalle}
-                </Callout>
-              </div>
-            )}
 
             <form
               action={async () => {
@@ -113,18 +87,12 @@ export default async function LoginPage({
             >
               <button
                 type="submit"
-                className={`${claseBoton("primario", "md")} w-full`}
+                className="flex w-full items-center justify-center gap-2.5 rounded-md bg-iib-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-iib-primary-hover"
               >
                 <IconoMicrosoft />
                 Iniciar sesión con Microsoft
               </button>
             </form>
-
-            <ul className="mt-8 flex flex-col gap-2.5 border-t border-iib-border pt-6 text-sm text-iib-secondary">
-              <li>Propón y aprueba objetivos.</li>
-              <li>Registra el seguimiento en cada etapa del periodo.</li>
-              <li>Consulta tu avance y tus resultados.</li>
-            </ul>
 
             {esDesarrollo && (
               <div className="mt-8 rounded-md border border-dashed border-iib-border p-5 text-left">

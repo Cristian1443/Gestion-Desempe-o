@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Boton } from "@/components/ui/Boton";
-
 type Resultado = { ok: true } | { ok: false; error: string };
 
 // Resultado final del indicador (de la empresa o de gerencia). Quien edita lo
@@ -32,26 +30,30 @@ export function CumplimientoControl({
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-iib-secondary">Resultado final</span>
-        <Boton
-          variante="secundario"
-          tamano="sm"
+        <button
+          type="button"
           disabled={pending}
           onClick={() => marcar(true)}
-          aria-pressed={cumplido === true}
-          className={cumplido === true ? "!border-success !bg-success !text-white" : ""}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            cumplido === true
+              ? "bg-success text-white"
+              : "border border-iib-border text-iib-foreground hover:bg-iib-surface-sunken"
+          }`}
         >
           Cumple
-        </Boton>
-        <Boton
-          variante="secundario"
-          tamano="sm"
+        </button>
+        <button
+          type="button"
           disabled={pending}
           onClick={() => marcar(false)}
-          aria-pressed={cumplido === false}
-          className={cumplido === false ? "!border-danger !bg-danger !text-white" : ""}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            cumplido === false
+              ? "bg-danger text-white"
+              : "border border-iib-border text-iib-foreground hover:bg-iib-surface-sunken"
+          }`}
         >
           No cumple
-        </Boton>
+        </button>
       </div>
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
     </div>

@@ -26,19 +26,6 @@ export function estadoFranja(inicio: Date, fin: Date, hoy: string): EstadoFranja
   return "EN_CURSO";
 }
 
-const MS_POR_DIA = 24 * 60 * 60 * 1000;
-
-// Días de calendario que faltan para una fecha (0 = hoy, negativo = ya pasó).
-export function diasHasta(fecha: Date, hoy: string = hoyEnBogota()): number {
-  return Math.round((Date.parse(fechaISO(fecha)) - Date.parse(hoy)) / MS_POR_DIA);
-}
-
-// "termina hoy", "queda 1 día", "quedan 12 días" — para el fin de una franja.
-export function textoDias(dias: number): string {
-  if (dias <= 0) return "termina hoy";
-  return dias === 1 ? "queda 1 día" : `quedan ${dias} días`;
-}
-
 export interface RangoFechas {
   inicio: Date;
   fin: Date;
