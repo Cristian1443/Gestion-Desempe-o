@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { errorDeFranjas, estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
+import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { CANTIDAD_OBJETIVOS_CORPORATIVOS, CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
 
 // El periodo "actual" es el ABIERTO. Solo debería haber uno a la vez en la
@@ -34,7 +35,7 @@ export interface ContextoFranjas {
   // Contra cuál se mide la cobertura en pantalla: el que está en curso o, si no
   // hay, el último que ya empezó.
   seguimientoReferencia: SeguimientoVista | null;
-  // Franja del % de cumplimiento final. Null mientras Gestión Humana no la defina.
+  // Franja del resultado final. Null mientras Gestión Humana no la defina.
   cumplimiento: { inicio: Date; fin: Date; estado: EstadoFranja } | null;
 }
 
@@ -210,7 +211,7 @@ export async function eliminarSeguimiento(seguimientoId: string) {
   await db.seguimiento.delete({ where: { id: seguimientoId } });
 }
 
-// Franja del % de cumplimiento final. Puede terminar después del periodo, pero
+// Franja del resultado final. Puede terminar después del periodo, pero
 // debe empezar cuando ya terminó el último seguimiento.
 export async function definirFranjaCumplimiento(input: { periodoId: string; fechaInicio: Date; fechaFin: Date }) {
   const periodo = await cargarPeriodoConFranjas(input.periodoId);
@@ -238,7 +239,7 @@ export async function abrirPeriodo(periodoId: string) {
     throw new ErrorPeriodo("Define al menos un seguimiento antes de abrir el periodo.");
   }
   if (!periodo.cumplimientoInicio || !periodo.cumplimientoFin) {
-    throw new ErrorPeriodo("Define la franja del % de cumplimiento final antes de abrir el periodo.");
+    throw new ErrorPeriodo("Define la franja del resultado final antes de abrir el periodo.");
   }
 
   const otroActivo = await db.periodo.findFirst({
@@ -256,8 +257,8 @@ export async function abrirPeriodo(periodoId: string) {
 // No se cierra un periodo con evaluaciones a medias: todo objetivo debe tener su
 // resultado. Un objetivo DESARROLLO se considera calificado por
 // `cumplioDesarrollo` (sí/no); un indicador (de la empresa o de gerencia) por
-// `cumplido` (Cumple / No cumple); el resto (DESEMPEÑO) por su % de
-// cumplimiento (`calificacionFinal`). Además tienen que estar cargados todos los
+// `cumplido` (Cumple / No cumple), igual que los objetivos de desempeño (los de
+// desarrollo no cuentan mientras estén desactivados). Además tienen que estar cargados todos los
 // indicadores: 8 de la empresa y 2 por cada gerencia con gerente.
 export async function cerrarPeriodo(periodoId: string) {
   const periodo = await db.periodo.findUnique({ where: { id: periodoId } });
@@ -270,7 +271,7 @@ export async function cerrarPeriodo(periodoId: string) {
 
   const [objetivos, gerencias] = await Promise.all([
     db.objetivo.findMany({
-      where: { periodoId },
+      where: { periodoId, ...FILTRO_OBJETIVOS_ACTIVOS },
       select: {
         nivel: true,
         gerenciaId: true,
@@ -299,8 +300,8 @@ export async function cerrarPeriodo(periodoId: string) {
   }
 
   const sinCalificar = objetivos.filter((o) => {
-    if (o.nivel === "CORPORATIVO" || o.nivel === "GERENCIA") return o.cumplido === null;
-    return o.tipoIndividual === "DESARROLLO" ? o.cumplioDesarrollo === null : o.calificacionFinal === null;
+    if (o.nivel === "INDIVIDUAL" && o.tipoIndividual === "DESARROLLO") return o.cumplioDesarrollo === null;
+    return o.cumplido === null;
   });
   if (sinCalificar.length > 0) {
     const porNivel = sinCalificar.reduce<Record<string, number>>((acumulado, o) => {

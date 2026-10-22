@@ -1,4 +1,5 @@
 import type { EstadoAprobacionObjetivo } from "@prisma/client";
+import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { db } from "@/server/db";
 import {
   obtenerContextoFranjas,
@@ -33,6 +34,8 @@ export interface ObjetivoEquipoVista {
   // calculo-notas.ts — DESARROLLO no tiene nota, solo cumplimiento).
   calificacionFinal: number | null;
   cumplioDesarrollo: boolean | null;
+  // Resultado final Cumple / No cumple (objetivos de desempeño).
+  cumplido: boolean | null;
 }
 
 export interface ColaboradorEquipo {
@@ -77,7 +80,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
   const vistas = await Promise.all(
     colaboradores.map(async (colaborador): Promise<ColaboradorEquipo> => {
       const objetivos = await db.objetivo.findMany({
-        where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id },
+        where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id, ...FILTRO_OBJETIVOS_ACTIVOS },
         include: {
           seguimientos: {
             orderBy: [{ seguimientoId: "asc" }, { version: "desc" }],
@@ -112,6 +115,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
             .sort((a, b) => a.numero - b.numero),
           calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
           cumplioDesarrollo: o.cumplioDesarrollo,
+          cumplido: o.cumplido,
         })),
       };
     }),

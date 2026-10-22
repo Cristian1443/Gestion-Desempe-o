@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
-import { CANTIDAD_OBJETIVOS_DESARROLLO, CANTIDAD_OBJETIVOS_DESEMPENO, PESO_TOTAL_DESEMPENO } from "@/server/services/calculo-notas";
+import { CANTIDAD_DESARROLLO_ACTIVA } from "@/lib/objetivos-config";
+import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 
 const camposComunesObjetivoIndividual = {
   descripcion: z.string().min(1, "La descripción es obligatoria.").max(2000),
@@ -17,10 +18,6 @@ const camposComunesObjetivoIndividual = {
 export const objetivoDesempenoSchema = z.object({
   ...camposComunesObjetivoIndividual,
   tipoIndividual: z.literal("DESEMPENO"),
-  peso: z
-    .number({ invalid_type_error: "El peso debe ser un número." })
-    .min(0.01, "El peso debe ser mayor a 0.")
-    .max(100, "El peso no puede ser mayor a 100."),
   lineaEstrategica: z.enum(CODIGOS_LINEA_ESTRATEGICA, {
     errorMap: () => ({ message: "Selecciona una línea estratégica." }),
   }),
@@ -47,15 +44,11 @@ export const proponerObjetivosSchema = z.object({
       `Debes proponer exactamente ${CANTIDAD_OBJETIVOS_DESEMPENO} objetivos de desempeño.`,
     )
     .refine(
-      (objetivos) => objetivos.filter((o) => o.tipoIndividual === "DESARROLLO").length === CANTIDAD_OBJETIVOS_DESARROLLO,
-      `Debes proponer exactamente ${CANTIDAD_OBJETIVOS_DESARROLLO} objetivos de desarrollo.`,
-    )
-    .refine((objetivos) => {
-      const suma = objetivos
-        .filter((o) => o.tipoIndividual === "DESEMPENO")
-        .reduce((acc, o) => acc + Math.round(o.peso * 100), 0);
-      return suma === Math.round(PESO_TOTAL_DESEMPENO * 100);
-    }, `La suma de pesos de los objetivos de desempeño debe ser ${PESO_TOTAL_DESEMPENO}.`),
+      (objetivos) => objetivos.filter((o) => o.tipoIndividual === "DESARROLLO").length === CANTIDAD_DESARROLLO_ACTIVA,
+      CANTIDAD_DESARROLLO_ACTIVA === 0
+        ? "Los objetivos de desarrollo no se manejan este año."
+        : `Debes proponer exactamente ${CANTIDAD_DESARROLLO_ACTIVA} objetivos de desarrollo.`,
+    ),
 });
 
 export const aprobarObjetivosSchema = z.object({

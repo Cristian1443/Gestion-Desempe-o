@@ -3,7 +3,7 @@
 import { accionDefinirFranjaCumplimiento } from "./actions";
 import { FranjaFechasForm } from "./FranjaFechasForm";
 
-// Franja en la que se pone el % de cumplimiento final de cada objetivo.
+// Franja en la que se pone el resultado final de cada objetivo.
 export function FranjaCumplimientoForm({
   periodoId,
   inicio,

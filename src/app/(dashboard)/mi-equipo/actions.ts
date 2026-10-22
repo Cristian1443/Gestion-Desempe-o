@@ -105,13 +105,11 @@ export async function accionRegistrarSeguimiento(
   return { ok: true };
 }
 
-export async function accionCalificarDesempeno(
-  objetivoId: string,
-  calificacionFinal: number,
-): Promise<EstadoAccionEquipo> {
+// Resultado final de un objetivo de desempeño: Cumple / No cumple.
+export async function accionCalificarDesempeno(objetivoId: string, cumple: boolean): Promise<EstadoAccionEquipo> {
   const jefe = await requireRol("JEFE");
 
-  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, calificacionFinal });
+  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, cumple });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
@@ -120,7 +118,7 @@ export async function accionCalificarDesempeno(
     await calificarObjetivoDesempeno({ ...parsed.data, jefeId: jefe.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el resultado." };
   }
 
   revalidarVistas();
@@ -142,7 +140,7 @@ export async function accionCalificarDesarrollo(
     await calificarObjetivoDesarrollo({ ...parsed.data, jefeId: jefe.usuarioId });
   } catch (error) {
     if (error instanceof ErrorCalificacion) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar el % de cumplimiento." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar el resultado final." };
   }
 
   revalidarVistas();

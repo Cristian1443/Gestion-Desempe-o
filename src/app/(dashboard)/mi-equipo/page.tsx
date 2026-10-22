@@ -24,7 +24,7 @@ export default async function MiEquipoPage() {
         <h1 className="text-2xl font-bold text-iib-foreground">Mi equipo</h1>
         <p className="text-sm text-iib-secondary">
           Aprueba los objetivos individuales de tus colaboradores, registra su seguimiento dentro de cada franja y
-          pon su % de cumplimiento al final.
+          marca si cumple o no cumple al final.
         </p>
         <FranjaBanner periodo={datos.periodo.nombre} franjas={datos.franjas} />
       </div>

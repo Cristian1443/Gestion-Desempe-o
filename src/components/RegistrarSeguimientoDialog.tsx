@@ -24,7 +24,7 @@ function BotonEnviar({ etiqueta, etiquetaEnviando }: { etiqueta: string; etiquet
 // la Server Action que realmente valida y persiste el registro se recibe como
 // prop, así la única diferencia entre los tres usos es a qué función se
 // conecta, no el formulario en sí. Cada registro es solo comentario + fecha
-// (la fecha la pone el servidor); el % de cumplimiento es un juicio aparte que
+// (la fecha la pone el servidor); el resultado final es un juicio aparte que
 // se pone una sola vez, al final, dentro de su franja.
 export function RegistrarSeguimientoDialog({
   objetivoId,

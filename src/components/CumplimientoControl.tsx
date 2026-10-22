@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 type Resultado = { ok: true } | { ok: false; error: string };
 
 // Resultado final del indicador (de la empresa o de gerencia). Quien edita lo
-// marca dentro de la franja del % de cumplimiento; fuera de ella (o para los
+// marca dentro de la franja del resultado final; fuera de ella (o para los
 // demás) es solo lectura. La Server Action que valida y guarda llega por prop.
 export function CumplimientoControl({
   objetivoId,

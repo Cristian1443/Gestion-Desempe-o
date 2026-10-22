@@ -2,12 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { LINEAS_ESTRATEGICAS, CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
-import {
-  CANTIDAD_OBJETIVOS_DESARROLLO,
-  CANTIDAD_OBJETIVOS_DESEMPENO,
-  PESO_TOTAL_DESEMPENO,
-  distribuirPesoEquitativo,
-} from "@/server/services/calculo-notas";
+import { CANTIDAD_DESARROLLO_ACTIVA } from "@/lib/objetivos-config";
+import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 import type { ObjetivoVista } from "@/server/services/objetivos.service";
 import { accionProponerObjetivos } from "./actions";
 
@@ -16,7 +12,6 @@ type FilaDesempeno = {
   descripcion: string;
   acciones: string;
   indicador: string;
-  peso: number;
   linkRepositorio: string;
 };
 
@@ -29,7 +24,7 @@ type FilaDesarrollo = {
 };
 
 function filaDesempenoVacia(): FilaDesempeno {
-  return { lineaEstrategica: "", descripcion: "", acciones: "", indicador: "", peso: 0, linkRepositorio: "" };
+  return { lineaEstrategica: "", descripcion: "", acciones: "", indicador: "", linkRepositorio: "" };
 }
 
 function filaDesarrolloVacia(): FilaDesarrollo {
@@ -48,7 +43,6 @@ function desempenoDesdeAnterior(objetivos: ObjetivoVista[]): FilaDesempeno[] {
         descripcion: o.descripcion,
         acciones: o.acciones ?? "",
         indicador: o.indicador,
-        peso: o.peso,
         linkRepositorio: o.linkRepositorio ?? "",
       }),
     );
@@ -71,7 +65,7 @@ function desarrolloDesdeAnterior(objetivos: ObjetivoVista[]): FilaDesarrollo[] {
       }),
     );
   return Array.from(
-    { length: CANTIDAD_OBJETIVOS_DESARROLLO },
+    { length: CANTIDAD_DESARROLLO_ACTIVA },
     (_, i) => previos[i] ?? filaDesarrolloVacia(),
   );
 }
@@ -80,50 +74,6 @@ const estiloInput =
   "rounded-md border border-iib-border bg-iib-surface px-2.5 py-2 text-sm shadow-sm transition focus:border-iib-primary focus:outline-none focus:ring-2 focus:ring-iib-primary/15";
 const estiloLabel = "text-xs font-semibold text-iib-secondary";
 const estiloCampo = "flex flex-col gap-1";
-
-function ResumenPeso({
-  titulo,
-  descripcion,
-  suma,
-  total,
-  sumaValida,
-  onDistribuir,
-  acento,
-}: {
-  titulo: string;
-  descripcion: string;
-  suma: number;
-  total: number;
-  sumaValida: boolean;
-  onDistribuir: () => void;
-  acento: "desempeno" | "desarrollo";
-}) {
-  const colorAcento = acento === "desempeno" ? "text-iib-primary" : "text-blue-700";
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
-      <div>
-        <h3 className={`text-sm font-bold ${colorAcento}`}>{titulo}</h3>
-        <p className="text-xs text-iib-secondary">{descripcion}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <span
-          className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
-            sumaValida ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
-          }`}
-        >
-          {suma.toFixed(2)}% / {total}%
-        </span>
-        <button
-          type="button"
-          onClick={onDistribuir}
-          className="rounded-md border border-iib-border px-3 py-1.5 text-xs font-semibold transition hover:bg-iib-surface-sunken"
-        >
-          Repartir equitativo
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function TarjetaDesempeno({
   fila,
@@ -155,19 +105,6 @@ function TarjetaDesempeno({
             </option>
           ))}
         </select>
-        <label className="ml-auto flex shrink-0 items-center gap-1.5 text-xs font-semibold text-iib-secondary">
-          Peso
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step="0.01"
-            value={fila.peso}
-            onChange={(e) => onCambiar("peso", e.target.value)}
-            className="w-20 rounded-md border border-iib-border bg-iib-surface px-2 py-1.5 text-sm font-bold tabular-nums"
-          />
-          %
-        </label>
       </div>
 
       <div className="flex flex-col gap-3.5 p-4">
@@ -309,30 +246,22 @@ export function ProponerObjetivosForm({
   const [desarrollo, setDesarrollo] = useState<FilaDesarrollo[]>(() =>
     objetivosPrevios
       ? desarrolloDesdeAnterior(objetivosPrevios)
-      : Array.from({ length: CANTIDAD_OBJETIVOS_DESARROLLO }, filaDesarrolloVacia),
+      : Array.from({ length: CANTIDAD_DESARROLLO_ACTIVA }, filaDesarrolloVacia),
   );
   const [error, setError] = useState<string | null>(null);
   const [enviado, setEnviado] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const sumaDesempeno = desempeno.reduce((acc, f) => acc + Math.round((f.peso || 0) * 100), 0) / 100;
-  const sumaDesempenoValida = Math.round(sumaDesempeno * 100) === Math.round(PESO_TOTAL_DESEMPENO * 100);
-
   function actualizarDesempeno(indice: number, campo: keyof FilaDesempeno, valor: string) {
     setDesempeno((prev) =>
       prev.map((f, i) =>
-        i === indice ? { ...f, [campo]: campo === "peso" ? Number(valor) : valor } : f,
+        i === indice ? { ...f, [campo]: valor } : f,
       ),
     );
   }
 
   function actualizarDesarrollo(indice: number, campo: keyof FilaDesarrollo, valor: string) {
     setDesarrollo((prev) => prev.map((f, i) => (i === indice ? { ...f, [campo]: valor } : f)));
-  }
-
-  function distribuirDesempeno() {
-    const pesos = distribuirPesoEquitativo(CANTIDAD_OBJETIVOS_DESEMPENO, PESO_TOTAL_DESEMPENO);
-    setDesempeno((prev) => prev.map((f, i) => ({ ...f, peso: pesos[i] ?? 0 })));
   }
 
   function enviar() {
@@ -343,7 +272,6 @@ export function ProponerObjetivosForm({
           descripcion: f.descripcion,
           acciones: f.acciones,
           indicador: f.indicador,
-          peso: f.peso,
           tipoIndividual: "DESEMPENO" as const,
           lineaEstrategica: f.lineaEstrategica,
           linkRepositorio: f.linkRepositorio || undefined,
@@ -375,20 +303,20 @@ export function ProponerObjetivosForm({
     );
   }
 
-  const puedeEnviar = sumaDesempenoValida;
+  const puedeEnviar = desempeno.every(
+    (f) => f.lineaEstrategica && f.descripcion.trim() && f.acciones.trim() && f.indicador.trim(),
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4">
-        <ResumenPeso
-          titulo={`Objetivos de desempeño`}
-          descripcion={`${CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno clasificado en una línea estratégica`}
-          suma={sumaDesempeno}
-          total={PESO_TOTAL_DESEMPENO}
-          sumaValida={sumaDesempenoValida}
-          onDistribuir={distribuirDesempeno}
-          acento="desempeno"
-        />
+        <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
+          <h3 className="text-sm font-bold text-iib-primary">Objetivos de desempeño</h3>
+          <p className="text-xs text-iib-secondary">
+            {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno clasificado en una línea estratégica. No llevan peso: al
+            final del periodo tu jefe marca si cada uno cumple o no cumple.
+          </p>
+        </div>
         <div className="flex flex-col gap-4">
           {desempeno.map((fila, indice) => (
             <TarjetaDesempeno
@@ -401,36 +329,46 @@ export function ProponerObjetivosForm({
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
-          <h3 className="text-sm font-bold text-blue-700">Objetivos de desarrollo</h3>
-          <p className="text-xs text-iib-secondary">
-            {CANTIDAD_OBJETIVOS_DESARROLLO} objetivos, cada uno asociado a una competencia a fortalecer. No
-            llevan peso — al cierre del periodo tu jefe registra si se cumplieron o no.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4">
-          {desarrollo.map((fila, indice) => (
-            <TarjetaDesarrollo
-              key={indice}
-              fila={fila}
-              numero={indice + 1}
-              onCambiar={(campo, valor) => actualizarDesarrollo(indice, campo, valor)}
-            />
-          ))}
-        </div>
-      </section>
+      {CANTIDAD_DESARROLLO_ACTIVA > 0 && (
+        <section className="flex flex-col gap-4">
+          <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
+            <h3 className="text-sm font-bold text-blue-700">Objetivos de desarrollo</h3>
+            <p className="text-xs text-iib-secondary">
+              {CANTIDAD_DESARROLLO_ACTIVA} objetivos, cada uno asociado a una competencia a fortalecer. No llevan peso — al
+              cierre del periodo tu jefe registra si se cumplieron o no.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            {desarrollo.map((fila, indice) => (
+              <TarjetaDesarrollo
+                key={indice}
+                fila={fila}
+                numero={indice + 1}
+                onCambiar={(campo, valor) => actualizarDesarrollo(indice, campo, valor)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
-      <button
-        type="button"
-        onClick={enviar}
-        disabled={pending || !puedeEnviar}
-        className="self-end rounded-md bg-iib-primary px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {pending ? "Enviando…" : "Enviar a mi jefe"}
-      </button>
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        {!puedeEnviar && (
+          <p className="text-sm text-warning">
+            Completa la línea estratégica, la descripción, las acciones y el indicador de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
+            objetivos para poder enviar.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={enviar}
+          disabled={pending || !puedeEnviar}
+          className="rounded-md bg-iib-primary px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {pending ? "Enviando…" : "Enviar a mi jefe"}
+        </button>
+      </div>
     </div>
   );
 }

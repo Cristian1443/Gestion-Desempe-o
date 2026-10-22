@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import {
@@ -242,7 +243,7 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
   const colaboradores: ColaboradorConsolidado[] = await Promise.all(
     colaboradoresBase.map(async (colaborador) => {
       const objetivosIndividuales = await db.objetivo.findMany({
-        where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id },
+        where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId: colaborador.id, ...FILTRO_OBJETIVOS_ACTIVOS },
         include: {
           seguimientos: seguimientoReferenciaId
             ? { where: { seguimientoId: seguimientoReferenciaId }, take: 1 }

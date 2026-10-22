@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { formatearFecha } from "@/lib/fecha";
 import { estadoFranja, hoyEnBogota } from "@/lib/franja";
 
-// Calificación final (en pantalla: "% de cumplimiento") de los objetivos. Solo
+// Calificación final (en pantalla: "resultado final") de los objetivos. Solo
 // se puede poner dentro de la franja que Gestión Humana define para el periodo;
 // nadie abre ni cierra nada a mano. Individuales: la pone el jefe directo.
 export class ErrorCalificacion extends Error {
@@ -22,17 +22,17 @@ export function exigirFranjaCumplimiento(periodo: {
   }
   const { cumplimientoInicio: inicio, cumplimientoFin: fin } = periodo;
   if (!inicio || !fin) {
-    throw new ErrorCalificacion("Gestión Humana todavía no definió la franja del % de cumplimiento.");
+    throw new ErrorCalificacion("Gestión Humana todavía no definió la franja del resultado final.");
   }
 
   const estado = estadoFranja(inicio, fin, hoyEnBogota());
   if (estado === "PROXIMA") {
     throw new ErrorCalificacion(
-      `El % de cumplimiento se pone del ${formatearFecha(inicio)} al ${formatearFecha(fin)}. Todavía no empieza.`,
+      `El resultado final se marca del ${formatearFecha(inicio)} al ${formatearFecha(fin)}. Todavía no empieza.`,
     );
   }
   if (estado === "FINALIZADA") {
-    throw new ErrorCalificacion(`La franja del % de cumplimiento terminó el ${formatearFecha(fin)}.`);
+    throw new ErrorCalificacion(`La franja del resultado final terminó el ${formatearFecha(fin)}.`);
   }
 }
 
@@ -54,9 +54,10 @@ async function obtenerObjetivoIndividualParaCalificar(objetivoId: string, jefeId
   return objetivo;
 }
 
+// Resultado final de un objetivo de desempeño: Cumple / No cumple, sin peso.
 export async function calificarObjetivoDesempeno(input: {
   objetivoId: string;
-  calificacionFinal: number;
+  cumple: boolean;
   jefeId: string;
 }) {
   const objetivo = await obtenerObjetivoIndividualParaCalificar(input.objetivoId, input.jefeId);
@@ -67,7 +68,7 @@ export async function calificarObjetivoDesempeno(input: {
   return db.objetivo.update({
     where: { id: input.objetivoId },
     data: {
-      calificacionFinal: input.calificacionFinal,
+      cumplido: input.cumple,
       calificadoPor: input.jefeId,
       fechaCalificacion: new Date(),
     },

@@ -264,14 +264,29 @@ semáforo: describen el flujo anterior, no el actual.
   y autor (`RegistroSeguimiento`); sin porcentaje, salvo en los indicadores de
   gerencia (ver abajo). Quien lo hace: jefe directo (individual) o gerente
   (gerencia). Corregir dentro de la franja crea una versión nueva.
-- **% de cumplimiento final.** Es la antigua "calificación final" (0-100, columna
-  `Objetivo.calificacionFinal`), con "Cumple" desde 80. Se pone una sola vez, al
-  final, y solo dentro de la **franja del % de cumplimiento** que Gestión Humana
-  define en el periodo (`Periodo.cumplimientoInicio/Fin`), que puede terminar
-  después del periodo. Los objetivos de desarrollo siguen siendo sí/no.
+- **Resultado final: Cumple / No cumple, sin peso.** Todos los objetivos (individuales
+  de desempeño, indicadores de gerencia e indicadores de la empresa) se miden igual:
+  `Objetivo.cumplido`. Ya no hay peso (`peso` queda en 0) ni % de calificación
+  (`calificacionFinal` no se usa y una regla de la base impide guardar un valor).
+  Se marca una sola vez, al final, y solo dentro de la **franja del resultado final**
+  que Gestión Humana define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
+  puede terminar después del periodo. En los individuales lo marca el jefe directo.
+- **Objetivos de desempeño.** Cuatro por persona, sin peso; el colaborador los propone,
+  el jefe los aprueba y al final marca Cumple / No cumple.
+- **Objetivos de desarrollo: desactivados en 2026.** Interruptor `DESARROLLO_HABILITADO`
+  en [src/lib/objetivos-config.ts](src/lib/objetivos-config.ts) (apagado): no se piden,
+  no se muestran y no cuentan para cerrar el periodo; los datos que ya existían se
+  conservan. Para reactivarlos el próximo año basta con ponerlo en `true`.
 - **Periodo.** Borrador → Abierto → Cerrado. Abrir exige al menos un seguimiento y
-  la franja del % final; cerrar exige que todos los objetivos tengan su %. Ya no
-  existe "En evaluación" ni "Pasar a evaluación": la franja lo reemplaza.
+  la franja del resultado final; cerrar exige que todos los objetivos tengan su
+  resultado. Ya no existe "En evaluación" ni "Pasar a evaluación": la franja lo reemplaza.
+- **PDF consolidado.** Con el periodo **cerrado**, Gestión Humana y Admin descargan desde
+  *Administración* un PDF con los objetivos individuales (por gerencia y persona), los
+  indicadores de gerencia y los de la empresa, con su seguimiento y resultado. Ruta
+  `GET /api/consolidado/<periodoId>` (403 si no es Gestión Humana/Admin, 409 si el periodo
+  no está cerrado); datos en [src/server/services/consolidado.service.ts](src/server/services/consolidado.service.ts)
+  y documento en [src/server/pdf/consolidado.ts](src/server/pdf/consolidado.ts) (`pdfkit`,
+  declarado como paquete externo en `next.config.mjs`).
 - Los seguimientos nunca alimentan la nota ponderada (`calculo-notas.ts`).
 
 ### Indicadores de la empresa (nivel corporativo)

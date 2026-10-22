@@ -72,7 +72,7 @@ async function crearSiguienteVersionRegistro(
 // Seguimiento de un objetivo INDIVIDUAL, registrado directamente por el jefe
 // directo del dueño del objetivo (no es un autorreporte del colaborador: el
 // jefe hace el seguimiento a su equipo durante el periodo y, con base en
-// esos seguimientos, pone el % de cumplimiento al final).
+// esos seguimientos, marca el resultado al final).
 export async function registrarSeguimientoIndividual(
   input: RegistrarSeguimientoInput & { jefeId: string },
 ) {

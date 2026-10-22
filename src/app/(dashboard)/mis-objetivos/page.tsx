@@ -1,4 +1,5 @@
 import { FranjaItems } from "@/components/FranjaBanner";
+import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
 import {
@@ -41,9 +42,9 @@ export default async function MisObjetivosPage({
   const individualesSinResolver =
     individuales.length === 0 || individuales.every((o) => o.estadoAprobacion === "DEVUELTO");
 
-  const categoria = (
-    ["gerencia", "desempeno", "desarrollo"] as Categoria[]
-  ).includes(searchParams.categoria as Categoria)
+  // Los objetivos de desarrollo no se manejan este año: esa categoría no existe.
+  const categorias: Categoria[] = DESARROLLO_HABILITADO ? ["gerencia", "desempeno", "desarrollo"] : ["gerencia", "desempeno"];
+  const categoria = categorias.includes(searchParams.categoria as Categoria)
     ? (searchParams.categoria as Categoria)
     : undefined;
 
@@ -120,22 +121,24 @@ export default async function MisObjetivosPage({
                 ? individuales.length === 0
                   ? "Aún no propuestos"
                   : "Devueltos por tu jefe"
-                : `${desempeno.length} objetivos · 40% de la nota`
+                : `${desempeno.length} objetivos · cumple o no cumple`
             }
             detalle="Van contra una línea estratégica"
           />
-          <TarjetaCategoria
-            categoria="desarrollo"
-            titulo="Desarrollo"
-            resumen={
-              individualesSinResolver
-                ? individuales.length === 0
-                  ? "Aún no propuestos"
-                  : "Devueltos por tu jefe"
-                : `${desarrollo.length} objetivos · sin peso`
-            }
-            detalle="Van contra una competencia a fortalecer"
-          />
+          {DESARROLLO_HABILITADO && (
+            <TarjetaCategoria
+              categoria="desarrollo"
+              titulo="Desarrollo"
+              resumen={
+                individualesSinResolver
+                  ? individuales.length === 0
+                    ? "Aún no propuestos"
+                    : "Devueltos por tu jefe"
+                  : `${desarrollo.length} objetivos · cumple o no cumple`
+              }
+              detalle="Van contra una competencia a fortalecer"
+            />
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -182,12 +185,14 @@ export default async function MisObjetivosPage({
                     {categoria === "desempeno" ? "Objetivos de desempeño" : "Objetivos de desarrollo"}
                   </h2>
                   <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    {categoria === "desempeno" ? "40% de la nota final" : "Sin peso"}
+                    Sin peso · cumple o no cumple
                   </span>
                 </div>
                 <span className="text-sm text-iib-secondary">
                   {individualesSinResolver
-                    ? "Se proponen junto con los de la otra categoría individual"
+                    ? DESARROLLO_HABILITADO
+                      ? "Se proponen junto con los de la otra categoría individual"
+                      : "Se proponen los 4 juntos y se envían a tu jefe"
                     : `${(categoria === "desempeno" ? desempeno : desarrollo).length} objetivo${
                         (categoria === "desempeno" ? desempeno : desarrollo).length === 1 ? "" : "s"
                       }`}

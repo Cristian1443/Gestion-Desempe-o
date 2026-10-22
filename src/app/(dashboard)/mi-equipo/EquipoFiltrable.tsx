@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { FranjaUI } from "@/lib/franja-ui";
+import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
 import type { ColaboradorEquipo, MiEquipo } from "@/server/services/equipo.service";
 import { ColaboradorPanel, TarjetaColaborador, TarjetaJefe } from "./components";
 
@@ -61,7 +62,7 @@ export function EquipoFiltrable({
           placeholder="Buscar colaborador por nombre…"
           className="min-w-[14rem] flex-1 rounded-md border border-iib-border bg-iib-background px-3 py-2 text-sm focus:border-iib-primary focus:outline-none focus:ring-2 focus:ring-iib-primary/15"
         />
-        <div className="flex gap-1.5">
+        <div className={DESARROLLO_HABILITADO ? "flex gap-1.5" : "hidden"}>
           {OPCIONES_TIPO.map((opcion) => (
             <button
               key={opcion.valor}

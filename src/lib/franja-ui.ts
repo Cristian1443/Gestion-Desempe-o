@@ -11,7 +11,7 @@ export interface FranjaUI {
   // Contra cuál se mide "falta seguimiento": el que está en curso o el último
   // que ya empezó.
   referenciaNumero: number | null;
-  // True si hoy está dentro de la franja del % de cumplimiento.
+  // True si hoy está dentro de la franja del resultado final.
   cumplimientoEnCurso: boolean;
 }
 

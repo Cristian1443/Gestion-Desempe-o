@@ -15,7 +15,7 @@ function textoDias(dias: number): string {
 }
 
 // Resume qué está en curso hoy: el seguimiento (o cuándo es el próximo) y la
-// franja del % de cumplimiento.
+// franja del resultado final.
 export function FranjaItems({ franjas }: { franjas: ContextoFranjas }) {
   const { seguimientoEnCurso, proximoSeguimiento, cumplimiento } = franjas;
   const items: Array<{ clave: string; urgente?: boolean; contenido: ReactNode }> = [];
@@ -54,7 +54,7 @@ export function FranjaItems({ franjas }: { franjas: ContextoFranjas }) {
         urgente: dias <= 3,
         contenido: (
           <>
-            % de cumplimiento en curso · hasta el {formatearFecha(cumplimiento.fin)} ({textoDias(dias)})
+            Resultado final en curso · hasta el {formatearFecha(cumplimiento.fin)} ({textoDias(dias)})
           </>
         ),
       });
@@ -63,14 +63,14 @@ export function FranjaItems({ franjas }: { franjas: ContextoFranjas }) {
         clave: "cumplimiento",
         contenido: (
           <>
-            % de cumplimiento: del {formatearFecha(cumplimiento.inicio)} al {formatearFecha(cumplimiento.fin)}
+            Resultado final: del {formatearFecha(cumplimiento.inicio)} al {formatearFecha(cumplimiento.fin)}
           </>
         ),
       });
     } else {
       items.push({
         clave: "cumplimiento",
-        contenido: <>Franja del % de cumplimiento terminada el {formatearFecha(cumplimiento.fin)}</>,
+        contenido: <>Franja del resultado final terminada el {formatearFecha(cumplimiento.fin)}</>,
       });
     }
   }

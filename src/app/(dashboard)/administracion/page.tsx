@@ -15,7 +15,7 @@ export default async function AdministracionPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-iib-foreground">Administración</h1>
           <p className="text-sm text-iib-secondary">
-            Periodos de evaluación, con la franja de cada seguimiento y la del % de cumplimiento. Los indicadores de
+            Periodos de evaluación, con la franja de cada seguimiento y la del resultado final. Los indicadores de
             la empresa se gestionan en la pestaña Indicadores.
           </p>
         </div>

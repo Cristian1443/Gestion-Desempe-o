@@ -207,13 +207,13 @@ nice -n 10 npm run build
 `constraints.sql` usa `ADD CONSTRAINT` sin `IF NOT EXISTS`: si se corre dos
 veces, falla. Es solo de la primera instalación.
 
-Una instalación nueva aplica las **9 migraciones** desde cero. Se probó el
+Una instalación nueva aplica las **10 migraciones** desde cero. Se probó el
 2026-10-21 sobre una base vacía: `migrate deploy`, `constraints.sql` y el seed
 terminan sin errores y `prisma migrate diff` no encuentra diferencias con el
 esquema. Para comprobarlo en el servidor:
 
 ```bash
-npx prisma migrate status      # "Database schema is up to date" y 9 migraciones
+npx prisma migrate status      # "Database schema is up to date" y 10 migraciones
 ```
 
 ### 3.8 Datos iniciales (solo la primera vez)
@@ -259,9 +259,11 @@ que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
    orden, sin traslaparse y dentro del periodo. Reemplazar las fechas de ejemplo del
    seed. Un seguimiento solo se puede registrar dentro de su franja; nadie lo abre
    ni lo cierra a mano.
-2. **Franja del % de cumplimiento final.** Debe empezar después del último
-   seguimiento (puede terminar después del periodo). Dentro de ella: el jefe pone el
-   % de cada objetivo individual y se marca Cumple / No cumple en los indicadores.
+2. **Franja del resultado final.** Debe empezar después del último
+   seguimiento (puede terminar después del periodo). Dentro de ella: el jefe marca
+   Cumple / No cumple en cada objetivo individual de desempeño (sin peso) y se marca
+   Cumple / No cumple en los indicadores. Los objetivos de desarrollo están
+   desactivados en 2026 (ver README).
 3. **Roles (Administración → Estructura organizacional).**
    - *Gestor de objetivos corporativos* a **Andrea Jimenez Fandiño**: carga y hace
      el seguimiento de los indicadores de la empresa.
@@ -437,11 +439,11 @@ En el navegador:
 5. Las pestañas **Indicadores** (para todos) y **Mi gerencia** (para gerentes)
    cargan, y sin sesión redirigen a `/login`.
 
-Y en la base (debe dar 9 migraciones y las tres reglas nuevas):
+Y en la base (debe dar 10 migraciones y las reglas nuevas):
 
 ```bash
 psql "${DATABASE_URL%%\?*}" -At -c "select count(*) from _prisma_migrations"
-psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_objetivo_cumplido_solo_indicadores','chk_objetivo_indicador_sin_calificacion','chk_registro_seguimiento_porcentaje_rango') order by 1"
+psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_objetivo_cumplido_solo_indicadores','chk_objetivo_indicador_sin_calificacion','chk_registro_seguimiento_porcentaje_rango','chk_objetivo_cumplido_no_desarrollo','chk_objetivo_sin_calificacion_numerica') order by 1"
 ```
 
 ### Que Compras y Contratación siguen sanos
@@ -522,7 +524,7 @@ backup tomado antes de migrar (`pg_restore`). Conserva las 3 últimas carpetas d
 | El login dejó de funcionar sin tocar nada | Venció el client secret de Entra ID | Crear un secret nuevo, actualizar `shared/.env`, `pm2 restart` |
 | Aparece o desaparece gente en *Estructura organizacional* | Es el resultado de `sincronizar-grupo.mjs` (la fuente de verdad es Entra ID) | Revisar el grupo `Usuarios_activos` y `sync-directorio.log` |
 | "No hay un seguimiento en curso" al registrar | Hoy no cae dentro de la franja de ningún seguimiento | Gestión Humana agrega o ajusta un seguimiento que incluya la fecha de hoy (3.9) |
-| Cumple / No cumple o el % de cumplimiento no se habilitan, o "Gestión Humana todavía no definió la franja" | Falta la franja del % final, o hoy está fuera de ella | Definirla o ajustarla en Administración (3.9) |
+| Cumple / No cumple no se habilita, o "Gestión Humana todavía no definió la franja" | Falta la franja del resultado final, o hoy está fuera de ella | Definirla o ajustarla en Administración (3.9) |
 | El periodo no se deja cerrar: "Faltan por cargar…" | No están los 8 indicadores de la empresa o los 2 de alguna gerencia | Cargarlos (Andrea y los gerentes) y marcar todos los resultados |
 | Aviso `"next start" does not work with "output: standalone"` en el log | `next.config.mjs` tiene `output: "standalone"` (hecho para Docker) | Inofensivo (QA corre así hace semanas); ver pendientes |
 

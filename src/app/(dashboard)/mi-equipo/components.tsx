@@ -209,15 +209,6 @@ function EncabezadoObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
         </div>
         {clase && <span className={`text-xs font-medium ${clase.colorTexto}`}>{clase.detalle}</span>}
       </div>
-      {objetivo.tipoIndividual === "DESARROLLO" ? (
-        <span className="shrink-0 rounded-full bg-iib-surface-sunken px-2.5 py-0.5 text-xs font-bold text-iib-secondary">
-          Sin peso
-        </span>
-      ) : (
-        <span className="shrink-0 rounded-full bg-iib-surface-sunken px-2.5 py-0.5 text-xs font-bold tabular-nums text-iib-secondary">
-          {objetivo.peso}%
-        </span>
-      )}
     </div>
   );
 }
@@ -256,10 +247,7 @@ function ObjetivoAprobadoRow({ objetivo, franja }: { objetivo: ObjetivoEquipoVis
         </div>
       ) : (
         <>
-          <CumplimientoLectura
-            calificacionFinal={objetivo.calificacionFinal}
-            cumplioDesarrollo={objetivo.cumplioDesarrollo}
-          />
+          <CumplimientoLectura cumplido={objetivo.cumplido} cumplioDesarrollo={objetivo.cumplioDesarrollo} />
           {enCurso && (
             <div className="flex justify-end">
               <RegistrarSeguimientoDialog

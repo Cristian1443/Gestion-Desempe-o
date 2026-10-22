@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cumpleCalificacion } from "@/lib/calificacion";
 import { formatearFecha as formatearFechaBase } from "@/lib/fecha";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
 import type { ObjetivoVista, SeguimientoVista } from "@/server/services/objetivos.service";
@@ -240,15 +239,6 @@ export function ObjetivoIndividualCard({
         <span className="grid h-7 w-7 place-items-center rounded-md bg-iib-surface-sunken text-xs font-bold text-iib-secondary">
           {numero}
         </span>
-        {objetivo.tipoIndividual === "DESARROLLO" ? (
-          <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold text-iib-secondary">
-            Sin peso
-          </span>
-        ) : (
-          <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
-            {objetivo.peso}%
-          </span>
-        )}
       </div>
       {objetivo.estadoAprobacion === "PENDIENTE_APROBACION" ? (
         <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
@@ -363,20 +353,7 @@ export function CalificacionFinalVista({ objetivo }: { objetivo: ObjetivoVista }
     );
   }
 
-  if (objetivo.calificacionFinal === null) return null;
-  const cumple = cumpleCalificacion(objetivo.calificacionFinal);
-  return (
-    <p className="flex items-center gap-2 rounded-md bg-iib-surface-sunken px-3 py-2 text-sm font-medium">
-      % de cumplimiento: {objetivo.calificacionFinal}%
-      <span
-        className={`rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${
-          cumple ? "bg-success text-white" : "bg-danger text-white"
-        }`}
-      >
-        {cumple ? "Cumple" : "No cumple"}
-      </span>
-    </p>
-  );
+  return null;
 }
 
 export function ObjetivoSoloLecturaCard({

@@ -53,7 +53,7 @@ export default async function ResultadosPage() {
         </div>
         <p className="rounded-card border border-dashed border-iib-border bg-iib-surface px-4 py-3 text-xs text-iib-secondary">
           Estas cifras muestran <strong>cuántos objetivos ya tienen un registro en el seguimiento
-          indicado arriba</strong>, no el % de cumplimiento — ese es un juicio del evaluador que se
+          indicado arriba</strong>, no el resultado final (cumple o no cumple) — ese es un juicio del evaluador que se
           pone una sola vez, al final, dentro de su franja.
         </p>
       </section>

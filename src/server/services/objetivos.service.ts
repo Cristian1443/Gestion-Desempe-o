@@ -1,4 +1,5 @@
 import type { EstadoAprobacionObjetivo } from "@prisma/client";
+import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { db } from "@/server/db";
 import {
   obtenerContextoFranjas,
@@ -134,7 +135,7 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
   const [franjas, individuales, gerencia, indicadoresTotal] = await Promise.all([
     obtenerContextoFranjas(periodo.id),
     db.objetivo.findMany({
-      where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId },
+      where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId, ...FILTRO_OBJETIVOS_ACTIVOS },
       include: { seguimientos: bitacoraDeSeguimientos },
       orderBy: { createdAt: "asc" },
     }),

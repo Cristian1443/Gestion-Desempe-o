@@ -5,7 +5,7 @@ import { useId, useState, useTransition } from "react";
 type Resultado = { ok: true } | { ok: false; error: string };
 
 // Formulario de una franja: fecha de inicio y de fin (inclusivas). Lo usan
-// agregar y editar un seguimiento, y definir la franja del % de cumplimiento.
+// agregar y editar un seguimiento, y definir la franja del resultado final.
 export function FranjaFechasForm({
   inicioInicial = "",
   finInicial = "",

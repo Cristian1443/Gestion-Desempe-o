@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { primerDiaDelMes, mesActual } from "@/lib/mes";
 import { obtenerContextoFranjas, obtenerPeriodoActual } from "@/server/services/periodos.service";
 
@@ -48,7 +49,7 @@ function calcularCobertura<T extends { tieneSeguimiento: boolean }>(
 }
 
 // Vista operativa de "quién ya hizo el seguimiento en curso y quién no" — no
-// es el % de cumplimiento del periodo (`Objetivo.calificacionFinal`, un juicio
+// es el resultado final del periodo (`Objetivo.calificacionFinal`, un juicio
 // del evaluador que se pone al final, dentro de su franja).
 export async function obtenerResultados(): Promise<Resultados | null> {
   const periodo = await obtenerPeriodoActual();
@@ -61,7 +62,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
 
   const [individuales, gerenciaObjetivos, corporativos, usuarios] = await Promise.all([
     db.objetivo.findMany({
-      where: { periodoId: periodo.id, nivel: "INDIVIDUAL", estadoAprobacion: "APROBADO" },
+      where: { periodoId: periodo.id, nivel: "INDIVIDUAL", estadoAprobacion: "APROBADO", ...FILTRO_OBJETIVOS_ACTIVOS },
       include: {
         seguimientos: seguimientoDeReferencia,
         usuario: { select: { nombre: true, gerenciaId: true } },

@@ -125,6 +125,6 @@ export async function accionDefinirFranjaCumplimiento(input: unknown): Promise<E
     franjaCumplimientoSchema,
     input,
     definirFranjaCumplimiento,
-    "Ocurrió un error inesperado al guardar la franja del % de cumplimiento.",
+    "Ocurrió un error inesperado al guardar la franja del resultado final.",
   );
 }

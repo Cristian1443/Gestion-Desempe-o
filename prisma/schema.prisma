@@ -268,11 +268,8 @@ model Objetivo {
   indicador    String
   unidadMedida String? @map("unidad_medida")
 
-  // INDIVIDUAL: peso libre dentro de su grupo, solo para DESEMPENO — los 4
-  // deben sumar 40 (ver calculo-notas.ts). Los de DESARROLLO no compiten por
-  // peso: siempre queda en 0 (ver `cumplioDesarrollo`). GERENCIA: fijo en
-  // 15.00 (2 objetivos por gerencia). CORPORATIVO (los "indicadores de la
-  // empresa"): no llevan peso, siempre 0 — solo Cumple / No cumple.
+  // Ningún objetivo lleva ya peso: siempre queda en 0 (la nota final ponderada
+  // no está conectada; ver calculo-notas.ts). Se conserva la columna.
   peso Decimal @db.Decimal(5, 2)
 
   estadoAprobacion     EstadoAprobacionObjetivo @default(BORRADOR) @map("estado_aprobacion")
@@ -285,12 +282,11 @@ model Objetivo {
   aprobador       Usuario?  @relation("ObjetivoAprobadoPor", fields: [aprobadoPor], references: [id])
   fechaAprobacion DateTime? @map("fecha_aprobacion")
 
-  // Calificación final 0-100 (en pantalla: "% de cumplimiento"), asignada una
-  // sola vez dentro de la franja del periodo (insumo del motor de cálculo).
-  // Es un juicio del evaluador, no un promedio automático de los
-  // seguimientos: por eso es un campo propio.
-  // La asigna el jefe (individual), el gerente (gerencia) o Gestión Humana
-  // (corporativo), según el nivel del objetivo.
+  // Ya no se usa: antes guardaba un % de cumplimiento 0-100. Todos los
+  // objetivos se miden ahora con Cumple / No cumple (`cumplido`) y una regla de
+  // la base impide guardar aquí un valor. Se conserva la columna por el histórico.
+  // (Quién califica: el jefe en individuales, el gerente en gerencia, la persona
+  // encargada en la empresa — ver `calificadoPor`.)
   calificacionFinal Decimal?  @map("calificacion_final") @db.Decimal(5, 2)
   calificadoPor     String?   @map("calificado_por")
   calificador       Usuario?  @relation("ObjetivoCalificadoPor", fields: [calificadoPor], references: [id])
@@ -302,9 +298,10 @@ model Objetivo {
   // entra al cálculo de la nota individual (ver calculo-notas.ts).
   cumplioDesarrollo Boolean? @map("cumplio_desarrollo")
 
-  // Solo para nivel CORPORATIVO (indicadores de la empresa): no llevan nota ni
-  // peso, solo Cumple / No cumple, que marca la persona encargada al final,
-  // dentro de la franja del % de cumplimiento del periodo.
+  // Resultado final Cumple / No cumple, sin peso, que se marca una sola vez
+  // dentro de la franja del resultado final del periodo: el jefe en los
+  // objetivos individuales de desempeño, el gerente en los de gerencia y la
+  // persona encargada en los indicadores de la empresa. No aplica a desarrollo.
   cumplido Boolean? @map("cumplido")
 
   seguimientos RegistroSeguimiento[]

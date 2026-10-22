@@ -86,7 +86,7 @@ export function PeriodoRow({
 
       <div className="flex flex-col gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">
-          % de cumplimiento final
+          resultado final
         </p>
         {franjaCumplimiento ? (
           <p className="text-sm">
@@ -97,7 +97,7 @@ export function PeriodoRow({
             Sin franja.{" "}
             {periodo.estado === "BORRADOR"
               ? "Defínela para poder abrir el periodo: "
-              : "Nadie puede poner el % de cumplimiento hasta que la definas: "}
+              : "Nadie puede marcar el resultado final hasta que la definas: "}
             es el rango de fechas en que jefes, gerentes y Gestión Humana lo ponen en cada objetivo.
           </p>
         )}
@@ -128,6 +128,21 @@ export function PeriodoRow({
             variante="ghost"
             accion={accionCerrarPeriodo.bind(null, periodo.id)}
           />
+        </div>
+      )}
+
+      {periodo.estado === "CERRADO" && (
+        <div className="flex flex-col items-end gap-1">
+          {/* Descarga directa: la ruta valida el rol y que el periodo esté cerrado. */}
+          <a
+            href={`/api/consolidado/${periodo.id}`}
+            className="rounded-md bg-iib-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover"
+          >
+            Descargar consolidado (PDF)
+          </a>
+          <p className="text-xs text-iib-secondary">
+            Objetivos individuales, indicadores de gerencia e indicadores de la empresa, con su seguimiento y resultado.
+          </p>
         </div>
       )}
     </div>

@@ -71,7 +71,8 @@ ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_unidad_medida_no_individual
   CHECK (nivel <> 'INDIVIDUAL' OR unidad_medida IS NULL);
 
--- calificacion_final siempre entre 0 y 100 (cuando ya fue asignada).
+-- calificacion_final ya no se usa (ver chk_objetivo_sin_calificacion_numerica en la
+-- migración 20261024100000); si algún día se vuelve a usar, siempre entre 0 y 100.
 ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_calificacion_rango
   CHECK (calificacion_final IS NULL OR (calificacion_final >= 0 AND calificacion_final <= 100));

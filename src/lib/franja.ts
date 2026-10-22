@@ -1,4 +1,4 @@
-// Franjas de fechas de los seguimientos y del % de cumplimiento final.
+// Franjas de fechas de los seguimientos y del resultado final.
 //
 // Las fechas de franja son fechas de calendario guardadas como medianoche UTC
 // (igual que en fecha.ts). Se comparan como texto "AAAA-MM-DD", que ordena
@@ -38,7 +38,7 @@ export interface SeguimientoFranja extends RangoFechas {
 // Devuelve el primer problema de las franjas, o `null` si están bien. Reglas:
 // cada franja con inicio <= fin; cada seguimiento dentro del periodo; los
 // seguimientos en el mismo orden de su número y sin traslaparse; y la franja del
-// % final después del último seguimiento (puede terminar después del periodo).
+// resultado final después del último seguimiento (puede terminar después del periodo).
 export function errorDeFranjas(input: {
   periodo: RangoFechas;
   seguimientos: SeguimientoFranja[];
@@ -65,11 +65,11 @@ export function errorDeFranjas(input: {
 
   if (input.cumplimiento) {
     if (fechaISO(input.cumplimiento.inicio) > fechaISO(input.cumplimiento.fin)) {
-      return "La franja del % de cumplimiento termina antes de empezar.";
+      return "La franja del resultado final termina antes de empezar.";
     }
     const ultimo = ordenados[ordenados.length - 1];
     if (ultimo && fechaISO(input.cumplimiento.inicio) <= fechaISO(ultimo.fin)) {
-      return `La franja del % de cumplimiento debe empezar después de que termine el seguimiento ${ultimo.numero}.`;
+      return `La franja del resultado final debe empezar después de que termine el seguimiento ${ultimo.numero}.`;
     }
   }
 

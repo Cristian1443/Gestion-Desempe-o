@@ -149,7 +149,7 @@ export async function registrarAvanceMensual(input: {
 }
 
 // Resultado final del indicador. Solo se puede marcar dentro de la franja del
-// % de cumplimiento que Gestión Humana define para el periodo.
+// resultado final que Gestión Humana define para el periodo.
 export async function marcarCumplimiento(input: { objetivoId: string; cumple: boolean; marcadoPor: string }) {
   const objetivo = await obtenerIndicadorOFalla(input.objetivoId);
 
