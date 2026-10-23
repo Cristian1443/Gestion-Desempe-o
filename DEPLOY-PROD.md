@@ -207,13 +207,13 @@ nice -n 10 npm run build
 `constraints.sql` usa `ADD CONSTRAINT` sin `IF NOT EXISTS`: si se corre dos
 veces, falla. Es solo de la primera instalación.
 
-Una instalación nueva aplica las **10 migraciones** desde cero. Se probó el
-2026-10-21 sobre una base vacía: `migrate deploy`, `constraints.sql` y el seed
+Una instalación nueva aplica las **11 migraciones** desde cero. Se probó el
+2026-10-23 sobre una base vacía: `migrate deploy`, `constraints.sql` y el seed
 terminan sin errores y `prisma migrate diff` no encuentra diferencias con el
 esquema. Para comprobarlo en el servidor:
 
 ```bash
-npx prisma migrate status      # "Database schema is up to date" y 10 migraciones
+npx prisma migrate status      # "Database schema is up to date" y 11 migraciones
 ```
 
 ### 3.8 Datos iniciales (solo la primera vez)
@@ -269,11 +269,14 @@ que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
      el seguimiento de los indicadores de la empresa.
    - Cada gerencia con su **gerente** asignado: carga y hace el seguimiento de los
      indicadores de su gerencia.
-4. **Indicadores de la empresa:** Andrea carga los **8** en la pestaña *Indicadores*
-   y registra cada mes el avance (% acumulado y comentario). No se puede cargar un
-   noveno.
-5. **Indicadores de la gerencia:** cada gerente carga los **2** de su gerencia en
-   *Mi gerencia* y los sigue en cada seguimiento (% acumulado y comentario).
+4. **Componente 3 (C3), Resultado institucional:** Andrea carga los **8** indicadores
+   de la empresa en la pestaña *Resultado institucional*. Cada uno lleva **línea
+   estratégica** (L1 a L4; la L5 no aplica), **objetivo estratégico**, **tipo**
+   (estratégico o de gestión), **indicador** y **meta** (puede ser "N/A"). Después
+   registra cada mes el avance (% acumulado y comentario). No se puede cargar un noveno.
+5. **Componente 2 (C2), Metas por gerencia:** cada gerente carga los **2** de su
+   gerencia en la pestaña *Metas por gerencia*, con los mismos cinco campos, y los
+   sigue en cada seguimiento (% acumulado y comentario).
 6. **Cierre del periodo.** Solo se cierra cuando están los 8 de la empresa, los 2
    de cada gerencia con gerente y el resultado de todos los objetivos e indicadores;
    si falta algo, el mensaje dice qué.
@@ -441,14 +444,15 @@ En el navegador:
 3. Con la cuenta de arranque: *Administración* y *Estructura organizacional*
    cargan, y el conteo de colaboradores coincide con el grupo de Entra ID.
 4. Se ven las fotos/iniciales de los colaboradores.
-5. Las pestañas **Indicadores** (para todos) y **Mi gerencia** (para gerentes)
-   cargan, y sin sesión redirigen a `/login`.
+5. Las pestañas **Metas individuales** (C1), **Metas por gerencia** (C2, para
+   gerentes) y **Resultado institucional** (C3) cargan, y sin sesión redirigen a
+   `/login`.
 
-Y en la base (debe dar 10 migraciones y las tres reglas):
+Y en la base (debe dar 11 migraciones y las cuatro reglas):
 
 ```bash
 psql "${DATABASE_URL%%\?*}" -At -c "select count(*) from _prisma_migrations"
-psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_registro_seguimiento_porcentaje_rango','chk_objetivo_cumplido_no_desarrollo','chk_objetivo_sin_calificacion_numerica') order by 1"
+psql "${DATABASE_URL%%\?*}" -At -c "select conname from pg_constraint where conname in ('chk_registro_seguimiento_porcentaje_rango','chk_objetivo_cumplido_no_desarrollo','chk_objetivo_sin_calificacion_numerica','chk_objetivo_tipo_indicador_solo_indicadores') order by 1"
 ```
 
 ### Que Compras y Contratación siguen sanos
