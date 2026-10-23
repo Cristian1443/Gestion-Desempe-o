@@ -57,6 +57,11 @@ enum LineaEstrategica {
 // El periodo solo se abre y se cierra a mano. Lo que ocurre dentro (cuándo se
 // puede registrar un seguimiento y cuándo se pone el % de cumplimiento) lo
 // deciden las franjas de fechas, ver `Seguimiento` y `Periodo.cumplimiento*`.
+enum TipoIndicador {
+  ESTRATEGICO
+  GESTION
+}
+
 enum EstadoPeriodo {
   BORRADOR
   ABIERTO
@@ -303,6 +308,11 @@ model Objetivo {
   // objetivos individuales de desempeño, el gerente en los de gerencia y la
   // persona encargada en los indicadores de la empresa. No aplica a desarrollo.
   cumplido Boolean? @map("cumplido")
+
+  // Solo CORPORATIVO y GERENCIA (los indicadores): si el indicador es estratégico
+  // o de gestión. La línea estratégica (L1 a L4) usa `lineaEstrategica`; el
+  // objetivo estratégico se guarda en `descripcion` y el indicador en `titulo`.
+  tipoIndicador TipoIndicador? @map("tipo_indicador")
 
   seguimientos RegistroSeguimiento[]
   // Solo CORPORATIVO: avance mes a mes del indicador.

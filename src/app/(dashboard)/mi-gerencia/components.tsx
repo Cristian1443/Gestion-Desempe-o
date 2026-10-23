@@ -42,7 +42,8 @@ export function IndicadorGerenciaCard({
         descripcion={indicador.descripcion}
         meta={indicador.meta}
         unidadMedida={indicador.unidadMedida}
-        indicador={indicador.indicador}
+        lineaEstrategica={indicador.lineaEstrategica}
+        tipoIndicador={indicador.tipoIndicador}
         estado={indicador.estado}
       />
 
@@ -92,11 +93,11 @@ export function IndicadorGerenciaCard({
       <AccionesIndicador
         objetivoId={indicador.id}
         datos={{
-          titulo: indicador.titulo,
+          lineaEstrategica: indicador.lineaEstrategica ?? "",
           descripcion: indicador.descripcion,
+          tipoIndicador: indicador.tipoIndicador ?? "",
+          titulo: indicador.titulo,
           meta: indicador.meta,
-          unidadMedida: indicador.unidadMedida ?? "",
-          indicador: indicador.indicador,
         }}
         puedeEliminar={indicador.seguimientos.length === 0 && indicador.cumplido === null}
         accionEditar={accionEditarIndicadorGerencia}

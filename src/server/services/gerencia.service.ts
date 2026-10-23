@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
+import type { LineaIndicadorCodigo, TipoIndicadorCodigo } from "@/lib/indicadores-config";
 import { CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import {
@@ -22,12 +23,13 @@ export class ErrorGerencia extends Error {
 }
 
 export interface DatosIndicadorGerencia {
-  titulo: string;
+  lineaEstrategica: LineaIndicadorCodigo;
+  // Objetivo estratégico (se guarda en `descripcion`).
   descripcion: string;
+  tipoIndicador: TipoIndicadorCodigo;
+  // El indicador (se guarda en `titulo` y en `indicador`).
+  titulo: string;
   meta: string;
-  // Cómo se mide el indicador (la fórmula o el criterio).
-  indicador: string;
-  unidadMedida: string;
 }
 
 async function gerenciaDelGerenteOFalla(gerenteId: string) {
@@ -75,8 +77,9 @@ export async function crearIndicadorGerencia(gerenteId: string, datos: DatosIndi
       titulo: datos.titulo,
       descripcion: datos.descripcion,
       meta: datos.meta,
-      indicador: datos.indicador,
-      unidadMedida: datos.unidadMedida,
+      indicador: datos.titulo,
+      lineaEstrategica: datos.lineaEstrategica,
+      tipoIndicador: datos.tipoIndicador,
       peso: 0,
       estadoAprobacion: "APROBADO",
       creadoPor: gerenteId,
@@ -99,8 +102,9 @@ export async function editarIndicadorGerencia(
       titulo: datos.titulo,
       descripcion: datos.descripcion,
       meta: datos.meta,
-      indicador: datos.indicador,
-      unidadMedida: datos.unidadMedida,
+      indicador: datos.titulo,
+      lineaEstrategica: datos.lineaEstrategica,
+      tipoIndicador: datos.tipoIndicador,
     },
   });
 }
@@ -155,6 +159,9 @@ export interface IndicadorGerenciaVista {
   meta: string;
   indicador: string;
   unidadMedida: string | null;
+  // Línea estratégica (L1 a L4) y tipo; nulos en indicadores cargados antes de estos campos.
+  lineaEstrategica: string | null;
+  tipoIndicador: TipoIndicadorCodigo | null;
   // Un registro vigente por seguimiento (el más reciente, si hubo
   // correcciones), ordenado por número de seguimiento ascendente.
   seguimientos: SeguimientoGerenciaVista[];
@@ -226,6 +233,8 @@ export async function obtenerMiGerencia(gerenteId: string): Promise<MiGerencia |
       meta: o.meta as string,
       indicador: o.indicador,
       unidadMedida: o.unidadMedida,
+      lineaEstrategica: o.lineaEstrategica,
+      tipoIndicador: o.tipoIndicador,
       seguimientos,
       // Registros anteriores a este modelo no tienen %: se ignoran para el último.
       ultimoPorcentaje: [...seguimientos].reverse().find((s) => s.porcentaje !== null)?.porcentaje ?? null,

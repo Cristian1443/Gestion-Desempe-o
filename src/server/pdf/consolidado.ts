@@ -176,9 +176,10 @@ function dibujarIndicadorBase(e: Escritor, indicador: IndicadorPdf, numero: numb
   e.separador(6);
   e.subtitulo(`${numero}. ${indicador.titulo}`, TEXTO, 11.5);
   e.resultado(indicador.cumplido);
-  e.parrafo(indicador.descripcion, { color: GRIS });
+  e.campo("Línea estratégica", indicador.lineaEstrategica);
+  e.campo("Objetivo estratégico", indicador.descripcion);
+  e.campo("Tipo de indicador", indicador.tipoIndicador);
   e.campo("Meta", `${indicador.meta}${indicador.unidadMedida ? ` ${indicador.unidadMedida}` : ""}`);
-  e.campo("Se mide", indicador.indicador);
 }
 
 function dibujarEmpresa(e: Escritor, indicadores: IndicadorEmpresaPdf[]) {

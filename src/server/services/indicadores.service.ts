@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
 import { claveMes, mesActual, mesesDelPeriodo, mesesRegistrables, primerDiaDelMes } from "@/lib/mes";
+import type { LineaIndicadorCodigo, TipoIndicadorCodigo } from "@/lib/indicadores-config";
 import { CANTIDAD_OBJETIVOS_CORPORATIVOS } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
@@ -19,12 +20,13 @@ export class ErrorIndicador extends Error {
 }
 
 export interface DatosIndicador {
-  titulo: string;
+  lineaEstrategica: LineaIndicadorCodigo;
+  // Objetivo estratégico (se guarda en `descripcion`).
   descripcion: string;
+  tipoIndicador: TipoIndicadorCodigo;
+  // El indicador (se guarda en `titulo` y en `indicador`).
+  titulo: string;
   meta: string;
-  // Cómo se mide el indicador (la fórmula o el criterio).
-  indicador: string;
-  unidadMedida: string;
 }
 
 async function periodoAbiertoOFalla() {
@@ -64,8 +66,9 @@ export async function crearIndicador(input: DatosIndicador & { creadoPor: string
       titulo: input.titulo,
       descripcion: input.descripcion,
       meta: input.meta,
-      indicador: input.indicador,
-      unidadMedida: input.unidadMedida,
+      indicador: input.titulo,
+      lineaEstrategica: input.lineaEstrategica,
+      tipoIndicador: input.tipoIndicador,
       peso: 0,
       estadoAprobacion: "APROBADO",
       creadoPor: input.creadoPor,
@@ -84,8 +87,9 @@ export async function editarIndicador(input: DatosIndicador & { objetivoId: stri
       titulo: input.titulo,
       descripcion: input.descripcion,
       meta: input.meta,
-      indicador: input.indicador,
-      unidadMedida: input.unidadMedida,
+      indicador: input.titulo,
+      lineaEstrategica: input.lineaEstrategica,
+      tipoIndicador: input.tipoIndicador,
     },
   });
 }
@@ -185,6 +189,9 @@ export interface IndicadorVista {
   meta: string;
   indicador: string;
   unidadMedida: string | null;
+  // Línea estratégica (L1 a L4) y tipo; nulos en indicadores cargados antes de estos campos.
+  lineaEstrategica: string | null;
+  tipoIndicador: TipoIndicadorCodigo | null;
   // Un registro vigente por mes, de enero a diciembre.
   avances: AvanceMesVista[];
   ultimoPorcentaje: number | null;
@@ -249,6 +256,8 @@ export async function obtenerIndicadores(): Promise<Indicadores | null> {
       meta: o.meta as string,
       indicador: o.indicador,
       unidadMedida: o.unidadMedida,
+      lineaEstrategica: o.lineaEstrategica,
+      tipoIndicador: o.tipoIndicador,
       avances,
       ultimoPorcentaje: avances[avances.length - 1]?.porcentaje ?? null,
       cumplido: o.cumplido,

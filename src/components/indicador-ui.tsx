@@ -1,3 +1,5 @@
+import { ETIQUETA_TIPO_INDICADOR, textoLinea, type TipoIndicadorCodigo } from "@/lib/indicadores-config";
+
 // Piezas visuales compartidas por los indicadores de la empresa (/indicadores) y
 // los de la gerencia (/mi-gerencia): hacen lo mismo y se ven igual; solo cambia
 // cómo se dibuja su seguimiento (12 meses vs. seguimientos con franja).
@@ -31,20 +33,23 @@ export function TarjetaResumen({ etiqueta, valor, destacada = false }: { etiquet
   );
 }
 
-// Nombre + estado, descripción, meta y cómo se mide.
+// Indicador + estado, línea estratégica, objetivo estratégico, tipo y meta.
 export function CabeceraIndicador({
   titulo,
   descripcion,
   meta,
   unidadMedida,
-  indicador,
+  lineaEstrategica,
+  tipoIndicador,
   estado,
 }: {
   titulo: string;
+  // Objetivo estratégico.
   descripcion: string;
   meta: string;
   unidadMedida: string | null;
-  indicador: string;
+  lineaEstrategica: string | null;
+  tipoIndicador: TipoIndicadorCodigo | null;
   estado: EstadoIndicadorUI;
 }) {
   return (
@@ -56,19 +61,28 @@ export function CabeceraIndicador({
         </span>
       </div>
 
-      <p className="-mt-2 text-sm leading-relaxed text-iib-secondary">{descripcion}</p>
+      {(lineaEstrategica || tipoIndicador) && (
+        <div className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          {lineaEstrategica && <span className="font-semibold text-iib-primary">{textoLinea(lineaEstrategica)}</span>}
+          {tipoIndicador && (
+            <span className="rounded-full bg-iib-surface-sunken px-2.5 py-0.5 font-semibold text-iib-secondary">
+              {ETIQUETA_TIPO_INDICADOR[tipoIndicador]}
+            </span>
+          )}
+        </div>
+      )}
 
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm">
+        <div className="flex gap-2">
+          <dt className="shrink-0 text-iib-secondary">Objetivo estratégico</dt>
+          <dd className="font-medium">{descripcion}</dd>
+        </div>
         <div className="flex gap-2">
           <dt className="shrink-0 text-iib-secondary">Meta</dt>
           <dd className="font-medium">
             {meta}
             {unidadMedida ? ` ${unidadMedida}` : ""}
           </dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="shrink-0 text-iib-secondary">Se mide</dt>
-          <dd className="font-medium">{indicador}</dd>
         </div>
       </dl>
     </>

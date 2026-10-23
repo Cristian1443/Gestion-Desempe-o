@@ -1,3 +1,4 @@
+import { ETIQUETA_TIPO_INDICADOR, textoLinea } from "@/lib/indicadores-config";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
 import { claveMes } from "@/lib/mes";
 import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
@@ -27,11 +28,16 @@ export interface AvanceMesPdf {
 }
 
 export interface IndicadorPdf {
+  // El indicador.
   titulo: string;
+  // El objetivo estratégico.
   descripcion: string;
   meta: string;
   unidadMedida: string | null;
   indicador: string;
+  // Línea estratégica (texto completo) y tipo; nulos en indicadores cargados antes de estos campos.
+  lineaEstrategica?: string | null;
+  tipoIndicador?: string | null;
   cumplido: boolean | null;
 }
 
@@ -116,6 +122,8 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
     meta: o.meta ?? "",
     unidadMedida: o.unidadMedida,
     indicador: o.indicador,
+    lineaEstrategica: textoLinea(o.lineaEstrategica),
+    tipoIndicador: o.tipoIndicador ? ETIQUETA_TIPO_INDICADOR[o.tipoIndicador] : null,
     cumplido: o.cumplido,
     avances: o.avances.map((a) => ({ mes: claveMes(a.mes), porcentaje: a.porcentaje, comentario: a.comentario })),
   }));
@@ -133,6 +141,8 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
             meta: o.meta ?? "",
             unidadMedida: o.unidadMedida,
             indicador: o.indicador,
+            lineaEstrategica: textoLinea(o.lineaEstrategica),
+            tipoIndicador: o.tipoIndicador ? ETIQUETA_TIPO_INDICADOR[o.tipoIndicador] : null,
             cumplido: o.cumplido,
             seguimientos: o.seguimientos
               .map((s) => ({
