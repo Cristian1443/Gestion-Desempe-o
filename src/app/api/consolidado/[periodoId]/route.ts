@@ -12,13 +12,13 @@ function respuestaTexto(estado: number, mensaje: string) {
 }
 
 // Consolidado del periodo en PDF: objetivos individuales, indicadores de gerencia
-// e indicadores de la empresa, con su seguimiento y su resultado. Solo Gestión
-// Humana y Admin, y solo cuando el periodo ya está cerrado.
+// e indicadores de la empresa, con su seguimiento y su resultado. Solo Talento
+// Humano y Admin, y solo cuando el periodo ya está cerrado.
 export async function GET(_solicitud: Request, { params }: { params: { periodoId: string } }) {
   const usuario = await obtenerUsuarioSesion();
   if (!usuario || !usuario.activo) return respuestaTexto(401, "Inicia sesión para descargar el consolidado.");
   if (!tieneRol(usuario.roles, ["GESTION_HUMANA", "ADMIN"])) {
-    return respuestaTexto(403, "Solo Gestión Humana puede descargar el consolidado.");
+    return respuestaTexto(403, "Solo Talento Humano puede descargar el consolidado.");
   }
 
   const periodo = await db.periodo.findUnique({ where: { id: params.periodoId } });

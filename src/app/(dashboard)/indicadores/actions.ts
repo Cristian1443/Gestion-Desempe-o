@@ -21,7 +21,7 @@ import {
 export type EstadoAccionIndicador = { ok: true } | { ok: false; error: string };
 
 // Quién carga y hace el seguimiento de los indicadores: el Gestor corporativo
-// (hoy Andrea Jimenez) y, como respaldo, Gestión Humana y Admin. Todos los
+// (hoy Andrea Jimenez) y, como respaldo, Talento Humano y Admin. Todos los
 // demás los ven en solo lectura.
 const ROLES_EDITORES = ["GESTOR_CORPORATIVO", "GESTION_HUMANA", "ADMIN"] as const;
 

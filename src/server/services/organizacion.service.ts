@@ -115,7 +115,7 @@ async function validarJefeSinCiclo(usuarioId: string | null, jefeId: string | nu
 // Da de alta a un colaborador antes de que exista su cuenta vinculada
 // (`entraObjectId` queda en null — ver comentario en el schema y en
 // `resolverUsuarioParaLogin`). Es la operación central de "conectar
-// empleados con sus jefes": aquí es donde Gestión Humana arma el
+// empleados con sus jefes": aquí es donde Talento Humano arma el
 // organigrama real.
 export async function crearUsuario(datos: DatosUsuario) {
   const existente = await db.usuario.findUnique({ where: { email: datos.email } });

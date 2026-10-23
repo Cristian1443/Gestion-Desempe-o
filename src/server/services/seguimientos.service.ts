@@ -14,7 +14,7 @@ export class ErrorSeguimiento extends Error {
   }
 }
 
-// El seguimiento en el que se puede registrar hoy: el que Gestión Humana
+// El seguimiento en el que se puede registrar hoy: el que Talento Humano
 // definió con una franja que incluye la fecha de hoy. Fuera de toda franja
 // nadie registra; el mensaje dice cuándo vuelve a abrirse.
 async function exigirSeguimientoEnCurso(periodoId: string) {

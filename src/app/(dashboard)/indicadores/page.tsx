@@ -67,7 +67,7 @@ export default async function IndicadoresPage() {
               : cumplimiento.estado === "PROXIMA"
                 ? `Resultado final: se marca del ${formatearFecha(cumplimiento.inicio)} al ${formatearFecha(cumplimiento.fin)}.`
                 : `La franja del resultado final terminó el ${formatearFecha(cumplimiento.fin)}.`
-            : "Gestión Humana todavía no definió la franja del resultado final."}
+            : "Talento Humano todavía no definió la franja del resultado final."}
         </p>
       </div>
 

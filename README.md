@@ -22,7 +22,7 @@ antes de construir el esquema:
    → el jefe directo aprueba, edita o devuelve con comentario
    (`Objetivo.estadoAprobacion`).
 2. **Seguimientos numerados con franja de fechas:** son una entidad
-   explícita (`Seguimiento`), que Gestión Humana configura por periodo
+   explícita (`Seguimiento`), que Talento Humano configura por periodo
    (cuántos hay y la franja desde–hasta de cada uno). Se registran solo dentro
    de su franja; ver "Seguimientos y % de cumplimiento" más abajo.
 3. **Seguimiento en niveles superiores:** los objetivos de gerencia y
@@ -38,14 +38,14 @@ antes de construir el esquema:
   dos modelos de "usuario" (el de NextAuth y el de negocio) y mantiene
   `Usuario` como única fuente de verdad para roles y jerarquía.
 - **`Usuario.entraObjectId` es opcional (pre-registro + vinculación por
-  correo):** Gestión Humana puede dar de alta a alguien en la estructura
+  correo):** Talento Humano puede dar de alta a alguien en la estructura
   organizacional (con su jefe, gerencia y roles) antes de que esa persona
   haya iniciado sesión ni una sola vez — `entraObjectId` queda en `null`
   ("pendiente"). La primera vez que esa cuenta entra por SSO,
   `resolverUsuarioParaLogin` la empareja por correo y completa el
   `entraObjectId` automáticamente, sin intervención manual. Es el patrón
   estándar de "invitar antes del primer login" en apps empresariales, y evita
-  que Gestión Humana dependa de que TI le pase IDs de Azure AD para poder
+  que Talento Humano dependa de que TI le pase IDs de Azure AD para poder
   armar el organigrama.
 - **Auto-aprovisionamiento en el primer login, si nadie lo pre-registró:**
   cuando alguien inicia sesión y no hay ningún `Usuario` con su correo (ni
@@ -56,10 +56,10 @@ antes de construir el esquema:
   con el grupo de colaboradores activos asignado** (ver
   "Configurar el App Registration"), así que solo alguien de ese grupo llega
   siquiera a la pantalla de login. `Usuario.activo` sigue siendo el
-  interruptor para desactivar a alguien después (offboarding), y Gestión
-  Humana completa jefe/gerencia/roles desde Estructura organizacional cuando
+  interruptor para desactivar a alguien después (offboarding), y Talento
+  Humano completa jefe/gerencia/roles desde Estructura organizacional cuando
   pueda — no bloquea el primer acceso. Esto convive con el camino de
-  pre-registro manual: si Gestión Humana ya dio de alta a la persona de
+  pre-registro manual: si Talento Humano ya dio de alta a la persona de
   antemano (con su jefe y gerencia ya definidos), esa información no se
   pierde, simplemente se vincula en vez de crear un perfil nuevo.
 - **Un solo modelo `Objetivo` para los 3 niveles:** en vez de 3 tablas
@@ -104,7 +104,7 @@ antes de construir el esquema:
 - **La sesión se re-valida contra la base de datos en cada lectura, no solo al
   iniciar sesión:** el JWT únicamente guarda el `entraObjectId`. Roles,
   gerencia y el estado `activo` se resuelven en el callback `session`
-  consultando `Usuario` cada vez. Así, si Gestión Humana desactiva a alguien,
+  consultando `Usuario` cada vez. Así, si Talento Humano desactiva a alguien,
   pierde el acceso en la siguiente petición en vez de conservarlo hasta que
   expire el token (con estrategia JWT pura, sin esto, una desactivación no
   tendría efecto hasta el vencimiento del JWT).
@@ -146,7 +146,7 @@ src/
         CrearObjetivosGerenciaForm.tsx  Formulario de carga (Client Component)
         actions.ts             Server Actions: crear objetivos y reportar avance
       administracion/
-        page.tsx             Módulo Gestión Humana/Admin: corporativos + periodos
+        page.tsx             Módulo Talento Humano/Admin: corporativos + periodos
         components.tsx        ObjetivoCorporativoCard + PeriodoRow
         CrearObjetivosCorporativosForm.tsx  Formulario de carga (Client)
         CrearPeriodoForm.tsx / AgregarSeguimientoForm.tsx / FranjaCumplimientoForm.tsx  Formularios (Client)
@@ -235,7 +235,7 @@ scripts/
      (falta "calificar al cierre" — ver nota al final de esa sección)
    - ✅ Mi gerencia (gerente) — cargar los 2 objetivos, reportar avance,
      consolidado del equipo
-   - ✅ Administración (Gestión Humana) — corporativos, periodos y seguimientos con franja
+   - ✅ Administración (Talento Humano) — corporativos, periodos y seguimientos con franja
    - ✅ Estructura organizacional — gerencias, alta de colaboradores,
      conexión empleado↔jefe, con vinculación automática al primer login
    - ✅ Tablero de resultados — avance global, cumplimiento por gerencia,
@@ -253,7 +253,7 @@ historial de cómo se construyeron y todavía mencionan cortes, validación y
 semáforo: describen el flujo anterior, no el actual.
 
 - **Seguimientos numerados.** Cada periodo tiene N seguimientos (Seguimiento 1,
-  2… N). Gestión Humana define cuántos hay y la **franja de fechas** (inicio y
+  2… N). Talento Humano define cuántos hay y la **franja de fechas** (inicio y
   fin, inclusivos) de cada uno desde *Administración*. Las franjas van en orden y
   no se traslapan; cada seguimiento debe caer dentro del periodo.
 - **Se controla solo, por fechas.** Un seguimiento se puede registrar únicamente
@@ -272,7 +272,7 @@ semáforo: describen el flujo anterior, no el actual.
   `calificacionFinal` fuera de los individuales). Solo los individuales de desempeño
   llevan peso (ver abajo); los indicadores no.
   Se marca una sola vez, al final, y solo dentro de la **franja del resultado final**
-  que Gestión Humana define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
+  que Talento Humano define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
   puede terminar después del periodo. En los individuales lo marca el jefe directo.
 - **Objetivos de desempeño.** Cuatro por persona, cada uno con **línea estratégica,
   descripción, acciones, fórmula del indicador, meta y peso**; los cuatro pesos suman
@@ -287,10 +287,10 @@ semáforo: describen el flujo anterior, no el actual.
 - **Periodo.** Borrador → Abierto → Cerrado. Abrir exige al menos un seguimiento y
   la franja del resultado final; cerrar exige que todos los objetivos tengan su
   resultado. Ya no existe "En evaluación" ni "Pasar a evaluación": la franja lo reemplaza.
-- **PDF consolidado.** Con el periodo **cerrado**, Gestión Humana y Admin descargan desde
+- **PDF consolidado.** Con el periodo **cerrado**, Talento Humano y Admin descargan desde
   *Administración* un PDF con los objetivos individuales (por gerencia y persona), los
   indicadores de gerencia y los de la empresa, con su seguimiento y resultado. Ruta
-  `GET /api/consolidado/<periodoId>` (403 si no es Gestión Humana/Admin, 409 si el periodo
+  `GET /api/consolidado/<periodoId>` (403 si no es Talento Humano/Admin, 409 si el periodo
   no está cerrado); datos en [src/server/services/consolidado.service.ts](src/server/services/consolidado.service.ts)
   y documento en [src/server/pdf/consolidado.ts](src/server/pdf/consolidado.ts) (`pdfkit`,
   declarado como paquete externo en `next.config.mjs`).
@@ -314,7 +314,7 @@ Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todo
   Un periodo no se cierra mientras algún indicador no tenga resultado.
 - **Quién los gestiona.** El rol *Gestor de objetivos corporativos* (hoy Andrea
   Jimenez Fandiño) carga los indicadores, hace el seguimiento mensual y marca el
-  resultado; Gestión Humana y Admin pueden hacer lo mismo. Todos los demás los ven
+  resultado; Talento Humano y Admin pueden hacer lo mismo. Todos los demás los ven
   en solo lectura. La pantalla muestra como responsables a quienes tengan ese rol.
 - **Nota final.** Cómo cuentan los indicadores en el 30% corporativo de la nota
   está sin definir; `calculo-notas.ts` no se tocó y sigue sin conectarse a nada.
@@ -326,7 +326,7 @@ Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todo
 
 Los objetivos de gerencia hacen lo mismo que los indicadores de la empresa, con una
 diferencia: el seguimiento no es mensual sino por los **seguimientos con franja**
-que define Gestión Humana (3 al año o los que diga). Viven en *Mi gerencia*.
+que define Talento Humano (3 al año o los que diga). Viven en *Mi gerencia*.
 
 - **Sin peso** (`Objetivo.peso` en 0, ya no son 15% cada uno), cumple o no cumple.
 - **2 por gerencia**, cargados de a uno por el **gerente de esa gerencia**, que
@@ -415,7 +415,7 @@ el periodo vigente.
   `Objetivo.calificacionFinal` cuando el periodo pasa a `EN_EVALUACION`) no
   está construido todavía — el campo ya existe en el esquema desde la fase 2,
   pero la UI de calificación se hace más sentido junto con el cierre de
-  periodo (que es responsabilidad de Administración/Gestión Humana).
+  periodo (que es responsabilidad de Administración/Talento Humano).
 
 ## Módulo "Mi gerencia" (fase 4, tercera entrega)
 
@@ -444,7 +444,7 @@ equipo.
 
 ## Módulo "Administración" (fase 4, cuarta entrega — parcial)
 
-Pantalla de Gestión Humana / Admin: objetivos corporativos y gestión de
+Pantalla de Talento Humano / Admin: objetivos corporativos y gestión de
 periodos. La estructura organizacional (altas de usuarios, gerencias, roles)
 quedó fuera **a propósito**: en gran parte la va a resolver el script de
 migración de la fase 5 con datos reales de SharePoint, así que construir un
@@ -452,7 +452,7 @@ CRUD manual completo ahora habría sido, en parte, trabajo desechable.
 
 - **Objetivos corporativos:** mismo patrón que gerencia — sin aprobación,
   carga única por periodo, 3.75% fijo cada uno
-  (`crearObjetivosCorporativos`), reportado por Gestión Humana/Admin
+  (`crearObjetivosCorporativos`), reportado por Talento Humano/Admin
   (`reportarAvanceCorporativo`, que también reutiliza
   `crearSiguienteVersionSeguimiento`).
 - **Periodos:** crear periodo (`crearPeriodo`), definir cortes mientras está
@@ -489,7 +489,7 @@ CRUD manual completo ahora habría sido, en parte, trabajo desechable.
 
 ## Módulo "Tablero de resultados" (fase 4, quinta y última entrega)
 
-Pantalla de solo lectura para Gestión Humana/Admin: avance global, cumplimiento
+Pantalla de solo lectura para Talento Humano/Admin: avance global, cumplimiento
 por gerencia, y objetivos en riesgo.
 
 - **Es avance operativo, no la nota final:** el motor de cálculo de notas
@@ -564,7 +564,7 @@ Administración, hasta que hizo falta de verdad.
 `prisma/seed.ts` ya no inventa personas ni gerencias — esa estructura la trae
 la migración real (`scripts/migracion-sharepoint/importar-estructura-real.mjs`)
 contra el directorio de Entra ID. El seed solo crea lo mínimo para arrancar un
-ambiente nuevo: la cuenta de arranque de Gestión Humana/Admin, el periodo
+ambiente nuevo: la cuenta de arranque de Talento Humano/Admin, el periodo
 anual `2026` con 4 seguimientos con franja y la franja del % de cumplimiento. No crea indicadores de la
 empresa: los carga el Gestor corporativo desde la pestaña Indicadores. Es idempotente, se puede correr varias
 veces:
@@ -590,7 +590,7 @@ aparece si ya corriste el seed).
 
 Se mantiene a propósito en el código, no es un descarte de un experimento:
 sirve para probar cada módulo nuevo como un usuario con el rol que le
-corresponde (jefe, gerente, Gestión Humana) sin depender de tener el App
+corresponde (jefe, gerente, Talento Humano) sin depender de tener el App
 Registration de Entra ID ya configurado — algo que se repetirá en el resto
 de la fase 4 (Mi equipo, Mi gerencia, Administración). El requisito de "solo
 SSO corporativo, sin usuarios propios" sigue cumpliéndose en producción
@@ -632,7 +632,7 @@ aplicación en el tenant de Microsoft 365 de la organización:
      [organización]"** — sin esto, cada usuario nuevo ve una pantalla de
      "Se necesita la aprobación del administrador" en su primer intento.
 7. Con eso, **cualquier miembro de ese grupo ya puede iniciar sesión sin que
-   Gestión Humana tenga que darlo de alta a mano primero** — ver
+   Talento Humano tenga que darlo de alta a mano primero** — ver
    "Auto-aprovisionamiento en el primer login" más arriba. Si en cambio
    prefieres pre-registrar a alguien con su jefe/gerencia ya definidos antes
    de su primer login, hazlo en **Administración → Estructura

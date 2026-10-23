@@ -85,7 +85,7 @@ enum EstadoEvaluacion {
 model Usuario {
   id     String  @id @default(cuid())
   // Nulo mientras el colaborador está "pre-registrado" (dado de alta por
-  // Gestión Humana en la estructura organizacional) pero todavía no ha
+  // Talento Humano en la estructura organizacional) pero todavía no ha
   // iniciado sesión ni una sola vez con su cuenta corporativa. Se completa
   // solo, automáticamente, la primera vez que esa persona entra por SSO:
   // el callback de login lo empareja por `email` y lo vincula (ver
@@ -179,7 +179,7 @@ model Periodo {
   estado      EstadoPeriodo @default(BORRADOR)
 
   // Franja de fechas (inclusive) en la que se pone el % de cumplimiento final
-  // de cada objetivo. La define Gestión Humana y puede terminar después de
+  // de cada objetivo. La define Talento Humano y puede terminar después de
   // `fechaFin` (la evaluación se hace al cierre del año). Nulas hasta que se
   // definan; sin franja nadie puede poner el % final.
   cumplimientoInicio DateTime? @map("cumplimiento_inicio")
@@ -195,7 +195,7 @@ model Periodo {
   @@map("periodos")
 }
 
-// Seguimiento numerado de un periodo (Seguimiento 1, 2… N). Gestión Humana
+// Seguimiento numerado de un periodo (Seguimiento 1, 2… N). Talento Humano
 // define cuántos hay y la franja de fechas (inclusive) de cada uno; el sistema
 // decide solo, por la fecha de hoy, cuál está en curso, así que nadie abre ni
 // cierra nada a mano. Las franjas no se traslapan y aplican a los 3 niveles

@@ -6,7 +6,7 @@ const ETIQUETA_ROL: Record<string, string> = {
   JEFE: "Jefe",
   GERENTE: "Gerente",
   GESTOR_CORPORATIVO: "Gestor de objetivos corporativos",
-  GESTION_HUMANA: "Gestión Humana",
+  GESTION_HUMANA: "Talento Humano",
   ADMIN: "Admin",
 };
 

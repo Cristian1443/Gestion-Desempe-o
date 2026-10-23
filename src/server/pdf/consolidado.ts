@@ -126,7 +126,7 @@ function dibujarPortada(e: Escritor, datos: ConsolidadoDatos) {
   const { doc } = e;
   doc.rect(0, 0, doc.page.width, 150).fill(ROJO);
   doc.font("Helvetica-Bold").fontSize(11).fillColor("#FFFFFF").text("INVEST IN BOGOTÁ", MARGEN, 52, { characterSpacing: 2 });
-  doc.font("Helvetica-Bold").fontSize(26).text("Consolidado de la evaluación", MARGEN, 76, { width: ANCHO_UTIL });
+  doc.font("Helvetica-Bold").fontSize(26).text("Consolidado del resultado final", MARGEN, 76, { width: ANCHO_UTIL });
   doc.font("Helvetica").fontSize(13).text(limpiar(`Periodo ${datos.periodo.nombre}`), MARGEN, 112);
 
   doc.y = 180;
@@ -310,7 +310,7 @@ export function generarConsolidadoPdf(datos: ConsolidadoDatos): Promise<Buffer> 
       margins: { top: MARGEN, bottom: MARGEN, left: MARGEN, right: MARGEN },
       bufferPages: true,
       info: {
-        Title: limpiar(`Consolidado de la evaluación — ${datos.periodo.nombre}`),
+        Title: limpiar(`Consolidado del resultado final — ${datos.periodo.nombre}`),
         Author: "Invest in Bogotá — Gestión del Desempeño",
       },
     });

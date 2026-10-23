@@ -5,14 +5,14 @@ import { db } from "@/server/db";
 //   1. Ya existe un Usuario con este entraObjectId — es alguien que ya había
 //      iniciado sesión antes. Caso normal de todos los días.
 //   2. No existe por entraObjectId, pero sí hay un Usuario con el mismo
-//      correo sin vincular todavía (`entraObjectId` nulo) — Gestión Humana
+//      correo sin vincular todavía (`entraObjectId` nulo) — Talento Humano
 //      lo pre-registró de antemano en la estructura organizacional (con su
 //      jefe, gerencia y roles ya definidos) y este es su primer login real.
 //      Se vincula automáticamente.
 //   3. No existe ningún registro con ese correo — nadie lo pre-registró a
 //      mano. En vez de rechazarlo, se aprovisiona un perfil base
 //      (rol COLABORADOR, sin jefe ni gerencia todavía) y se deja que
-//      Gestión Humana lo complete después desde Estructura organizacional.
+//      Talento Humano lo complete después desde Estructura organizacional.
 //      Esto es seguro porque el control de acceso real ya vive en Entra
 //      ID: el App Registration tiene "Assignment required" activado y solo
 //      el grupo de colaboradores activos está asignado, así que solo

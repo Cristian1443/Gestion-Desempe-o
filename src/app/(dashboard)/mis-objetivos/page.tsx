@@ -24,8 +24,8 @@ export default async function MisObjetivosPage({
     return (
       <div className="rounded-card bg-iib-surface p-6 text-center shadow-card">
         <p className="text-sm text-iib-secondary">
-          No hay un periodo de evaluación abierto en este momento. Cuando Gestión
-          Humana abra el periodo, tus objetivos aparecerán aquí.
+          No hay un periodo de evaluación abierto en este momento. Cuando Talento
+          Humano abra el periodo, tus objetivos aparecerán aquí.
         </p>
       </div>
     );

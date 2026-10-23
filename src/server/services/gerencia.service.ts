@@ -12,7 +12,7 @@ import {
 // Indicadores de la gerencia = objetivos de nivel GERENCIA. Hacen lo mismo que
 // los de la empresa (sin peso, % de avance con comentario y resultado final
 // Cumple / No cumple), pero el seguimiento no es mensual sino por los
-// seguimientos con franja que define Gestión Humana. Los carga y les hace
+// seguimientos con franja que define Talento Humano. Los carga y les hace
 // seguimiento el gerente de la gerencia; son 2 por gerencia. No pasan por
 // aprobación: quedan vigentes de una vez.
 export class ErrorGerencia extends Error {
@@ -117,7 +117,7 @@ export async function eliminarIndicadorGerencia(gerenteId: string, objetivoId: s
 }
 
 // Resultado final del indicador: lo marca el gerente dentro de la franja del %
-// de cumplimiento que Gestión Humana define para el periodo.
+// de cumplimiento que Talento Humano define para el periodo.
 export async function marcarCumplimientoGerencia(input: {
   objetivoId: string;
   cumple: boolean;

@@ -13,7 +13,7 @@ export interface CasillaSeguimiento {
 }
 
 // La tira de seguimientos de un indicador de gerencia: una casilla por cada
-// seguimiento que definió Gestión Humana (3 al año o los que sean). Solo el que
+// seguimiento que definió Talento Humano (3 al año o los que sean). Solo el que
 // está en curso hoy se puede registrar o corregir; los pasados se leen y los
 // próximos quedan apagados.
 export function TiraSeguimientosEditable({

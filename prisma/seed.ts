@@ -52,7 +52,7 @@ async function main() {
   });
 
   // Seguimientos trimestrales de partida, con una franja de dos semanas al
-  // final de cada trimestre — Gestión Humana los reprograma desde
+  // final de cada trimestre — Talento Humano los reprograma desde
   // Administración según el calendario real del año.
   const franjasSeguimiento = [
     { numero: 1, fechaInicio: new Date("2026-03-16"), fechaFin: new Date("2026-03-31") },
@@ -72,7 +72,7 @@ async function main() {
   }
 
   console.log("Seed completado:");
-  console.log(`  Cuenta de arranque: ${admin.email} (Gestión Humana + Admin, pendiente de primer login)`);
+  console.log(`  Cuenta de arranque: ${admin.email} (Talento Humano + Admin, pendiente de primer login)`);
   console.log(`  Periodo: ${periodo.nombre} (${seguimientos.length} seguimientos con franja)`);
   console.log("  Indicadores de la empresa: ninguno (los carga el Gestor corporativo desde la pestaña Indicadores)");
   console.log(

@@ -35,7 +35,7 @@ export interface ContextoFranjas {
   // Contra cuál se mide la cobertura en pantalla: el que está en curso o, si no
   // hay, el último que ya empezó.
   seguimientoReferencia: SeguimientoVista | null;
-  // Franja del resultado final. Null mientras Gestión Humana no la defina.
+  // Franja del resultado final. Null mientras Talento Humano no la defina.
   cumplimiento: { inicio: Date; fin: Date; estado: EstadoFranja } | null;
 }
 
@@ -79,7 +79,7 @@ export async function obtenerContextoFranjas(
   };
 }
 
-// --- Administración de periodos (Gestión Humana / Admin) ---
+// --- Administración de periodos (Talento Humano / Admin) ---
 
 export class ErrorPeriodo extends Error {
   constructor(message: string) {

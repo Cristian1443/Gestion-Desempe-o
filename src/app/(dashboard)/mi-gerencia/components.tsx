@@ -54,7 +54,7 @@ export function IndicadorGerenciaCard({
       />
 
       {casillas.length === 0 ? (
-        <p className="text-sm text-iib-secondary">Gestión Humana todavía no definió los seguimientos del periodo.</p>
+        <p className="text-sm text-iib-secondary">Talento Humano todavía no definió los seguimientos del periodo.</p>
       ) : (
         <TiraSeguimientosEditable objetivoId={indicador.id} tituloIndicador={indicador.titulo} casillas={casillas} />
       )}

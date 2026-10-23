@@ -223,10 +223,10 @@ npx prisma db seed
 ```
 
 El seed crea la cuenta de arranque `iibservices2@investinbogota.org`
-(Gestión Humana + Admin) y el periodo `2026` **ya Abierto**, con 4 seguimientos de
+(Talento Humano + Admin) y el periodo `2026` **ya Abierto**, con 4 seguimientos de
 ejemplo (16-31 de marzo, junio, septiembre y diciembre) y una franja de ejemplo para
 el % de cumplimiento (5-25 de enero de 2027). Esas fechas son un punto de partida:
-Gestión Humana las ajusta a las reales en la sección 3.9. El seed no crea
+Talento Humano las ajusta a las reales en la sección 3.9. El seed no crea
 indicadores ni objetivos de ningún nivel.
 
 **No volver a correr el seed en producción.** Sus `upsert` restauran valores:
@@ -249,12 +249,12 @@ Y siempre, para traer a todo el grupo `Usuarios_activos`:
 node --env-file=.env scripts/migracion-sharepoint/sincronizar-grupo.mjs
 ```
 
-### 3.9 Puesta en marcha funcional (la hace Gestión Humana)
+### 3.9 Puesta en marcha funcional (la hace Talento Humano)
 
 Con la app arriba, entrar con la cuenta de arranque y dejar listo el periodo. Hasta
 que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
 
-1. **Seguimientos (Administración → periodo).** Gestión Humana decide cuántos hay
+1. **Seguimientos (Administración → periodo).** Talento Humano decide cuántos hay
    (3 al año o los que quiera) y la **franja de fechas** de cada uno: inclusivas, en
    orden, sin traslaparse y dentro del periodo. Reemplazar las fechas de ejemplo del
    seed. Un seguimiento solo se puede registrar dentro de su franja; nadie lo abre
@@ -281,7 +281,7 @@ que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
 6. **Cierre del periodo.** Solo se cierra cuando están los 8 de la empresa, los 2
    de cada gerencia con gerente y el resultado de todos los objetivos e indicadores;
    si falta algo, el mensaje dice qué.
-7. **Consolidado en PDF.** Con el periodo cerrado, Gestión Humana descarga desde
+7. **Consolidado en PDF.** Con el periodo cerrado, Talento Humano descarga desde
    *Administración* el PDF con los objetivos individuales (por gerencia y persona), los
    indicadores de gerencia y los de la empresa, con su seguimiento y resultado. Antes de
    cerrar el periodo el botón no aparece. Lo genera la propia app con `pdfkit`, que
@@ -533,8 +533,8 @@ backup tomado antes de migrar (`pg_restore`). Conserva las 3 últimas carpetas d
 | `redirect_uri_mismatch` de Microsoft | `AUTH_URL` o el redirect de Entra ID no coinciden exactamente (https, puerto, sin barra final) | Alinear los dos |
 | El login dejó de funcionar sin tocar nada | Venció el client secret de Entra ID | Crear un secret nuevo, actualizar `shared/.env`, `pm2 restart` |
 | Aparece o desaparece gente en *Estructura organizacional* | Es el resultado de `sincronizar-grupo.mjs` (la fuente de verdad es Entra ID) | Revisar el grupo `Usuarios_activos` y `sync-directorio.log` |
-| "No hay un seguimiento en curso" al registrar | Hoy no cae dentro de la franja de ningún seguimiento | Gestión Humana agrega o ajusta un seguimiento que incluya la fecha de hoy (3.9) |
-| Cumple / No cumple no se habilita, o "Gestión Humana todavía no definió la franja" | Falta la franja del resultado final, o hoy está fuera de ella | Definirla o ajustarla en Administración (3.9) |
+| "No hay un seguimiento en curso" al registrar | Hoy no cae dentro de la franja de ningún seguimiento | Talento Humano agrega o ajusta un seguimiento que incluya la fecha de hoy (3.9) |
+| Cumple / No cumple no se habilita, o "Talento Humano todavía no definió la franja" | Falta la franja del resultado final, o hoy está fuera de ella | Definirla o ajustarla en Administración (3.9) |
 | El periodo no se deja cerrar: "Faltan por cargar…" | No están los 8 indicadores de la empresa o los 2 de alguna gerencia | Cargarlos (Andrea y los gerentes) y marcar todos los resultados |
 | Aviso `"next start" does not work with "output: standalone"` en el log | `next.config.mjs` tiene `output: "standalone"` (hecho para Docker) | Inofensivo (QA corre así hace semanas); ver pendientes |
 

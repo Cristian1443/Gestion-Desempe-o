@@ -10,7 +10,7 @@ export default function AccesoDenegadoPage() {
         <p className="mb-6 text-sm text-iib-secondary">
           Tu cuenta de Microsoft es válida, pero no está registrada como
           colaborador activo en el sistema de Gestión del Desempeño. Si crees
-          que esto es un error, comunícate con Gestión Humana.
+          que esto es un error, comunícate con Talento Humano.
         </p>
         <form
           action={async () => {

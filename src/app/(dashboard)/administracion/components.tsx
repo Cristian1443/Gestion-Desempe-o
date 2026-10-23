@@ -98,7 +98,7 @@ export function PeriodoRow({
             {periodo.estado === "BORRADOR"
               ? "Defínela para poder abrir el periodo: "
               : "Nadie puede marcar el resultado final hasta que la definas: "}
-            es el rango de fechas en que jefes, gerentes y Gestión Humana lo ponen en cada objetivo.
+            es el rango de fechas en que jefes, gerentes y Talento Humano lo ponen en cada objetivo.
           </p>
         )}
         {!cerrado && (

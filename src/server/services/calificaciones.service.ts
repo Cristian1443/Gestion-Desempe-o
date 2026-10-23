@@ -4,7 +4,7 @@ import { formatearFecha } from "@/lib/fecha";
 import { estadoFranja, hoyEnBogota } from "@/lib/franja";
 
 // Calificación final (en pantalla: "resultado final") de los objetivos. Solo
-// se puede poner dentro de la franja que Gestión Humana define para el periodo;
+// se puede poner dentro de la franja que Talento Humano define para el periodo;
 // nadie abre ni cierra nada a mano. Individuales: la pone el jefe directo.
 export class ErrorCalificacion extends Error {
   constructor(message: string) {
@@ -23,7 +23,7 @@ export function exigirFranjaCumplimiento(periodo: {
   }
   const { cumplimientoInicio: inicio, cumplimientoFin: fin } = periodo;
   if (!inicio || !fin) {
-    throw new ErrorCalificacion("Gestión Humana todavía no definió la franja del resultado final.");
+    throw new ErrorCalificacion("Talento Humano todavía no definió la franja del resultado final.");
   }
 
   const estado = estadoFranja(inicio, fin, hoyEnBogota());

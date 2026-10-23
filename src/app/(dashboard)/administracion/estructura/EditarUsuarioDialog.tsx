@@ -8,7 +8,7 @@ const ROLES = [
   { valor: "JEFE", etiqueta: "Jefe" },
   { valor: "GERENTE", etiqueta: "Gerente" },
   { valor: "GESTOR_CORPORATIVO", etiqueta: "Gestor de objetivos corporativos" },
-  { valor: "GESTION_HUMANA", etiqueta: "Gestión Humana" },
+  { valor: "GESTION_HUMANA", etiqueta: "Talento Humano" },
   { valor: "ADMIN", etiqueta: "Admin" },
 ] as const;
 

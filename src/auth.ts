@@ -51,8 +51,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
 
     // Solo entra quien ya es colaborador activo dado de alta en el sistema
-    // — ya sea porque ya había iniciado sesión antes, o porque Gestión
-    // Humana lo pre-registró en la estructura organizacional y este es su
+    // — ya sea porque ya había iniciado sesión antes, o porque Talento
+    // Humano lo pre-registró en la estructura organizacional y este es su
     // primer login (se vincula por correo, ver `resolverUsuarioParaLogin`).
     // El App Registration de Entra ID además está configurado como
     // single-tenant, así que ni siquiera se llega hasta aquí con una cuenta

@@ -31,34 +31,42 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-screen">
-      {/* Panel de marca — solo en pantallas grandes. Tratamiento oscuro y
-          neutro sobre la foto (editorial, no satura todo de rojo); el rojo
-          institucional queda como acento puntual: el borde derecho y el
-          botón, no bañando la imagen completa. */}
+      {/* Panel de marca — solo en pantallas grandes. Foto del equipo arriba
+          (con un degradado para que se lea el logo) y los textos abajo sobre
+          fondo oscuro, sin tapar las caras;
+          el rojo institucional queda como acento: el borde derecho y el botón. */}
       <div className="relative hidden w-1/2 shrink-0 overflow-hidden border-r-4 border-iib-primary bg-iib-foreground lg:block">
-        <Image
-          src="/AdobeStock_1062200548.jpeg"
-          alt=""
-          fill
-          sizes="50vw"
-          className="object-cover saturate-[0.35] brightness-[0.75]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/40" />
+        <div className="absolute inset-x-0 top-0 bottom-[30%]">
+          <Image
+            src="/equipo-iib.jpg"
+            alt="Equipo de Invest in Bogotá"
+            fill
+            sizes="50vw"
+            className="object-cover object-[50%_45%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-iib-foreground to-transparent" />
+        </div>
 
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
-          <span className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-[0.25em] text-white/85">
-            <span className="h-1.5 w-1.5 rounded-full bg-iib-primary" />
-            Invest in Bogotá
-          </span>
-          <div className="max-w-sm">
-            <h2 className="text-3xl font-bold leading-tight">Gestión del Desempeño</h2>
-            <p className="mt-3 text-white/70">
-              Seguimiento y evaluación de objetivos institucionales.
-            </p>
+          <Image
+            src="/logo-iib-blanco.png"
+            alt="Invest in Bogotá"
+            width={700}
+            height={341}
+            priority
+            unoptimized
+            className="h-auto w-44"
+          />
+          <div className="flex flex-col gap-6">
+            <div className="max-w-sm">
+              <h2 className="text-3xl font-bold leading-tight">Gestión del Desempeño</h2>
+              <p className="mt-3 text-white/70">
+                Seguimiento y evaluación de objetivos institucionales.
+              </p>
+            </div>
+            <span className="text-xs text-white/70">© {new Date().getFullYear()} Invest in Bogotá</span>
           </div>
-          <span className="text-xs text-white/50">
-            © {new Date().getFullYear()} Invest in Bogotá — Corporación para el Desarrollo
-          </span>
         </div>
       </div>
 
@@ -67,9 +75,15 @@ export default async function LoginPage({
       <div className="flex w-full flex-1 flex-col bg-iib-background px-6 sm:px-10 lg:px-16">
         <div className="flex flex-1 flex-col items-center justify-center py-16">
           <div className="w-full max-w-sm">
-            <span className="mb-8 block text-xs font-bold uppercase tracking-[0.25em] text-iib-primary lg:hidden">
-              Invest in Bogotá
-            </span>
+            <Image
+              src="/logo-iib-color.png"
+              alt="Invest in Bogotá"
+              width={700}
+              height={341}
+              priority
+              unoptimized
+              className="mb-8 h-auto w-36 lg:hidden"
+            />
 
             <h1 className="text-2xl font-bold text-iib-foreground">Iniciar sesión</h1>
             <p className="mt-2 text-sm text-iib-secondary">
@@ -138,7 +152,7 @@ export default async function LoginPage({
             )}
 
             <p className="mt-10 text-xs text-iib-secondary lg:hidden">
-              © {new Date().getFullYear()} Invest in Bogotá — Corporación para el Desarrollo
+              © {new Date().getFullYear()} Invest in Bogotá
             </p>
           </div>
         </div>
@@ -146,7 +160,7 @@ export default async function LoginPage({
         <div className="hidden justify-center border-t border-iib-border py-6 lg:flex">
           <p className="text-xs text-iib-secondary">
             ¿Problemas para ingresar? Contacta a{" "}
-            <span className="font-medium text-iib-foreground">Gestión Humana</span>.
+            <span className="font-medium text-iib-foreground">Talento Humano</span>.
           </p>
         </div>
       </div>

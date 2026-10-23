@@ -10,7 +10,7 @@ import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 // Indicadores de la empresa = objetivos de nivel CORPORATIVO. No llevan peso ni
 // nota: durante el año se les registra un avance mensual (% acumulado y un
 // comentario) y al final se marca Cumple / No cumple. La autorización (Gestor
-// corporativo, Gestión Humana o Admin) se resuelve en la capa de Server Action
+// corporativo, Talento Humano o Admin) se resuelve en la capa de Server Action
 // con `requireRol`, no aquí.
 export class ErrorIndicador extends Error {
   constructor(message: string) {
@@ -150,7 +150,7 @@ export async function registrarAvanceMensual(input: {
 }
 
 // Resultado final del indicador. Solo se puede marcar dentro de la franja del
-// resultado final que Gestión Humana define para el periodo.
+// resultado final que Talento Humano define para el periodo.
 export async function marcarCumplimiento(input: { objetivoId: string; cumple: boolean; marcadoPor: string }) {
   const objetivo = await obtenerIndicadorOFalla(input.objetivoId);
 
