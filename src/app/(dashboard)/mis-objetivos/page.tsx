@@ -52,7 +52,7 @@ export default async function MisObjetivosPage({
     <>
       <div className="flex flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-iib-foreground">Mis objetivos</h1>
+          <h1 className="text-2xl font-bold text-iib-foreground">Componentes de medición individual</h1>
           <p className="mt-1 text-sm text-iib-secondary">
             Consulta y propone tus objetivos del periodo, organizados por categoría.
           </p>
