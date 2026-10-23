@@ -30,7 +30,7 @@ export default async function MiGerenciaPage() {
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-iib-foreground">Mi gerencia</h1>
+        <h1 className="text-2xl font-bold text-iib-foreground">Metas por gerencia</h1>
         <p className="text-sm text-iib-secondary">
           <strong className="font-semibold text-iib-foreground">{datos.gerencia.nombre}</strong> ·
           Periodo <strong className="font-semibold text-iib-foreground">{datos.periodo.nombre}</strong>

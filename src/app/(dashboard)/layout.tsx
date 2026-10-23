@@ -19,15 +19,14 @@ export default async function DashboardLayout({
     select: { foto: true },
   });
 
-  const items = [
-    { href: "/mis-objetivos", label: "Mis objetivos" },
-    { href: "/indicadores", label: "Indicadores" },
-  ];
+  // Los tres componentes de medición, en su orden: C1, C2 (solo gerentes) y C3.
+  const items = [{ href: "/mis-objetivos", label: "Metas individuales" }];
+  if (usuario.roles.includes("GERENTE")) {
+    items.push({ href: "/mi-gerencia", label: "Metas por gerencia" });
+  }
+  items.push({ href: "/indicadores", label: "Resultado institucional" });
   if (usuario.roles.includes("JEFE")) {
     items.push({ href: "/mi-equipo", label: "Mi equipo" });
-  }
-  if (usuario.roles.includes("GERENTE")) {
-    items.push({ href: "/mi-gerencia", label: "Mi gerencia" });
   }
   if (usuario.roles.includes("GESTION_HUMANA") || usuario.roles.includes("ADMIN")) {
     items.push({ href: "/administracion", label: "Administración" });
