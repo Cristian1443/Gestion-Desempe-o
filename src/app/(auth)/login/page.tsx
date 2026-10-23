@@ -31,22 +31,18 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-screen">
-      {/* Panel de marca — solo en pantallas grandes. Foto del equipo arriba
-          (con un degradado para que se lea el logo) y los textos abajo sobre
-          fondo oscuro, sin tapar las caras;
-          el rojo institucional queda como acento: el borde derecho y el botón. */}
+      {/* Panel de marca — solo en pantallas grandes. Tratamiento oscuro y
+          neutro sobre la foto de Bogotá; el rojo institucional queda como
+          acento: el borde derecho y el botón. */}
       <div className="relative hidden w-1/2 shrink-0 overflow-hidden border-r-4 border-iib-primary bg-iib-foreground lg:block">
-        <div className="absolute inset-x-0 top-0 bottom-[30%]">
-          <Image
-            src="/equipo-iib.jpg"
-            alt="Equipo de Invest in Bogotá"
-            fill
-            sizes="50vw"
-            className="object-cover object-[50%_45%]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-iib-foreground to-transparent" />
-        </div>
+        <Image
+          src="/AdobeStock_1062200548.jpeg"
+          alt=""
+          fill
+          sizes="50vw"
+          className="object-cover saturate-[0.35] brightness-[0.75]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/40" />
 
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
           <Image
