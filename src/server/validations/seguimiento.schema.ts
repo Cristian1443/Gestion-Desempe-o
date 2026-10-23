@@ -21,3 +21,7 @@ export const registrarSeguimientoGerenciaSchema = registrarSeguimientoSchema.ext
 });
 
 export type RegistrarSeguimientoGerenciaInput = z.infer<typeof registrarSeguimientoGerenciaSchema>;
+
+// Seguimiento de una meta individual: igual que el de gerencia, comentario + % de avance.
+export const registrarSeguimientoIndividualSchema = registrarSeguimientoGerenciaSchema;
+export type RegistrarSeguimientoIndividualInput = RegistrarSeguimientoGerenciaInput;

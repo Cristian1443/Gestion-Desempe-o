@@ -9,6 +9,8 @@ import {
 
 export interface SeguimientoEquipoVista {
   numero: number;
+  // % de avance de la meta en ese seguimiento.
+  porcentaje: number | null;
   comentario: string;
   fecha: Date;
 }
@@ -111,7 +113,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
           estadoAprobacion: o.estadoAprobacion,
           comentarioAprobacion: o.comentarioAprobacion,
           seguimientos: o.seguimientos
-            .map((s) => ({ numero: s.seguimiento.numero, comentario: s.comentario, fecha: s.createdAt }))
+            .map((s) => ({ numero: s.seguimiento.numero, porcentaje: s.porcentaje, comentario: s.comentario, fecha: s.createdAt }))
             .sort((a, b) => a.numero - b.numero),
           calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
           cumplioDesarrollo: o.cumplioDesarrollo,

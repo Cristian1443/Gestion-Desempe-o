@@ -74,7 +74,7 @@ async function crearSiguienteVersionRegistro(
 // jefe hace el seguimiento a su equipo durante el periodo y, con base en
 // esos seguimientos, marca el resultado al final).
 export async function registrarSeguimientoIndividual(
-  input: RegistrarSeguimientoInput & { jefeId: string },
+  input: RegistrarSeguimientoGerenciaInput & { jefeId: string },
 ) {
   const objetivo = await db.objetivo.findUnique({
     where: { id: input.objetivoId },
@@ -96,7 +96,13 @@ export async function registrarSeguimientoIndividual(
 
   const seguimiento = await exigirSeguimientoEnCurso(objetivo.periodoId);
 
-  return crearSiguienteVersionRegistro(objetivo.id, seguimiento.id, input.jefeId, input.comentario);
+  return crearSiguienteVersionRegistro(
+    objetivo.id,
+    seguimiento.id,
+    input.jefeId,
+    input.comentario,
+    input.porcentaje,
+  );
 }
 
 // Seguimiento de un indicador de GERENCIA, hecho por el gerente del área (no

@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { cumpleCalificacion } from "@/lib/calificacion";
 import { formatearFecha } from "@/lib/fecha";
 import { estadoFranja, hoyEnBogota } from "@/lib/franja";
 
@@ -54,10 +55,11 @@ async function obtenerObjetivoIndividualParaCalificar(objetivoId: string, jefeId
   return objetivo;
 }
 
-// Resultado final de un objetivo de desempeño: Cumple / No cumple, sin peso.
+// Resultado final de un objetivo de desempeño: el jefe pone el % de cumplimiento
+// (0 a 100) y de ahí sale Cumple (80 o más) / No cumple.
 export async function calificarObjetivoDesempeno(input: {
   objetivoId: string;
-  cumple: boolean;
+  calificacionFinal: number;
   jefeId: string;
 }) {
   const objetivo = await obtenerObjetivoIndividualParaCalificar(input.objetivoId, input.jefeId);
@@ -68,7 +70,8 @@ export async function calificarObjetivoDesempeno(input: {
   return db.objetivo.update({
     where: { id: input.objetivoId },
     data: {
-      cumplido: input.cumple,
+      calificacionFinal: input.calificacionFinal,
+      cumplido: cumpleCalificacion(input.calificacionFinal),
       calificadoPor: input.jefeId,
       fechaCalificacion: new Date(),
     },

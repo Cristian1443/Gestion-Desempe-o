@@ -261,8 +261,8 @@ que esto se haga, nadie puede registrar seguimientos ni marcar resultados.
    ni lo cierra a mano.
 2. **Franja del resultado final.** Debe empezar después del último
    seguimiento (puede terminar después del periodo). Dentro de ella: el jefe marca
-   Cumple / No cumple en cada objetivo individual de desempeño (4 por persona, con
-   meta y un peso que suma 100 % entre los cuatro) y se marca
+   el % de cumplimiento de cada objetivo individual de desempeño (4 por persona, con
+   meta y un peso que suma 100 % entre los cuatro; Cumple si llega a 80 o más) y se marca
    Cumple / No cumple en los indicadores. Los objetivos de desarrollo están
    desactivados en 2026 (ver README).
 3. **Roles (Administración → Estructura organizacional).**

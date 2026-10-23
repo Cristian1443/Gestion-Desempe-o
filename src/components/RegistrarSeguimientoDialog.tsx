@@ -34,6 +34,7 @@ export function RegistrarSeguimientoDialog({
   etiquetaBoton = "Registrar seguimiento",
   etiquetaEnviar = "Guardar",
   etiquetaEnviando = "Guardando…",
+  conPorcentaje = false,
   accion,
 }: {
   objetivoId: string;
@@ -44,6 +45,8 @@ export function RegistrarSeguimientoDialog({
   etiquetaBoton?: string;
   etiquetaEnviar?: string;
   etiquetaEnviando?: string;
+  // Pide también el % de avance de la meta (metas individuales).
+  conPorcentaje?: boolean;
   accion: (
     estadoPrevio: EstadoAccionSeguimiento,
     formData: FormData,
@@ -90,6 +93,21 @@ export function RegistrarSeguimientoDialog({
           <p className="-mt-2 text-xs text-iib-secondary">Franja: {franja}</p>
 
           <input type="hidden" name="objetivoId" value={objetivoId} />
+
+          {conPorcentaje && (
+            <label className="flex flex-col gap-1 text-sm text-iib-secondary">
+              % de avance de la meta (0 a 100)
+              <input
+                type="number"
+                name="porcentaje"
+                min={0}
+                max={100}
+                step={1}
+                required
+                className="w-28 rounded-md border border-iib-border bg-iib-background px-2.5 py-2 text-sm font-bold tabular-nums text-iib-foreground"
+              />
+            </label>
+          )}
 
           <label className="flex flex-col gap-1 text-sm text-iib-secondary">
             Comentario

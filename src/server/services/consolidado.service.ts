@@ -56,8 +56,10 @@ export interface ObjetivoIndividualPdf {
   meta?: string | null;
   peso?: number | null;
   lineaEstrategica: string | null;
+  // % de cumplimiento (0-100) y el resultado que sale de él.
+  calificacionFinal?: number | null;
   cumplido: boolean | null;
-  seguimientos: Array<{ numero: number; comentario: string }>;
+  seguimientos: Array<{ numero: number; porcentaje?: number | null; comentario: string }>;
 }
 
 export interface PersonaPdf {
@@ -172,9 +174,10 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
       meta: o.meta,
       peso: o.peso.toNumber(),
       lineaEstrategica: o.lineaEstrategica ? LINEAS_ESTRATEGICAS[o.lineaEstrategica as LineaEstrategicaCodigo] : null,
+      calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
       cumplido: o.cumplido,
       seguimientos: o.seguimientos
-        .map((s) => ({ numero: s.seguimiento.numero, comentario: s.comentario }))
+        .map((s) => ({ numero: s.seguimiento.numero, porcentaje: s.porcentaje, comentario: s.comentario }))
         .sort((a, b) => a.numero - b.numero),
     });
     personas.set(o.usuario.id, persona);

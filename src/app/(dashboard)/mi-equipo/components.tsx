@@ -143,7 +143,10 @@ function BitacoraSeguimiento({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
       {objetivo.seguimientos.map((s) => (
         <li key={s.numero} className="rounded-md bg-iib-surface-sunken px-3 py-2">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <span className="text-xs font-bold text-iib-foreground">Seguimiento {s.numero}</span>
+            <span className="text-xs font-bold text-iib-foreground">
+              Seguimiento {s.numero}
+              {s.porcentaje !== null ? ` · ${s.porcentaje}%` : ""}
+            </span>
             <span className="text-xs text-iib-secondary">{formatearFecha(s.fecha)}</span>
           </div>
           <p className="mt-1 text-sm leading-relaxed">{s.comentario}</p>
@@ -258,7 +261,11 @@ function ObjetivoAprobadoRow({ objetivo, franja }: { objetivo: ObjetivoEquipoVis
         </div>
       ) : (
         <>
-          <CumplimientoLectura cumplido={objetivo.cumplido} cumplioDesarrollo={objetivo.cumplioDesarrollo} />
+          <CumplimientoLectura
+            calificacionFinal={objetivo.calificacionFinal}
+            cumplido={objetivo.cumplido}
+            cumplioDesarrollo={objetivo.cumplioDesarrollo}
+          />
           {enCurso && (
             <div className="flex justify-end">
               <RegistrarSeguimientoDialog
@@ -272,6 +279,7 @@ function ObjetivoAprobadoRow({ objetivo, franja }: { objetivo: ObjetivoEquipoVis
                     : `Registrar seguimiento ${enCurso.numero}`
                 }
                 etiquetaEnviar="Guardar"
+                conPorcentaje
                 accion={accionRegistrarSeguimiento.bind(null, objetivo.id)}
               />
             </div>

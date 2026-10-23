@@ -282,11 +282,10 @@ model Objetivo {
   aprobador       Usuario?  @relation("ObjetivoAprobadoPor", fields: [aprobadoPor], references: [id])
   fechaAprobacion DateTime? @map("fecha_aprobacion")
 
-  // Ya no se usa: antes guardaba un % de cumplimiento 0-100. Todos los
-  // objetivos se miden ahora con Cumple / No cumple (`cumplido`) y una regla de
-  // la base impide guardar aquí un valor. Se conserva la columna por el histórico.
-  // (Quién califica: el jefe en individuales, el gerente en gerencia, la persona
-  // encargada en la empresa — ver `calificadoPor`.)
+  // % de cumplimiento (0-100) de un objetivo INDIVIDUAL de desempeño, que pone el
+  // jefe una sola vez al final, dentro de la franja del resultado final. De ahí sale
+  // `cumplido` (80 o más cumple). Los indicadores de gerencia y de la empresa no lo
+  // usan: solo Cumple / No cumple. (Quién califica: ver `calificadoPor`.)
   calificacionFinal Decimal?  @map("calificacion_final") @db.Decimal(5, 2)
   calificadoPor     String?   @map("calificado_por")
   calificador       Usuario?  @relation("ObjetivoCalificadoPor", fields: [calificadoPor], references: [id])

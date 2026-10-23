@@ -264,19 +264,22 @@ semáforo: describen el flujo anterior, no el actual.
   y autor (`RegistroSeguimiento`); sin porcentaje, salvo en los indicadores de
   gerencia (ver abajo). Quien lo hace: jefe directo (individual) o gerente
   (gerencia). Corregir dentro de la franja crea una versión nueva.
-- **Resultado final: Cumple / No cumple.** Todos los objetivos (individuales de
-  desempeño, indicadores de gerencia e indicadores de la empresa) se miden igual:
-  `Objetivo.cumplido`. Ya no hay % de calificación (`calificacionFinal` no se usa y una
-  regla de la base impide guardar un valor). Solo los 4 objetivos individuales de
-  desempeño llevan peso (ver abajo); los indicadores no.
+- **Resultado final: Cumple / No cumple.** Todos los objetivos terminan en
+  `Objetivo.cumplido`. En los 4 objetivos individuales de desempeño, el jefe pone el
+  **% de cumplimiento** (0-100, `calificacionFinal`) y de ahí sale el resultado: **80 o más
+  cumple** (`src/lib/calificacion.ts`). Los indicadores de gerencia y de la empresa no
+  llevan % final, solo Cumple / No cumple (una regla de la base impide guardar
+  `calificacionFinal` fuera de los individuales). Solo los individuales de desempeño
+  llevan peso (ver abajo); los indicadores no.
   Se marca una sola vez, al final, y solo dentro de la **franja del resultado final**
   que Gestión Humana define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
   puede terminar después del periodo. En los individuales lo marca el jefe directo.
 - **Objetivos de desempeño.** Cuatro por persona, cada uno con **línea estratégica,
   descripción, acciones, fórmula del indicador, meta y peso**; los cuatro pesos suman
   exactamente **100 %** (validado al proponer y de nuevo al aprobar). El colaborador los
-  propone, el jefe los aprueba y al final marca Cumple / No cumple. El peso aún no entra
-  a ninguna nota: la nota final ponderada sigue sin conectarse.
+  propone, el jefe los aprueba, en **cada seguimiento** registra el **% de avance** de la
+  meta con su comentario y al final pone el % de cumplimiento. El peso aún no entra a
+  ninguna nota: la nota final ponderada sigue sin conectarse.
 - **Objetivos de desarrollo: desactivados en 2026.** Interruptor `DESARROLLO_HABILITADO`
   en [src/lib/objetivos-config.ts](src/lib/objetivos-config.ts) (apagado): no se piden,
   no se muestran y no cuentan para cerrar el periodo; los datos que ya existían se

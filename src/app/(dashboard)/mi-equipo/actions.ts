@@ -16,7 +16,7 @@ import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 import { ErrorSeguimiento, registrarSeguimientoIndividual } from "@/server/services/seguimientos.service";
 import { devolverObjetivosSchema } from "@/server/validations/aprobacion.schema";
 import { calificarDesarrolloSchema, calificarDesempenoSchema } from "@/server/validations/calificacion.schema";
-import { registrarSeguimientoSchema } from "@/server/validations/seguimiento.schema";
+import { registrarSeguimientoIndividualSchema } from "@/server/validations/seguimiento.schema";
 
 export type EstadoAccionEquipo = { ok: true } | { ok: false; error: string };
 
@@ -83,9 +83,10 @@ export async function accionRegistrarSeguimiento(
 ): Promise<EstadoAccionEquipo> {
   const jefe = await requireRol("JEFE");
 
-  const parsed = registrarSeguimientoSchema.safeParse({
+  const parsed = registrarSeguimientoIndividualSchema.safeParse({
     objetivoId,
     comentario: formData.get("comentario"),
+    porcentaje: formData.get("porcentaje"),
   });
 
   if (!parsed.success) {
@@ -105,11 +106,11 @@ export async function accionRegistrarSeguimiento(
   return { ok: true };
 }
 
-// Resultado final de un objetivo de desempeño: Cumple / No cumple.
-export async function accionCalificarDesempeno(objetivoId: string, cumple: boolean): Promise<EstadoAccionEquipo> {
+// Resultado final de un objetivo de desempeño: el % de cumplimiento (de ahí sale Cumple / No cumple).
+export async function accionCalificarDesempeno(objetivoId: string, calificacionFinal: number): Promise<EstadoAccionEquipo> {
   const jefe = await requireRol("JEFE");
 
-  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, cumple });
+  const parsed = calificarDesempenoSchema.safeParse({ objetivoId, calificacionFinal });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
