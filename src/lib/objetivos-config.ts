@@ -7,6 +7,10 @@ import { CANTIDAD_OBJETIVOS_DESARROLLO } from "@/server/services/calculo-notas";
 // Para reactivarlos basta con cambiar esta constante a `true`.
 export const DESARROLLO_HABILITADO = false;
 
+// Los 4 objetivos de desempeño de cada persona llevan un peso (en %) y entre los
+// cuatro suman exactamente esto. Se miden con Cumple / No cumple.
+export const PESO_TOTAL_INDIVIDUALES = 100;
+
 // Cuántos objetivos de desarrollo debe proponer cada persona hoy.
 export const CANTIDAD_DESARROLLO_ACTIVA = DESARROLLO_HABILITADO ? CANTIDAD_OBJETIVOS_DESARROLLO : 0;
 

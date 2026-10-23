@@ -51,7 +51,10 @@ export interface IndicadorGerenciaPdf extends IndicadorPdf {
 export interface ObjetivoIndividualPdf {
   descripcion: string;
   acciones: string | null;
+  // Fórmula del indicador, meta y peso (%).
   indicador: string;
+  meta?: string | null;
+  peso?: number | null;
   lineaEstrategica: string | null;
   cumplido: boolean | null;
   seguimientos: Array<{ numero: number; comentario: string }>;
@@ -166,6 +169,8 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
       descripcion: o.descripcion,
       acciones: o.acciones,
       indicador: o.indicador,
+      meta: o.meta,
+      peso: o.peso.toNumber(),
       lineaEstrategica: o.lineaEstrategica ? LINEAS_ESTRATEGICAS[o.lineaEstrategica as LineaEstrategicaCodigo] : null,
       cumplido: o.cumplido,
       seguimientos: o.seguimientos

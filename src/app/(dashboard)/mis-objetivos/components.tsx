@@ -239,6 +239,9 @@ export function ObjetivoIndividualCard({
         <span className="grid h-7 w-7 place-items-center rounded-md bg-iib-surface-sunken text-xs font-bold text-iib-secondary">
           {numero}
         </span>
+        <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
+          Peso {objetivo.peso}%
+        </span>
       </div>
       {objetivo.estadoAprobacion === "PENDIENTE_APROBACION" ? (
         <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
@@ -268,9 +271,17 @@ export function ObjetivoIndividualCard({
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Indicador</p>
-        <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Fórmula del indicador</p>
+          <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
+        </div>
+        {objetivo.meta && (
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Meta</p>
+            <p className="text-sm leading-relaxed">{objetivo.meta}</p>
+          </div>
+        )}
       </div>
       {objetivo.linkRepositorio && (
         <a

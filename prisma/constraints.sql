@@ -61,12 +61,9 @@ ALTER TABLE objetivos
     OR (nivel <> 'INDIVIDUAL' AND acciones IS NULL)
   );
 
--- `meta` y `unidad_medida` son propios de GERENCIA/CORPORATIVO — en
--- INDIVIDUAL no se piden en el formulario, así que deben quedar nulos.
-ALTER TABLE objetivos
-  ADD CONSTRAINT chk_objetivo_meta_no_individual
-  CHECK (nivel <> 'INDIVIDUAL' OR meta IS NULL);
-
+-- `unidad_medida` es propia de GERENCIA/CORPORATIVO — en INDIVIDUAL no se pide en
+-- el formulario, así que debe quedar nula. (La `meta` sí aplica a los individuales
+-- de desempeño desde la migración 20261027100000.)
 ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_unidad_medida_no_individual
   CHECK (nivel <> 'INDIVIDUAL' OR unidad_medida IS NULL);
