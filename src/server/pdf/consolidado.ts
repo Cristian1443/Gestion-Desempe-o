@@ -178,7 +178,7 @@ function dibujarIndicadorBase(e: Escritor, indicador: IndicadorPdf, numero: numb
   e.resultado(indicador.cumplido);
   e.campo("Línea estratégica", indicador.lineaEstrategica);
   e.campo("Objetivo estratégico", indicador.descripcion);
-  e.campo("Tipo de indicador", indicador.tipoIndicador);
+  e.campo("Indicador estratégico", indicador.titulo);
   e.campo("Meta", `${indicador.meta}${indicador.unidadMedida ? ` ${indicador.unidadMedida}` : ""}`);
 }
 

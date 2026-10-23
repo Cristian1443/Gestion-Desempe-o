@@ -1,25 +1,19 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import {
-  CODIGOS_LINEA_INDICADOR,
-  ETIQUETA_TIPO_INDICADOR,
-  TIPOS_INDICADOR,
-  textoLinea,
-} from "@/lib/indicadores-config";
+import { CODIGOS_LINEA_INDICADOR, textoLinea } from "@/lib/indicadores-config";
 
-// Campos de un indicador (de la empresa o de gerencia). Los tres de texto llevan
-// el nombre que tienen en la base de datos: `descripcion` es el objetivo estratégico
-// y `titulo` es el indicador.
+// Campos de un indicador (de la empresa o de gerencia). Los de texto llevan el
+// nombre que tienen en la base de datos: `descripcion` es el objetivo estratégico
+// y `titulo` es el indicador estratégico.
 export interface DatosFormularioIndicador {
   lineaEstrategica: string;
   descripcion: string;
-  tipoIndicador: string;
   titulo: string;
   meta: string;
 }
 
-const VACIO: DatosFormularioIndicador = { lineaEstrategica: "", descripcion: "", tipoIndicador: "", titulo: "", meta: "" };
+const VACIO: DatosFormularioIndicador = { lineaEstrategica: "", descripcion: "", titulo: "", meta: "" };
 
 type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -85,34 +79,16 @@ export function FormularioIndicador({
           className={`${estiloCampo} resize-y`}
         />
       </label>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[14rem_1fr]">
-        <label htmlFor={`${id}-tipo`} className="flex flex-col gap-1 text-xs font-medium text-iib-secondary">
-          Tipo de indicador
-          <select
-            id={`${id}-tipo`}
-            value={datos.tipoIndicador}
-            onChange={(e) => cambiar("tipoIndicador", e.target.value)}
-            className={estiloCampo}
-          >
-            <option value="">Selecciona el tipo</option>
-            {TIPOS_INDICADOR.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {ETIQUETA_TIPO_INDICADOR[tipo]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label htmlFor={`${id}-indicador`} className="flex flex-col gap-1 text-xs font-medium text-iib-secondary">
-          {datos.tipoIndicador === "GESTION" ? "Indicador de gestión" : "Indicador estratégico"}
-          <input
-            id={`${id}-indicador`}
-            value={datos.titulo}
-            onChange={(e) => cambiar("titulo", e.target.value)}
-            placeholder="ej. # Proyectos facilitados"
-            className={estiloCampo}
-          />
-        </label>
-      </div>
+      <label htmlFor={`${id}-indicador`} className="flex flex-col gap-1 text-xs font-medium text-iib-secondary">
+        Indicador estratégico
+        <input
+          id={`${id}-indicador`}
+          value={datos.titulo}
+          onChange={(e) => cambiar("titulo", e.target.value)}
+          placeholder="ej. # Proyectos facilitados"
+          className={estiloCampo}
+        />
+      </label>
       <label htmlFor={`${id}-meta`} className="flex flex-col gap-1 text-xs font-medium text-iib-secondary sm:max-w-[14rem]">
         Meta
         <input

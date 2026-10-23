@@ -5,7 +5,6 @@ import { crearIndicadorSchema } from "@/server/validations/indicador.schema";
 const valido = {
   lineaEstrategica: "L1",
   descripcion: "Facilitar proyectos de inversión.",
-  tipoIndicador: "ESTRATEGICO",
   titulo: "# Proyectos facilitados",
   meta: "47",
 };
@@ -17,15 +16,14 @@ describe("campos de un indicador", () => {
     expect(textoLinea(null)).toBeNull();
   });
 
-  it("acepta los cinco campos (la meta puede ser N/A)", () => {
+  it("acepta los cuatro campos (la meta puede ser N/A)", () => {
     expect(crearIndicadorSchema.safeParse(valido).success).toBe(true);
-    expect(crearIndicadorSchema.safeParse({ ...valido, meta: "N/A", tipoIndicador: "GESTION" }).success).toBe(true);
+    expect(crearIndicadorSchema.safeParse({ ...valido, meta: "N/A" }).success).toBe(true);
   });
 
-  it("rechaza la línea L5, una línea vacía y un tipo desconocido", () => {
+  it("rechaza la línea L5 y una línea vacía", () => {
     expect(crearIndicadorSchema.safeParse({ ...valido, lineaEstrategica: "L5" }).success).toBe(false);
     expect(crearIndicadorSchema.safeParse({ ...valido, lineaEstrategica: "" }).success).toBe(false);
-    expect(crearIndicadorSchema.safeParse({ ...valido, tipoIndicador: "OTRO" }).success).toBe(false);
   });
 
   it("pide el objetivo estratégico, el indicador y la meta", () => {

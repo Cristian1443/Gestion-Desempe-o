@@ -83,7 +83,6 @@ export function IndicadorCard({
         meta={indicador.meta}
         unidadMedida={indicador.unidadMedida}
         lineaEstrategica={indicador.lineaEstrategica}
-        tipoIndicador={indicador.tipoIndicador}
         estado={indicador.estado}
       />
 
@@ -135,7 +134,6 @@ export function IndicadorCard({
           datos={{
             lineaEstrategica: indicador.lineaEstrategica ?? "",
             descripcion: indicador.descripcion,
-            tipoIndicador: indicador.tipoIndicador ?? "",
             titulo: indicador.titulo,
             meta: indicador.meta,
           }}

@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
 import { claveMes, mesActual, mesesDelPeriodo, mesesRegistrables, primerDiaDelMes } from "@/lib/mes";
-import type { LineaIndicadorCodigo, TipoIndicadorCodigo } from "@/lib/indicadores-config";
+import type { LineaIndicadorCodigo } from "@/lib/indicadores-config";
 import { CANTIDAD_OBJETIVOS_CORPORATIVOS } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
@@ -23,8 +23,7 @@ export interface DatosIndicador {
   lineaEstrategica: LineaIndicadorCodigo;
   // Objetivo estratégico (se guarda en `descripcion`).
   descripcion: string;
-  tipoIndicador: TipoIndicadorCodigo;
-  // El indicador (se guarda en `titulo` y en `indicador`).
+  // El indicador estratégico (se guarda en `titulo` y en `indicador`).
   titulo: string;
   meta: string;
 }
@@ -68,7 +67,6 @@ export async function crearIndicador(input: DatosIndicador & { creadoPor: string
       meta: input.meta,
       indicador: input.titulo,
       lineaEstrategica: input.lineaEstrategica,
-      tipoIndicador: input.tipoIndicador,
       peso: 0,
       estadoAprobacion: "APROBADO",
       creadoPor: input.creadoPor,
@@ -89,7 +87,6 @@ export async function editarIndicador(input: DatosIndicador & { objetivoId: stri
       meta: input.meta,
       indicador: input.titulo,
       lineaEstrategica: input.lineaEstrategica,
-      tipoIndicador: input.tipoIndicador,
     },
   });
 }
@@ -189,9 +186,8 @@ export interface IndicadorVista {
   meta: string;
   indicador: string;
   unidadMedida: string | null;
-  // Línea estratégica (L1 a L4) y tipo; nulos en indicadores cargados antes de estos campos.
+  // Línea estratégica (L1 a L4); nula en indicadores cargados antes de este campo.
   lineaEstrategica: string | null;
-  tipoIndicador: TipoIndicadorCodigo | null;
   // Un registro vigente por mes, de enero a diciembre.
   avances: AvanceMesVista[];
   ultimoPorcentaje: number | null;
@@ -257,7 +253,6 @@ export async function obtenerIndicadores(): Promise<Indicadores | null> {
       indicador: o.indicador,
       unidadMedida: o.unidadMedida,
       lineaEstrategica: o.lineaEstrategica,
-      tipoIndicador: o.tipoIndicador,
       avances,
       ultimoPorcentaje: avances[avances.length - 1]?.porcentaje ?? null,
       cumplido: o.cumplido,

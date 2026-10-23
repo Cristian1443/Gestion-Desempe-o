@@ -1,4 +1,4 @@
-import { ETIQUETA_TIPO_INDICADOR, textoLinea, type TipoIndicadorCodigo } from "@/lib/indicadores-config";
+import { textoLinea } from "@/lib/indicadores-config";
 
 // Piezas visuales compartidas por los indicadores de la empresa (/indicadores) y
 // los de la gerencia (/mi-gerencia): hacen lo mismo y se ven igual; solo cambia
@@ -33,14 +33,13 @@ export function TarjetaResumen({ etiqueta, valor, destacada = false }: { etiquet
   );
 }
 
-// Indicador + estado, línea estratégica, objetivo estratégico, tipo y meta.
+// Indicador + estado, línea estratégica, objetivo estratégico y meta.
 export function CabeceraIndicador({
   titulo,
   descripcion,
   meta,
   unidadMedida,
   lineaEstrategica,
-  tipoIndicador,
   estado,
 }: {
   titulo: string;
@@ -49,7 +48,6 @@ export function CabeceraIndicador({
   meta: string;
   unidadMedida: string | null;
   lineaEstrategica: string | null;
-  tipoIndicador: TipoIndicadorCodigo | null;
   estado: EstadoIndicadorUI;
 }) {
   return (
@@ -61,15 +59,8 @@ export function CabeceraIndicador({
         </span>
       </div>
 
-      {(lineaEstrategica || tipoIndicador) && (
-        <div className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          {lineaEstrategica && <span className="font-semibold text-iib-primary">{textoLinea(lineaEstrategica)}</span>}
-          {tipoIndicador && (
-            <span className="rounded-full bg-iib-surface-sunken px-2.5 py-0.5 font-semibold text-iib-secondary">
-              {ETIQUETA_TIPO_INDICADOR[tipoIndicador]}
-            </span>
-          )}
-        </div>
+      {lineaEstrategica && (
+        <p className="-mt-2 text-xs font-semibold text-iib-primary">{textoLinea(lineaEstrategica)}</p>
       )}
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm">

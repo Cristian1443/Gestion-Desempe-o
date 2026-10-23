@@ -1,18 +1,15 @@
 import { z } from "zod";
-import { CODIGOS_LINEA_INDICADOR, TIPOS_INDICADOR } from "@/lib/indicadores-config";
+import { CODIGOS_LINEA_INDICADOR } from "@/lib/indicadores-config";
 import { esClaveMes } from "@/lib/mes";
 
-// Campos de un indicador: línea estratégica (L1 a L4), objetivo estratégico, tipo de
-// indicador, el indicador y su meta (que puede ser "N/A").
+// Campos de un indicador: línea estratégica (L1 a L4), objetivo estratégico, el
+// indicador estratégico y su meta (que puede ser "N/A").
 const datosIndicador = z.object({
   lineaEstrategica: z.enum(CODIGOS_LINEA_INDICADOR, {
     errorMap: () => ({ message: "Selecciona una línea estratégica." }),
   }),
   descripcion: z.string().min(1, "El objetivo estratégico es obligatorio.").max(2000),
-  tipoIndicador: z.enum(TIPOS_INDICADOR, {
-    errorMap: () => ({ message: "Selecciona si el indicador es estratégico o de gestión." }),
-  }),
-  titulo: z.string().min(1, "El indicador es obligatorio.").max(300),
+  titulo: z.string().min(1, "El indicador estratégico es obligatorio.").max(300),
   meta: z.string().min(1, "La meta es obligatoria.").max(500),
 });
 
