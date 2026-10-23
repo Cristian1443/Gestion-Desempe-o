@@ -40,7 +40,7 @@ export default async function IndicadoresPage() {
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-iib-foreground">Indicadores de la empresa</h1>
+        <h1 className="text-2xl font-bold text-iib-foreground">Componente 3 (C3): Resultado institucional</h1>
         <p className="max-w-3xl text-sm text-iib-secondary">
           Son {tope} para toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un
           comentario y al final se marca si cumple o no cumple.

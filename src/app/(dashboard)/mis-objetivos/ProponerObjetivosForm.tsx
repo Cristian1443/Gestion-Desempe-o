@@ -311,7 +311,7 @@ export function ProponerObjetivosForm({
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4">
         <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
-          <h3 className="text-sm font-bold text-iib-primary">Objetivos de desempeño</h3>
+          <h3 className="text-sm font-bold text-iib-primary">Componente 1 (C1): Metas individuales</h3>
           <p className="text-xs text-iib-secondary">
             {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno clasificado en una línea estratégica. No llevan peso: al
             final del periodo tu jefe marca si cada uno cumple o no cumple.

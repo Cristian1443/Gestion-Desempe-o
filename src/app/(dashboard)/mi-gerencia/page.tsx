@@ -56,7 +56,7 @@ export default async function MiGerenciaPage() {
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
-          <h2 className="text-base font-bold">Indicadores de la gerencia</h2>
+          <h2 className="text-base font-bold">Componente 2 (C2): Metas por gerencia</h2>
           <span className="text-sm text-iib-secondary">
             Sin peso · en cada seguimiento registras su avance y al final marcas Cumple o No cumple
           </span>

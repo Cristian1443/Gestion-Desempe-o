@@ -91,39 +91,39 @@ export default async function MisObjetivosPage({
       {!categoria ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TarjetaCategoria
-            categoria="corporativo"
-            titulo="Indicadores"
-            href="/indicadores"
+            categoria="desempeno"
+            titulo="Componente 1 (C1): Metas individuales"
             resumen={
-              indicadoresTotal === 0
-                ? "Aún no cargados"
-                : `${indicadoresTotal} indicador${indicadoresTotal === 1 ? "" : "es"}`
+              individualesSinResolver
+                ? individuales.length === 0
+                  ? "Aún no propuestas"
+                  : "Devueltas por tu jefe"
+                : `${desempeno.length} metas · cumple o no cumple`
             }
-            detalle="Aplican a toda la Corporación · cumple o no cumple"
+            detalle="Van contra una línea estratégica"
           />
           {gerencia.nombreGerencia ? (
             <TarjetaCategoria
               categoria="gerencia"
-              titulo="Gerencia"
+              titulo="Componente 2 (C2): Metas por gerencia"
               resumen={
                 gerencia.objetivos.length === 0
-                  ? "Aún no cargados"
-                  : `${gerencia.objetivos.length} indicadores · cumple o no cumple`
+                  ? "Aún no cargadas"
+                  : `${gerencia.objetivos.length} metas · cumple o no cumple`
               }
               detalle={gerencia.nombreGerencia}
             />
           ) : null}
           <TarjetaCategoria
-            categoria="desempeno"
-            titulo="Desempeño"
+            categoria="corporativo"
+            titulo="Componente 3 (C3): Resultado institucional"
+            href="/indicadores"
             resumen={
-              individualesSinResolver
-                ? individuales.length === 0
-                  ? "Aún no propuestos"
-                  : "Devueltos por tu jefe"
-                : `${desempeno.length} objetivos · cumple o no cumple`
+              indicadoresTotal === 0
+                ? "Aún no cargado"
+                : `${indicadoresTotal} indicador${indicadoresTotal === 1 ? "" : "es"}`
             }
-            detalle="Van contra una línea estratégica"
+            detalle="Aplica a toda la Corporación · cumple o no cumple"
           />
           {DESARROLLO_HABILITADO && (
             <TarjetaCategoria
@@ -149,7 +149,7 @@ export default async function MisObjetivosPage({
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2 id="nivel-gerencia" className="text-base font-bold">
-                    Indicadores de la gerencia
+                    Componente 2 (C2): Metas por gerencia
                   </h2>
                 </div>
                 <span className="rounded-full border border-iib-border px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
@@ -182,7 +182,7 @@ export default async function MisObjetivosPage({
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2 id={`nivel-${categoria}`} className="text-base font-bold">
-                    {categoria === "desempeno" ? "Objetivos de desempeño" : "Objetivos de desarrollo"}
+                    {categoria === "desempeno" ? "Componente 1 (C1): Metas individuales" : "Objetivos de desarrollo"}
                   </h2>
                   <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
                     Sin peso · cumple o no cumple

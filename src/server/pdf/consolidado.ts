@@ -136,7 +136,7 @@ function dibujarPortada(e: Escritor, datos: ConsolidadoDatos) {
   e.separador(16);
 
   e.titulo("Resumen de resultados", 15);
-  e.parrafo("Cuántos objetivos e indicadores cumplieron, no cumplieron o quedaron sin resultado, por nivel.", {
+  e.parrafo("Cuántas metas cumplieron, no cumplieron o quedaron sin resultado, por componente de medición.", {
     color: GRIS,
   });
   e.separador(6);
@@ -144,9 +144,9 @@ function dibujarPortada(e: Escritor, datos: ConsolidadoDatos) {
   const columnas = [ANCHO_UTIL - 4 * 85, 85, 85, 85, 85];
   const encabezado = ["Nivel", "Total", "Cumplen", "No cumplen", "Sin resultado"];
   const filas: Array<[string, ResumenNivel]> = [
-    ["Objetivos individuales", datos.resumen.individuales],
-    ["Indicadores de gerencia", datos.resumen.gerencia],
-    ["Indicadores de la empresa", datos.resumen.empresa],
+    ["C1: Metas individuales", datos.resumen.individuales],
+    ["C2: Metas por gerencia", datos.resumen.gerencia],
+    ["C3: Resultado institucional", datos.resumen.empresa],
   ];
 
   function fila(valores: string[], opciones: { negrita: boolean; fondo?: string; colores?: Array<string | undefined> }) {
@@ -183,9 +183,9 @@ function dibujarIndicadorBase(e: Escritor, indicador: IndicadorPdf, numero: numb
 
 function dibujarEmpresa(e: Escritor, indicadores: IndicadorEmpresaPdf[]) {
   e.doc.addPage();
-  e.titulo("Indicadores de la empresa");
+  e.titulo("Componente 3 (C3): Resultado institucional");
   if (indicadores.length === 0) {
-    e.parrafo("No se cargaron indicadores de la empresa en este periodo.", { color: GRIS });
+    e.parrafo("No se cargaron indicadores de resultado institucional en este periodo.", { color: GRIS });
     return;
   }
   e.parrafo("Aplican a toda la Corporación. Sin peso: avance acumulado mes a mes y resultado final Cumple / No cumple.", {
@@ -204,9 +204,9 @@ function dibujarEmpresa(e: Escritor, indicadores: IndicadorEmpresaPdf[]) {
 
 function dibujarGerencias(e: Escritor, gerencias: Array<{ nombre: string; gerente: string | null; indicadores: IndicadorGerenciaPdf[] }>) {
   e.doc.addPage();
-  e.titulo("Indicadores de las gerencias");
+  e.titulo("Componente 2 (C2): Metas por gerencia");
   if (gerencias.length === 0) {
-    e.parrafo("No se cargaron indicadores de gerencia en este periodo.", { color: GRIS });
+    e.parrafo("No se cargaron metas por gerencia en este periodo.", { color: GRIS });
     return;
   }
   e.parrafo("Sin peso: avance acumulado en cada seguimiento y resultado final Cumple / No cumple.", { color: GRIS });
@@ -246,9 +246,9 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
 
 function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; personas: PersonaPdf[] }>) {
   e.doc.addPage();
-  e.titulo("Objetivos individuales");
+  e.titulo("Componente 1 (C1): Metas individuales");
   if (grupos.length === 0) {
-    e.parrafo("No hay objetivos individuales aprobados en este periodo.", { color: GRIS });
+    e.parrafo("No hay metas individuales aprobadas en este periodo.", { color: GRIS });
     return;
   }
   e.parrafo("Agrupados por gerencia y por persona. Sin peso: cada objetivo termina en Cumple / No cumple.", { color: GRIS });
@@ -316,9 +316,9 @@ export function generarConsolidadoPdf(datos: ConsolidadoDatos): Promise<Buffer> 
     try {
       const e = new Escritor(doc);
       dibujarPortada(e, datos);
-      dibujarEmpresa(e, datos.empresa);
-      dibujarGerencias(e, datos.gerencias);
       dibujarIndividuales(e, datos.individuales);
+      dibujarGerencias(e, datos.gerencias);
+      dibujarEmpresa(e, datos.empresa);
       dibujarPies(doc, datos.periodo.nombre);
       doc.end();
     } catch (error) {
