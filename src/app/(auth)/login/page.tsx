@@ -32,7 +32,7 @@ export default async function LoginPage({
   return (
     <main className="flex min-h-screen">
       {/* Panel de marca — solo en pantallas grandes. Foto del equipo arriba
-          (con un degradado para que se lea el logo) y los textos abajo sobre
+          (con un degradado suave arriba) y los textos abajo sobre
           fondo oscuro, sin tapar las caras; el rojo institucional queda como
           acento: el borde derecho y el botón. */}
       <div className="relative hidden w-1/2 shrink-0 overflow-hidden border-r-4 border-iib-primary bg-iib-foreground lg:block">
@@ -48,16 +48,7 @@ export default async function LoginPage({
           <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-iib-foreground to-transparent" />
         </div>
 
-        <div className="relative flex h-full flex-col justify-between p-12 text-white">
-          <Image
-            src="/logo-iib-blanco.png"
-            alt="Invest in Bogotá"
-            width={700}
-            height={341}
-            priority
-            unoptimized
-            className="h-auto w-44"
-          />
+        <div className="relative flex h-full flex-col justify-end p-12 text-white">
           <div className="flex flex-col gap-6">
             <div className="max-w-sm">
               <h2 className="text-3xl font-bold leading-tight">Gestión del Desempeño</h2>
