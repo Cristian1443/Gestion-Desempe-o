@@ -72,19 +72,18 @@ export default async function LoginPage({
 
       {/* Panel del formulario — estructurado en franjas (no un solo bloque
           flotando centrado) para que no quede vacío en pantallas anchas. */}
-      <div className="flex w-full flex-1 flex-col bg-iib-background px-6 sm:px-10 lg:px-16">
+      <div className="relative flex w-full flex-1 flex-col bg-iib-background px-6 sm:px-10 lg:px-16">
+        <Image
+          src="/logo-iib-oficial.png"
+          alt="Invest in Bogotá"
+          width={700}
+          height={341}
+          priority
+          unoptimized
+          className="absolute right-6 top-6 h-auto w-32 sm:right-10 sm:w-36 lg:right-16 lg:top-8 lg:w-40"
+        />
         <div className="flex flex-1 flex-col items-center justify-center py-16">
           <div className="w-full max-w-sm">
-            <Image
-              src="/logo-iib-color.png"
-              alt="Invest in Bogotá"
-              width={700}
-              height={341}
-              priority
-              unoptimized
-              className="mb-8 h-auto w-36 lg:hidden"
-            />
-
             <h1 className="text-2xl font-bold text-iib-foreground">Iniciar sesión</h1>
             <p className="mt-2 text-sm text-iib-secondary">
               Ingresa con tu cuenta corporativa para continuar.
