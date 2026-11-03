@@ -38,11 +38,11 @@ export default async function LoginPage({
       <div className="relative hidden w-1/2 shrink-0 overflow-hidden border-r-4 border-iib-primary bg-iib-foreground lg:block">
         <div className="absolute inset-x-0 top-0 bottom-[30%]">
           <Image
-            src="/equipo-iib-2026.jpg"
+            src="/equipo-iib-2026-b.jpg"
             alt="Equipo de Invest in Bogotá"
             fill
             sizes="50vw"
-            className="object-cover object-[50%_60%]"
+            className="object-cover object-[50%_55%]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-iib-foreground to-transparent" />
