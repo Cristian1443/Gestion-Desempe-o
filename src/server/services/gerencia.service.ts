@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import type { LineaIndicadorCodigo } from "@/lib/indicadores-config";
-import { CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
+import { CANTIDAD_OBJETIVOS_GERENCIA, PESO_OBJETIVO_GERENCIA } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import {
   obtenerContextoFranjas,
@@ -10,7 +10,7 @@ import {
 } from "@/server/services/periodos.service";
 
 // Indicadores de la gerencia = objetivos de nivel GERENCIA. Hacen lo mismo que
-// los de la empresa (sin peso, % de avance con comentario y resultado final
+// los de la empresa (todos pesan lo mismo: 15 % c/u, % de avance con comentario y resultado final
 // Cumple / No cumple), pero el seguimiento no es mensual sino por los
 // seguimientos con franja que define Talento Humano. Los carga y les hace
 // seguimiento el gerente de la gerencia; son 2 por gerencia. No pasan por
@@ -78,7 +78,7 @@ export async function crearIndicadorGerencia(gerenteId: string, datos: DatosIndi
       meta: datos.meta,
       indicador: datos.titulo,
       lineaEstrategica: datos.lineaEstrategica,
-      peso: 0,
+      peso: PESO_OBJETIVO_GERENCIA,
       estadoAprobacion: "APROBADO",
       creadoPor: gerenteId,
       aprobadoPor: gerenteId,

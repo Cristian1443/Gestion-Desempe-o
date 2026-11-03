@@ -47,6 +47,8 @@ export const PESO_NIVEL_CORPORATIVO = 0.3;
 
 export const CANTIDAD_OBJETIVOS_DESEMPENO = 4;
 export const PESO_TOTAL_DESEMPENO = 40;
+// Cada objetivo de desempeño pesa lo mismo: 40 / 4 = 10 %.
+export const PESO_OBJETIVO_INDIVIDUAL = PESO_TOTAL_DESEMPENO / CANTIDAD_OBJETIVOS_DESEMPENO;
 
 // Los objetivos de desarrollo no llevan peso: se registran (2 por
 // colaborador) pero no compiten por porcentaje dentro del nivel individual.

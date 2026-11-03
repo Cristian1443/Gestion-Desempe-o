@@ -6,8 +6,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "iib-primary": "#C00000",
-        "iib-primary-hover": "#A30000",
+        "iib-primary": "#E84922",
+        "iib-primary-hover": "#C93C17",
         "iib-background": "#F7F5F2",
         "iib-surface": "#FFFFFF",
         "iib-surface-sunken": "#EFECE6",

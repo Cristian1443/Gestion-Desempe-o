@@ -22,8 +22,8 @@ ALTER TABLE objetivos
   ADD CONSTRAINT chk_objetivo_nivel_corporativo
   CHECK (nivel <> 'CORPORATIVO' OR (usuario_id IS NULL AND gerencia_id IS NULL));
 
--- Los indicadores (de la empresa y de gerencia) no llevan peso: no hay regla de
--- peso por nivel. Los individuales de desempeño sí (ver aprobacion.schema.ts).
+-- El peso de cada objetivo lo pone el sistema según el nivel (individual 10 %,
+-- gerencia 15 %, empresa 3.75 %: ver calculo-notas.ts); no hay regla en la base.
 
 -- Todo objetivo INDIVIDUAL debe traer su clasificación (desempeño vs.
 -- desarrollo); los demás niveles no la usan.

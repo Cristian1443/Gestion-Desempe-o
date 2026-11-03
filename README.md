@@ -269,14 +269,14 @@ semáforo: describen el flujo anterior, no el actual.
   **% de cumplimiento** (0-100, `calificacionFinal`) y de ahí sale el resultado: **80 o más
   cumple** (`src/lib/calificacion.ts`). Los indicadores de gerencia y de la empresa no
   llevan % final, solo Cumple / No cumple (una regla de la base impide guardar
-  `calificacionFinal` fuera de los individuales). Solo los individuales de desempeño
-  llevan peso (ver abajo); los indicadores no.
+  `calificacionFinal` fuera de los individuales). Todos llevan peso, repartido por igual
+  dentro de su nivel (ver abajo): individuales 40 %, gerencia 30 % y empresa 30 %.
   Se marca una sola vez, al final, y solo dentro de la **franja del resultado final**
   que Talento Humano define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
   puede terminar después del periodo. En los individuales lo marca el jefe directo.
 - **Objetivos de desempeño.** Cuatro por persona, cada uno con **línea estratégica,
-  descripción, acciones, fórmula del indicador, meta y peso**; los cuatro pesos suman
-  exactamente **100 %** (validado al proponer y de nuevo al aprobar). El colaborador los
+  descripción, acciones, fórmula del indicador y meta**. El peso no lo escribe la persona:
+  los cuatro pesan lo mismo, **10 % c/u (40 % del total)**, y lo pone el sistema. El colaborador los
   propone, el jefe los aprueba, en **cada seguimiento** registra el **% de avance** de la
   meta con su comentario y al final pone el % de cumplimiento. El peso aún no entra a
   ninguna nota: la nota final ponderada sigue sin conectarse.
@@ -301,7 +301,7 @@ semáforo: describen el flujo anterior, no el actual.
 Los objetivos corporativos se llaman **indicadores** y funcionan distinto al resto.
 Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todos.
 
-- **Sin peso.** Solo Cumple / No cumple. `Objetivo.peso` queda en 0. **Siempre son
+- **Peso 3.75 % cada uno** (8 × 3.75 = 30 % del total). Cumple / No cumple. **Siempre son
   8** para toda la Corporación: no se puede cargar un noveno y el periodo no se
   cierra con menos de 8.
 - **Seguimiento mensual**, sin franjas: un registro por mes calendario con el
@@ -328,7 +328,7 @@ Los objetivos de gerencia hacen lo mismo que los indicadores de la empresa, con 
 diferencia: el seguimiento no es mensual sino por los **seguimientos con franja**
 que define Talento Humano (3 al año o los que diga). Viven en *Mi gerencia*.
 
-- **Sin peso** (`Objetivo.peso` en 0, ya no son 15% cada uno), cumple o no cumple.
+- **Peso 15 % cada uno** (2 × 15 = 30 % del total), cumple o no cumple.
 - **2 por gerencia**, cargados de a uno por el **gerente de esa gerencia**, que
   también los edita, los elimina (solo si no tienen seguimientos ni resultado), les
   hace el seguimiento y marca el resultado. No pasan por aprobación.
@@ -340,8 +340,8 @@ que define Talento Humano (3 al año o los que diga). Viven en *Mi gerencia*.
   dentro de la franja del % de cumplimiento.
 - **Cierre del periodo.** Exige los 8 indicadores de la empresa, los 2 de cada
   gerencia con gerente, y el resultado de todos.
-- La nota final sigue sin conectarse: `calculo-notas.ts` conserva sus reglas de
-  peso (15 y 3.75) como código sin usar.
+- La nota final sigue sin conectarse: `calculo-notas.ts` define los pesos (10, 15 y
+  3.75) y la fórmula, pero el resultado ponderado no se calcula todavía.
 
 ## Módulo "Mis objetivos" (fase 4, primera entrega)
 

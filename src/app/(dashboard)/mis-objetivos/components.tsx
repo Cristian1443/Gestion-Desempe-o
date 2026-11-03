@@ -382,7 +382,7 @@ export function ObjetivoSoloLecturaCard({
           {numero}
         </span>
         <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold text-iib-secondary">
-          Sin peso
+          Peso {objetivo.peso}%
         </span>
       </div>
 

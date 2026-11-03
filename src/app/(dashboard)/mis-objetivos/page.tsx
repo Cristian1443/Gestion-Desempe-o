@@ -185,7 +185,7 @@ export default async function MisObjetivosPage({
                     {categoria === "desempeno" ? "Componente 1 (C1): Metas individuales" : "Objetivos de desarrollo"}
                   </h2>
                   <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    Pesos suman 100 % · cumple o no cumple
+                    Cada uno pesa 10 % · cumple o no cumple
                   </span>
                 </div>
                 <span className="text-sm text-iib-secondary">

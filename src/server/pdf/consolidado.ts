@@ -12,7 +12,7 @@ import type {
 } from "@/server/services/consolidado.service";
 
 // Colores sobrios, con el rojo institucional solo para títulos y acentos.
-const ROJO = "#C00000";
+const ROJO = "#E84922";
 const TEXTO = "#262626";
 const GRIS = "#6B6B6B";
 const LINEA = "#E4E0D8";
@@ -189,7 +189,7 @@ function dibujarEmpresa(e: Escritor, indicadores: IndicadorEmpresaPdf[]) {
     e.parrafo("No se cargaron indicadores de resultado institucional en este periodo.", { color: GRIS });
     return;
   }
-  e.parrafo("Aplican a toda la Corporación. Sin peso: avance acumulado mes a mes y resultado final Cumple / No cumple.", {
+  e.parrafo("Aplican a toda la Corporación. Cada uno pesa lo mismo (3.75 % de 30 %): avance acumulado mes a mes y resultado final Cumple / No cumple.", {
     color: GRIS,
   });
   indicadores.forEach((indicador, i) => {
@@ -210,7 +210,7 @@ function dibujarGerencias(e: Escritor, gerencias: Array<{ nombre: string; gerent
     e.parrafo("No se cargaron metas por gerencia en este periodo.", { color: GRIS });
     return;
   }
-  e.parrafo("Sin peso: avance acumulado en cada seguimiento y resultado final Cumple / No cumple.", { color: GRIS });
+  e.parrafo("Cada uno pesa lo mismo (15 % de 30 %): avance acumulado en cada seguimiento y resultado final Cumple / No cumple.", { color: GRIS });
   for (const gerencia of gerencias) {
     e.separador(10);
     e.asegurarEspacio(70);
@@ -258,7 +258,7 @@ function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; pers
     e.parrafo("No hay metas individuales aprobadas en este periodo.", { color: GRIS });
     return;
   }
-  e.parrafo("Agrupados por gerencia y por persona. Sin peso: cada objetivo termina en Cumple / No cumple.", { color: GRIS });
+  e.parrafo("Agrupados por gerencia y por persona. Los 4 pesan lo mismo (10 % de 40 %): cada objetivo termina en Cumple / No cumple.", { color: GRIS });
   grupos.forEach((grupo, i) => {
     // La primera gerencia sigue en la misma página del título; las demás empiezan una nueva.
     if (i > 0) e.doc.addPage();

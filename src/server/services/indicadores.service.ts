@@ -3,12 +3,12 @@ import { db } from "@/server/db";
 import { estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
 import { claveMes, mesActual, mesesDelPeriodo, mesesRegistrables, primerDiaDelMes } from "@/lib/mes";
 import type { LineaIndicadorCodigo } from "@/lib/indicadores-config";
-import { CANTIDAD_OBJETIVOS_CORPORATIVOS } from "@/server/services/calculo-notas";
+import { CANTIDAD_OBJETIVOS_CORPORATIVOS, PESO_OBJETIVO_CORPORATIVO } from "@/server/services/calculo-notas";
 import { ErrorCalificacion, exigirFranjaCumplimiento } from "@/server/services/calificaciones.service";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 
-// Indicadores de la empresa = objetivos de nivel CORPORATIVO. No llevan peso ni
-// nota: durante el año se les registra un avance mensual (% acumulado y un
+// Indicadores de la empresa = objetivos de nivel CORPORATIVO. Todos pesan lo
+// mismo (3.75 % c/u) y no llevan nota: durante el año se les registra un avance mensual (% acumulado y un
 // comentario) y al final se marca Cumple / No cumple. La autorización (Gestor
 // corporativo, Talento Humano o Admin) se resuelve en la capa de Server Action
 // con `requireRol`, no aquí.
@@ -67,7 +67,7 @@ export async function crearIndicador(input: DatosIndicador & { creadoPor: string
       meta: input.meta,
       indicador: input.titulo,
       lineaEstrategica: input.lineaEstrategica,
-      peso: 0,
+      peso: PESO_OBJETIVO_CORPORATIVO,
       estadoAprobacion: "APROBADO",
       creadoPor: input.creadoPor,
       aprobadoPor: input.creadoPor,

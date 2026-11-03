@@ -1,6 +1,7 @@
 import { formatearFecha } from "@/lib/fecha";
 import { etiquetaMes } from "@/lib/mes";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
+import { PESO_OBJETIVO_CORPORATIVO } from "@/server/services/calculo-notas";
 import { obtenerIndicadores } from "@/server/services/indicadores.service";
 import { AgregarIndicador } from "@/components/AgregarIndicador";
 import { TarjetaResumen } from "@/components/indicador-ui";
@@ -42,7 +43,7 @@ export default async function IndicadoresPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-iib-foreground">Componente 3 (C3): Resultado institucional</h1>
         <p className="max-w-3xl text-sm text-iib-secondary">
-          Son {tope} para toda la Corporación. No llevan peso: cada mes se registra su avance acumulado con un
+          Son {tope} para toda la Corporación. Todos pesan lo mismo ({PESO_OBJETIVO_CORPORATIVO} % c/u): cada mes se registra su avance acumulado con un
           comentario y al final se marca si cumple o no cumple.
         </p>
         <p className="text-sm text-iib-secondary">

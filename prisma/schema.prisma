@@ -268,8 +268,9 @@ model Objetivo {
   indicador    String
   unidadMedida String? @map("unidad_medida")
 
-  // Ningún objetivo lleva ya peso: siempre queda en 0 (la nota final ponderada
-  // no está conectada; ver calculo-notas.ts). Se conserva la columna.
+  // Lo pone el sistema, no la persona: INDIVIDUAL desempeño 10, GERENCIA 15,
+  // CORPORATIVO 3.75 (cada nivel reparte su porcentaje por igual: 40/30/30). Los
+  // de desarrollo quedan en 0. Ver calculo-notas.ts.
   peso Decimal @db.Decimal(5, 2)
 
   estadoAprobacion     EstadoAprobacionObjetivo @default(BORRADOR) @map("estado_aprobacion")

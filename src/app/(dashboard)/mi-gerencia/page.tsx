@@ -2,6 +2,7 @@ import { FranjaBanner } from "@/components/FranjaBanner";
 import { AgregarIndicador } from "@/components/AgregarIndicador";
 import { TarjetaResumen } from "@/components/indicador-ui";
 import { requireRol } from "@/server/auth/rbac";
+import { PESO_OBJETIVO_GERENCIA } from "@/server/services/calculo-notas";
 import { obtenerMiGerencia } from "@/server/services/gerencia.service";
 import { accionCrearIndicadorGerencia } from "./actions";
 import { ColaboradorConsolidadoRow, IndicadorGerenciaCard } from "./components";
@@ -58,7 +59,7 @@ export default async function MiGerenciaPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
           <h2 className="text-base font-bold">Componente 2 (C2): Metas por gerencia</h2>
           <span className="text-sm text-iib-secondary">
-            Sin peso · en cada seguimiento registras su avance y al final marcas Cumple o No cumple
+            Cada uno pesa {PESO_OBJETIVO_GERENCIA} % · en cada seguimiento registras su avance y al final marcas Cumple o No cumple
           </span>
         </div>
 

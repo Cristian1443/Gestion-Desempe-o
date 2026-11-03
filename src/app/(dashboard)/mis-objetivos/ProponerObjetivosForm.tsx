@@ -2,8 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { LINEAS_ESTRATEGICAS, CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
-import { CANTIDAD_DESARROLLO_ACTIVA, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
-import { CANTIDAD_OBJETIVOS_DESEMPENO, distribuirPesoEquitativo } from "@/server/services/calculo-notas";
+import { CANTIDAD_DESARROLLO_ACTIVA } from "@/lib/objetivos-config";
+import {
+  CANTIDAD_OBJETIVOS_DESEMPENO,
+  PESO_OBJETIVO_INDIVIDUAL,
+  PESO_TOTAL_DESEMPENO,
+} from "@/server/services/calculo-notas";
 import type { ObjetivoVista } from "@/server/services/objetivos.service";
 import { accionProponerObjetivos } from "./actions";
 
@@ -13,7 +17,6 @@ type FilaDesempeno = {
   acciones: string;
   indicador: string;
   meta: string;
-  peso: number;
   linkRepositorio: string;
 };
 
@@ -26,7 +29,7 @@ type FilaDesarrollo = {
 };
 
 function filaDesempenoVacia(): FilaDesempeno {
-  return { lineaEstrategica: "", descripcion: "", acciones: "", indicador: "", meta: "", peso: 0, linkRepositorio: "" };
+  return { lineaEstrategica: "", descripcion: "", acciones: "", indicador: "", meta: "", linkRepositorio: "" };
 }
 
 function filaDesarrolloVacia(): FilaDesarrollo {
@@ -46,7 +49,6 @@ function desempenoDesdeAnterior(objetivos: ObjetivoVista[]): FilaDesempeno[] {
         acciones: o.acciones ?? "",
         indicador: o.indicador,
         meta: o.meta ?? "",
-        peso: o.peso,
         linkRepositorio: o.linkRepositorio ?? "",
       }),
     );
@@ -109,19 +111,9 @@ function TarjetaDesempeno({
             </option>
           ))}
         </select>
-        <label className="ml-auto flex shrink-0 items-center gap-1.5 text-xs font-semibold text-iib-secondary">
-          Peso
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step="0.01"
-            value={fila.peso}
-            onChange={(e) => onCambiar("peso", e.target.value)}
-            className="w-20 rounded-md border border-iib-border bg-iib-surface px-2 py-1.5 text-sm font-bold tabular-nums"
-          />
-          %
-        </label>
+        <span className="ml-auto shrink-0 rounded-full bg-iib-surface px-3 py-1 text-xs font-bold tabular-nums text-iib-secondary">
+          Peso {PESO_OBJETIVO_INDIVIDUAL} %
+        </span>
       </div>
 
       <div className="flex flex-col gap-3.5 p-4">
@@ -282,17 +274,9 @@ export function ProponerObjetivosForm({
   function actualizarDesempeno(indice: number, campo: keyof FilaDesempeno, valor: string) {
     setDesempeno((prev) =>
       prev.map((f, i) =>
-        i === indice ? { ...f, [campo]: campo === "peso" ? Number(valor) : valor } : f,
+        i === indice ? { ...f, [campo]: valor } : f,
       ),
     );
-  }
-
-  const sumaPesos = desempeno.reduce((acc, f) => acc + Math.round((f.peso || 0) * 100), 0) / 100;
-  const sumaValida = Math.round(sumaPesos * 100) === Math.round(PESO_TOTAL_INDIVIDUALES * 100);
-
-  function repartirEquitativo() {
-    const pesos = distribuirPesoEquitativo(CANTIDAD_OBJETIVOS_DESEMPENO, PESO_TOTAL_INDIVIDUALES);
-    setDesempeno((prev) => prev.map((f, i) => ({ ...f, peso: pesos[i] ?? 0 })));
   }
 
   function actualizarDesarrollo(indice: number, campo: keyof FilaDesarrollo, valor: string) {
@@ -308,7 +292,6 @@ export function ProponerObjetivosForm({
           acciones: f.acciones,
           indicador: f.indicador,
           meta: f.meta,
-          peso: f.peso,
           tipoIndividual: "DESEMPENO" as const,
           lineaEstrategica: f.lineaEstrategica,
           linkRepositorio: f.linkRepositorio || undefined,
@@ -342,7 +325,7 @@ export function ProponerObjetivosForm({
 
   const puedeEnviar = desempeno.every(
     (f) => f.lineaEstrategica && f.descripcion.trim() && f.acciones.trim() && f.indicador.trim() && f.meta.trim(),
-  ) && sumaValida;
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -350,25 +333,10 @@ export function ProponerObjetivosForm({
         <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
           <h3 className="text-sm font-bold text-iib-primary">Componente 1 (C1): Metas individuales</h3>
           <p className="text-xs text-iib-secondary">
-            {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno con su línea estratégica, su meta y su peso. Los cuatro pesos
-            deben sumar {PESO_TOTAL_INDIVIDUALES} %; al final del periodo tu jefe marca si cada uno cumple o no cumple.
+            {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno con su línea estratégica y su meta. Los cuatro pesan lo mismo
+            ({PESO_OBJETIVO_INDIVIDUAL} % c/u, {PESO_TOTAL_DESEMPENO} % de tu resultado); al final del periodo tu jefe marca si cada uno
+            cumple o no cumple.
           </p>
-          <div className="mt-2.5 flex flex-wrap items-center gap-3">
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
-                sumaValida ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
-              }`}
-            >
-              {sumaPesos.toFixed(2)}% / {PESO_TOTAL_INDIVIDUALES}%
-            </span>
-            <button
-              type="button"
-              onClick={repartirEquitativo}
-              className="rounded-md border border-iib-border px-3 py-1.5 text-xs font-semibold transition hover:bg-iib-surface-sunken"
-            >
-              Repartir equitativo
-            </button>
-          </div>
         </div>
         <div className="flex flex-col gap-4">
           {desempeno.map((fila, indice) => (
@@ -410,7 +378,7 @@ export function ProponerObjetivosForm({
         {!puedeEnviar && (
           <p className="text-sm text-warning">
             Completa la línea estratégica, la descripción, las acciones, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
-            objetivos, y que los pesos sumen {PESO_TOTAL_INDIVIDUALES} %, para poder enviar.
+            objetivos para poder enviar.
           </p>
         )}
         <button
