@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { requireRol } from "@/server/auth/rbac";
 import {
   ErrorGerencia,
@@ -35,6 +36,7 @@ async function ejecutar<T>(
   mensajeInesperado: string,
 ): Promise<EstadoAccionGerencia> {
   const gerente = await requireRol("GERENTE");
+  if (!COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) return { ok: false, error: "Las metas por gerencia no se manejan en esta vigencia." };
 
   const parsed = schema.safeParse(input);
   if (!parsed.success) {

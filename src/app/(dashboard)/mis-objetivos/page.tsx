@@ -1,6 +1,7 @@
 import { CronogramaPeriodo } from "@/components/CronogramaPeriodo";
 import { FranjaItems } from "@/components/FranjaBanner";
-import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
+import { avancePonderado, formatearPuntos } from "@/lib/avance";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, DESARROLLO_HABILITADO, PESO_OBJETIVO_INDIVIDUAL } from "@/lib/objetivos-config";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerUltimoPeriodoCerrado, tieneObjetivosAprobados } from "@/server/services/individuales.service";
 import { obtenerCronograma } from "@/server/services/cronograma.service";
@@ -65,19 +66,30 @@ export default async function MisObjetivosPage({
   const individualesSinResolver =
     individuales.length === 0 || individuales.every((o) => o.estadoAprobacion === "DEVUELTO");
 
-  // Los objetivos de desarrollo no se manejan este año: esa categoría no existe.
-  const categorias: Categoria[] = DESARROLLO_HABILITADO ? ["gerencia", "desempeno", "desarrollo"] : ["gerencia", "desempeno"];
-  const categoria = categorias.includes(searchParams.categoria as Categoria)
+  // Las categorías que existen en esta vigencia: gerencia solo si C2 está habilitado y desarrollo
+  // solo si se manejan. Con una sola (metas individuales) no hace falta el selector.
+  const categorias: Categoria[] = [
+    ...(COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS ? (["gerencia"] as const) : []),
+    "desempeno",
+    ...(DESARROLLO_HABILITADO ? (["desarrollo"] as const) : []),
+  ];
+  const hayVariasCategorias = COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS || DESARROLLO_HABILITADO;
+  const categoria: Categoria | undefined = categorias.includes(searchParams.categoria as Categoria)
     ? (searchParams.categoria as Categoria)
-    : undefined;
+    : hayVariasCategorias
+      ? undefined
+      : "desempeno";
+
+  // Avance ponderado: cada meta aporta su peso por su % de avance (de 100 puntos).
+  const avanceTotal = avancePonderado(desempeno.filter((o) => o.estadoAprobacion === "APROBADO"));
 
   return (
     <>
       <div className="flex flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-iib-foreground">Componentes de medición individual</h1>
+          <h1 className="text-2xl font-bold text-iib-foreground">Metas individuales</h1>
           <p className="mt-1 text-sm text-iib-secondary">
-            Consulta y propone tus objetivos del periodo, organizados por categoría.
+            Consulta y propone tus objetivos del periodo.
           </p>
         </div>
 
@@ -111,13 +123,13 @@ export default async function MisObjetivosPage({
         </div>
       </div>
 
+      <CronogramaPeriodo periodoNombre={periodo.nombre} items={cronograma} />
+
       {!categoria ? (
-        <>
-        <CronogramaPeriodo periodoNombre={periodo.nombre} items={cronograma} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TarjetaCategoria
             categoria="desempeno"
-            titulo="Componente 1 (C1): Metas individuales"
+            titulo="Metas individuales"
             resumen={
               individualesSinResolver
                 ? individuales.length === 0
@@ -127,7 +139,7 @@ export default async function MisObjetivosPage({
             }
             detalle="Van contra una línea estratégica"
           />
-          {gerencia.nombreGerencia ? (
+          {COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && gerencia.nombreGerencia ? (
             <TarjetaCategoria
               categoria="gerencia"
               titulo="Componente 2 (C2): Metas por gerencia"
@@ -139,6 +151,7 @@ export default async function MisObjetivosPage({
               detalle={gerencia.nombreGerencia}
             />
           ) : null}
+          {COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && (
           <TarjetaCategoria
             categoria="corporativo"
             titulo="Componente 3 (C3): Resultado institucional"
@@ -150,6 +163,7 @@ export default async function MisObjetivosPage({
             }
             detalle="Aplica a toda la Corporación · cumple o no cumple"
           />
+          )}
           {DESARROLLO_HABILITADO && (
             <TarjetaCategoria
               categoria="desarrollo"
@@ -165,10 +179,9 @@ export default async function MisObjetivosPage({
             />
           )}
         </div>
-        </>
       ) : (
         <div className="flex flex-col gap-4">
-          <VolverASelectorLink />
+          {hayVariasCategorias && <VolverASelectorLink />}
 
           {categoria === "gerencia" && gerencia.nombreGerencia && (
             <section className="flex flex-col gap-4" aria-labelledby="nivel-gerencia">
@@ -208,11 +221,16 @@ export default async function MisObjetivosPage({
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-iib-border pb-2.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2 id={`nivel-${categoria}`} className="text-base font-bold">
-                    {categoria === "desempeno" ? "Componente 1 (C1): Metas individuales" : "Objetivos de desarrollo"}
+                    {categoria === "desempeno" ? "Metas individuales" : "Objetivos de desarrollo"}
                   </h2>
                   <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    Cada uno pesa 10 % · cumple o no cumple
+                    Cada una pesa {PESO_OBJETIVO_INDIVIDUAL} % · seguimiento con % de avance
                   </span>
+                  {categoria === "desempeno" && avanceTotal.conAvance > 0 && (
+                    <span className="rounded-full bg-success-bg px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-success">
+                      Avance: {formatearPuntos(avanceTotal.puntos)} de {formatearPuntos(avanceTotal.total)} puntos
+                    </span>
+                  )}
                 </div>
                 <span className="text-sm text-iib-secondary">
                   {individualesSinResolver

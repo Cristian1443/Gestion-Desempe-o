@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { requireRol } from "@/server/auth/rbac";
 import { listarPeriodos } from "@/server/services/periodos.service";
 import { PeriodoRow } from "./components";
@@ -15,8 +16,8 @@ export default async function AdministracionPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-iib-foreground">Administración</h1>
           <p className="text-sm text-iib-secondary">
-            Periodos de evaluación, con la franja de cada seguimiento y la del resultado final. Los indicadores de
-            la empresa se gestionan en la pestaña Indicadores.
+            Periodos de evaluación, con la franja de cada seguimiento y la del resultado final.
+            {COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && " Los indicadores de la empresa se gestionan en la pestaña Indicadores."}
           </p>
         </div>
         <Link

@@ -26,8 +26,8 @@ describe("generarConsolidadoPdf", () => {
     const pdf = await generarConsolidadoPdf(datosVacios());
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(pdf.length).toBeGreaterThan(1000);
-    // Portada + una página por sección.
-    expect(paginas(pdf)).toBeGreaterThanOrEqual(4);
+    // Portada + la sección de metas individuales (C2 y C3 están ocultos).
+    expect(paginas(pdf)).toBeGreaterThanOrEqual(2);
   });
 
   it("incluye de todo un poco, con tildes, emojis y textos muy largos, y pagina sin fallar", async () => {
@@ -125,6 +125,6 @@ describe("generarConsolidadoPdf", () => {
     ];
     const pdf = await generarConsolidadoPdf(datos);
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
-    expect(paginas(pdf)).toBeGreaterThanOrEqual(4);
+    expect(paginas(pdf)).toBeGreaterThanOrEqual(2);
   });
 });

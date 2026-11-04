@@ -5,7 +5,7 @@ import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 
 const camposComunesObjetivoIndividual = {
   descripcion: z.string().min(1, "La descripción es obligatoria.").max(2000),
-  acciones: z.string().min(1, "Las acciones son obligatorias.").max(2000),
+  acciones: z.string().min(1, "Las evidencias son obligatorias.").max(2000),
   indicador: z.string().min(1, "La fórmula del indicador es obligatoria.").max(300),
   linkRepositorio: z
     .string()

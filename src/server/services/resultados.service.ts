@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { primerDiaDelMes, mesActual } from "@/lib/mes";
 import { obtenerContextoFranjas, obtenerPeriodoActual } from "@/server/services/periodos.service";
 
@@ -60,7 +60,7 @@ export async function obtenerResultados(): Promise<Resultados | null> {
     ? { where: { seguimientoId: seguimientoReferencia.id }, take: 1 as const }
     : { take: 0 as const };
 
-  const [individuales, gerenciaObjetivos, corporativos, usuarios] = await Promise.all([
+  const [individuales, gerenciaObjetivosBase, corporativosBase, usuarios] = await Promise.all([
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "INDIVIDUAL", estadoAprobacion: "APROBADO", ...FILTRO_OBJETIVOS_ACTIVOS },
       include: {
@@ -83,6 +83,10 @@ export async function obtenerResultados(): Promise<Resultados | null> {
       select: { id: true, gerenciaId: true },
     }),
   ]);
+
+  // Con C2 y C3 ocultos, el tablero solo habla de metas individuales.
+  const gerenciaObjetivos = gerenciaObjetivosBase.filter(() => COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS);
+  const corporativos = corporativosBase.filter(() => COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS);
 
   const gerencias = await db.gerencia.findMany();
 

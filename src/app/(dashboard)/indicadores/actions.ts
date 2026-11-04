@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { requireRol } from "@/server/auth/rbac";
 import {
   ErrorIndicador,
@@ -38,6 +39,7 @@ async function ejecutar<T>(
   mensajeInesperado: string,
 ): Promise<EstadoAccionIndicador> {
   const usuario = await requireRol(...ROLES_EDITORES);
+  if (!COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) return { ok: false, error: "El resultado institucional no se maneja en esta vigencia." };
 
   const parsed = schema.safeParse(input);
   if (!parsed.success) {

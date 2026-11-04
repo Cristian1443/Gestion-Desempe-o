@@ -9,7 +9,7 @@ export class ErrorEvidencia extends Error {
   }
 }
 
-// "Evidencias realizadas": lo que el colaborador cuenta que hizo, un texto por objetivo
+// "Acciones realizadas": lo que el colaborador cuenta que hizo, un texto por objetivo
 // individual y por seguimiento. Solo se escribe ANTES de cada seguimiento, para que el
 // jefe lo tenga a la mano cuando lo haga: la ventana está abierta desde que termina el
 // seguimiento anterior (o desde el inicio del periodo) hasta que empieza el siguiente.
@@ -26,7 +26,7 @@ export function ventanaEvidencia(
   if (seguimientoEnCurso) {
     return {
       abierta: false,
-      motivo: `El seguimiento ${seguimientoEnCurso.numero} está en curso: las evidencias se registran antes de cada seguimiento.`,
+      motivo: `El seguimiento ${seguimientoEnCurso.numero} está en curso: las acciones realizadas se registran antes de cada seguimiento.`,
     };
   }
   if (!proximoSeguimiento) {
@@ -52,10 +52,10 @@ export async function guardarEvidencia(input: { usuarioId: string; objetivoId: s
   });
 
   if (!objetivo || objetivo.nivel !== "INDIVIDUAL") throw new ErrorEvidencia("El objetivo no existe.");
-  if (objetivo.usuarioId !== input.usuarioId) throw new ErrorEvidencia("Solo puedes registrar evidencias de tus propios objetivos.");
-  if (objetivo.tipoIndividual !== "DESEMPENO") throw new ErrorEvidencia("Las evidencias solo aplican a los objetivos de desempeño.");
+  if (objetivo.usuarioId !== input.usuarioId) throw new ErrorEvidencia("Solo puedes registrar acciones realizadas de tus propios objetivos.");
+  if (objetivo.tipoIndividual !== "DESEMPENO") throw new ErrorEvidencia("Las acciones realizadas solo aplican a los objetivos de desempeño.");
   if (objetivo.estadoAprobacion !== "APROBADO") {
-    throw new ErrorEvidencia("Podrás registrar evidencias cuando tu jefe apruebe el objetivo.");
+    throw new ErrorEvidencia("Podrás registrar tus acciones realizadas cuando tu jefe apruebe el objetivo.");
   }
   if (objetivo.periodo.estado !== "ABIERTO") throw new ErrorEvidencia("El periodo no está abierto.");
 

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { errorDeFranjas, estadoFranja, hoyEnBogota, type EstadoFranja } from "@/lib/franja";
-import { FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
 import { CANTIDAD_OBJETIVOS_CORPORATIVOS, CANTIDAD_OBJETIVOS_GERENCIA } from "@/server/services/calculo-notas";
 
 // El periodo "actual" es el ABIERTO. Solo debería haber uno a la vez en la
@@ -272,7 +272,8 @@ export async function cerrarPeriodo(periodoId: string) {
 
   const [objetivos, gerencias] = await Promise.all([
     db.objetivo.findMany({
-      where: { periodoId, ...FILTRO_OBJETIVOS_ACTIVOS },
+      // Con C2 y C3 ocultos solo cuentan las metas individuales para poder cerrar.
+      where: { periodoId, ...FILTRO_OBJETIVOS_ACTIVOS, ...(COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS ? {} : { nivel: "INDIVIDUAL" as const }) },
       select: {
         nivel: true,
         gerenciaId: true,
@@ -287,10 +288,10 @@ export async function cerrarPeriodo(periodoId: string) {
 
   const faltantes: string[] = [];
   const corporativos = objetivos.filter((o) => o.nivel === "CORPORATIVO").length;
-  if (corporativos < CANTIDAD_OBJETIVOS_CORPORATIVOS) {
+  if (COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && corporativos < CANTIDAD_OBJETIVOS_CORPORATIVOS) {
     faltantes.push(`indicadores de la empresa (${corporativos} de ${CANTIDAD_OBJETIVOS_CORPORATIVOS})`);
   }
-  for (const gerencia of gerencias) {
+  for (const gerencia of COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS ? gerencias : []) {
     const cargados = objetivos.filter((o) => o.nivel === "GERENCIA" && o.gerenciaId === gerencia.id).length;
     if (cargados < CANTIDAD_OBJETIVOS_GERENCIA) {
       faltantes.push(`indicadores de ${gerencia.nombre} (${cargados} de ${CANTIDAD_OBJETIVOS_GERENCIA})`);

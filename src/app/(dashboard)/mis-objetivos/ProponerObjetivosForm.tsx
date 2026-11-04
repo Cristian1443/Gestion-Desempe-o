@@ -2,12 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { LINEAS_ESTRATEGICAS, CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
-import { CANTIDAD_DESARROLLO_ACTIVA } from "@/lib/objetivos-config";
-import {
-  CANTIDAD_OBJETIVOS_DESEMPENO,
-  PESO_OBJETIVO_INDIVIDUAL,
-  PESO_TOTAL_DESEMPENO,
-} from "@/server/services/calculo-notas";
+import { CANTIDAD_DESARROLLO_ACTIVA, PESO_OBJETIVO_INDIVIDUAL, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
+import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 import type { ObjetivoVista } from "@/server/services/objetivos.service";
 import { accionProponerObjetivos } from "./actions";
 
@@ -139,11 +135,11 @@ function TarjetaDesempeno({
             />
           </div>
           <div className={estiloCampo}>
-            <label className={estiloLabel}>Acciones</label>
+            <label className={estiloLabel}>Evidencias</label>
             <textarea
               value={fila.acciones}
               onChange={(e) => onCambiar("acciones", e.target.value)}
-              placeholder="¿Cómo se va a lograr? Pasos o actividades concretas"
+              placeholder="¿Qué evidencias soportarán el cumplimiento? Documentos, informes, enlaces…"
               rows={3}
               className={`resize-y ${estiloInput}`}
             />
@@ -159,7 +155,7 @@ function TarjetaDesempeno({
             className={estiloInput}
           />
           <p className="text-xs text-iib-secondary">
-            Se llena desde el principio, al proponer el objetivo. Lo que vas haciendo (las evidencias realizadas) lo
+            Se llena desde el principio, al proponer el objetivo. Lo que vas haciendo (las acciones realizadas) lo
             registras después, antes de cada seguimiento.
           </p>
         </div>
@@ -359,11 +355,11 @@ export function ProponerObjetivosForm({
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4">
         <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
-          <h3 className="text-sm font-bold text-iib-primary">Componente 1 (C1): Metas individuales</h3>
+          <h3 className="text-sm font-bold text-iib-primary">Metas individuales</h3>
           <p className="text-xs text-iib-secondary">
             {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno con su línea estratégica y su meta. Los cuatro pesan lo mismo
-            ({PESO_OBJETIVO_INDIVIDUAL} % c/u, {PESO_TOTAL_DESEMPENO} % de tu resultado); al final del periodo tu jefe marca si cada uno
-            cumple o no cumple.
+            ({PESO_OBJETIVO_INDIVIDUAL} % c/u, {PESO_TOTAL_INDIVIDUALES} % en total). Tu jefe hace el seguimiento de cada uno con un
+            % de avance y un comentario, y al final del periodo marca si cumple o no cumple.
           </p>
         </div>
         <div className="flex flex-col gap-4">
@@ -405,7 +401,7 @@ export function ProponerObjetivosForm({
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         {!puedeEnviar && (
           <p className="text-sm text-warning">
-            Completa la línea estratégica, la descripción, las acciones, el indicador, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
+            Completa la línea estratégica, la descripción, las evidencias, el indicador, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
             objetivos para poder enviar.
           </p>
         )}

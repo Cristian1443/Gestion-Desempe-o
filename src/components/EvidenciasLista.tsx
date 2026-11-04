@@ -1,6 +1,6 @@
 import { formatearFecha } from "@/lib/fecha";
 
-// Las evidencias realizadas que el colaborador registró antes de cada seguimiento (solo
+// Las acciones realizadas que el colaborador registró antes de cada seguimiento (solo
 // lectura): la ven el colaborador, su jefe, el gerente y la dirección.
 export function EvidenciasLista({
   evidencias,
@@ -16,7 +16,7 @@ export function EvidenciasLista({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Evidencias realizadas</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Acciones realizadas</p>
       <ul className="flex flex-col gap-2.5">
         {evidencias.map((e) => (
           <li key={e.numero} className="rounded-md border border-iib-border bg-iib-surface px-3 py-2.5">

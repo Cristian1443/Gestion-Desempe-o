@@ -8,6 +8,7 @@ import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDia
 import { CumplimientoLectura } from "@/components/CumplimientoLectura";
 import type { FranjaUI } from "@/lib/franja-ui";
 import { Avatar } from "@/components/Avatar";
+import { avancePonderado, formatearPuntos, puntosDeAvance, ultimoPorcentaje } from "@/lib/avance";
 import { EvidenciasLista } from "@/components/EvidenciasLista";
 import { CalificacionFinalControl } from "./CalificacionFinalControl";
 
@@ -170,7 +171,7 @@ function DetalleObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
         {objetivo.acciones && (
           <div className="flex flex-col gap-0.5">
             <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
-              Acciones
+              Evidencias
             </p>
             <p className="text-sm leading-relaxed">{objetivo.acciones}</p>
           </div>
@@ -225,9 +226,19 @@ function EncabezadoObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
         </div>
         {clase && <span className={`text-xs font-medium ${clase.colorTexto}`}>{clase.detalle}</span>}
       </div>
-      <span className="shrink-0 rounded-full bg-iib-surface-sunken px-2.5 py-0.5 text-xs font-bold tabular-nums text-iib-secondary">
-        Peso {objetivo.peso}%
-      </span>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="rounded-full bg-iib-surface-sunken px-2.5 py-0.5 text-xs font-bold tabular-nums text-iib-secondary">
+          Peso {objetivo.peso}%
+        </span>
+        {(() => {
+          const avance = ultimoPorcentaje(objetivo.seguimientos);
+          return avance === null ? null : (
+            <span className="rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-bold tabular-nums text-success">
+              Avance {avance}% · {formatearPuntos(puntosDeAvance(objetivo.peso, avance))} de {formatearPuntos(objetivo.peso)}
+            </span>
+          );
+        })()}
+      </div>
     </div>
   );
 }
@@ -314,6 +325,11 @@ export function ColaboradorPanel({ colaborador, franja }: { colaborador: Colabor
           <h3 className="text-base font-semibold">{colaborador.nombre}</h3>
           {colaborador.cargo && <p className="text-xs text-iib-secondary">{colaborador.cargo}</p>}
         </div>
+        {avancePonderado(aprobados).conAvance > 0 && (
+          <span className="rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success">
+            Avance: {formatearPuntos(avancePonderado(aprobados).puntos)} de {formatearPuntos(avancePonderado(aprobados).total)} puntos
+          </span>
+        )}
         {sinRegistroDeReferencia > 0 && franja.referenciaNumero !== null && (
           <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
             {sinRegistroDeReferencia} sin registro en el seguimiento {franja.referenciaNumero}

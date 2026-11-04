@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EvidenciasLista } from "@/components/EvidenciasLista";
+import { formatearPuntos, puntosDeAvance, ultimoPorcentaje } from "@/lib/avance";
 import { formatearFecha as formatearFechaBase } from "@/lib/fecha";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
 import type { ObjetivoVista, SeguimientoVista } from "@/server/services/objetivos.service";
@@ -228,7 +229,7 @@ function BitacoraSeguimiento({ seguimientos }: { seguimientos: SeguimientoVista[
   );
 }
 
-// Evidencias realizadas de un objetivo de desempeño aprobado. Con `ventana` (solo en "Mis
+// Acciones realizadas de un objetivo de desempeño aprobado. Con `ventana` (solo en "Mis
 // objetivos", para el dueño) permite escribir las del próximo seguimiento mientras la
 // ventana esté abierta; sin ella (gerente, dirección) es solo lectura.
 function SeccionEvidencias({ objetivo, ventana }: { objetivo: ObjetivoVista; ventana?: VentanaEvidenciaUI }) {
@@ -253,7 +254,7 @@ function SeccionEvidencias({ objetivo, ventana }: { objetivo: ObjetivoVista; ven
     <div className="flex flex-col gap-2">
       <EvidenciasLista evidencias={objetivo.evidencias} />
       {ventana && !ventana.abierta && (
-        <p className="text-xs text-iib-secondary">Evidencias realizadas: {ventana.motivo}</p>
+        <p className="text-xs text-iib-secondary">Acciones realizadas: {ventana.motivo}</p>
       )}
     </div>
   );
@@ -277,6 +278,14 @@ export function ObjetivoIndividualCard({
         <span className="rounded-full bg-iib-surface-sunken px-2.5 py-1 text-xs font-bold tabular-nums text-iib-secondary">
           Peso {objetivo.peso}%
         </span>
+        {(() => {
+          const avance = ultimoPorcentaje(objetivo.seguimientos);
+          return avance === null ? null : (
+            <span className="rounded-full bg-success-bg px-2.5 py-1 text-xs font-bold tabular-nums text-success">
+              Avance {avance}% · aporta {formatearPuntos(puntosDeAvance(objetivo.peso, avance))} de {formatearPuntos(objetivo.peso)}
+            </span>
+          );
+        })()}
       </div>
       {objetivo.estadoAprobacion === "PENDIENTE_APROBACION" ? (
         <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-warning-bg px-2.5 py-1 text-xs font-semibold text-warning">
@@ -301,7 +310,7 @@ export function ObjetivoIndividualCard({
         </div>
         {objetivo.acciones && (
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Acciones</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Evidencias</p>
             <p className="text-sm leading-relaxed">{objetivo.acciones}</p>
           </div>
         )}

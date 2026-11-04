@@ -2,6 +2,7 @@ import Image from "next/image";
 import { signOut } from "@/auth";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { db } from "@/server/db";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { alcanceDe } from "@/server/services/individuales.service";
 import { Avatar } from "@/components/Avatar";
 import { NavTabs } from "./NavTabs";
@@ -20,12 +21,15 @@ export default async function DashboardLayout({
     select: { foto: true },
   });
 
-  // Los tres componentes de medición, en su orden: C1, C2 (solo gerentes) y C3.
+  // Metas individuales y, solo si están habilitados, los componentes de gerencia (solo
+  // gerentes) y de resultado institucional.
   const items = [{ href: "/mis-objetivos", label: "Metas individuales" }];
-  if (usuario.roles.includes("GERENTE")) {
-    items.push({ href: "/mi-gerencia", label: "Metas por gerencia" });
+  if (COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) {
+    if (usuario.roles.includes("GERENTE")) {
+      items.push({ href: "/mi-gerencia", label: "Metas por gerencia" });
+    }
+    items.push({ href: "/indicadores", label: "Resultado institucional" });
   }
-  items.push({ href: "/indicadores", label: "Resultado institucional" });
   if (usuario.roles.includes("JEFE")) {
     items.push({ href: "/mi-equipo", label: "Mi equipo" });
   }

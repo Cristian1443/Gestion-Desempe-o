@@ -1,6 +1,9 @@
 import PDFDocument from "pdfkit";
 import { formatearFecha } from "@/lib/fecha";
+import { avancePonderado, formatearPuntos, puntosDeAvance, ultimoPorcentaje } from "@/lib/avance";
 import { etiquetaMes } from "@/lib/mes";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, PESO_OBJETIVO_INDIVIDUAL, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
+import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 import type {
   ConsolidadoDatos,
   IndicadorEmpresaPdf,
@@ -158,11 +161,10 @@ function dibujarPortada(e: Escritor, datos: ConsolidadoDatos) {
 
   const columnas = [ANCHO_UTIL - 4 * 85, 85, 85, 85, 85];
   const encabezado = ["Nivel", "Total", "Cumplen", "No cumplen", "Sin resultado"];
-  const filas: Array<[string, ResumenNivel]> = [
-    ["C1: Metas individuales", datos.resumen.individuales],
-    ["C2: Metas por gerencia", datos.resumen.gerencia],
-    ["C3: Resultado institucional", datos.resumen.empresa],
-  ];
+  const filas: Array<[string, ResumenNivel]> = [["Metas individuales", datos.resumen.individuales]];
+  if (COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) {
+    filas.push(["Metas por gerencia", datos.resumen.gerencia], ["Resultado institucional", datos.resumen.empresa]);
+  }
 
   function fila(valores: string[], opciones: { negrita: boolean; fondo?: string; colores?: Array<string | undefined> }) {
     const y = doc.y;
@@ -252,17 +254,25 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
   e.asegurarEspacio(60);
   e.parrafo(`${numero}. ${objetivo.descripcion}`, { negrita: true, sangria: 8 });
   if (objetivo.lineaEstrategica) e.campo("Línea estratégica", objetivo.lineaEstrategica, 14);
-  e.campo("Acciones", objetivo.acciones, 14);
+  e.campo("Evidencias", objetivo.acciones, 14);
   e.campo("Indicador", objetivo.nombreIndicador, 14);
   e.campo("Fórmula del indicador", objetivo.indicador, 14);
   e.campo("Meta", objetivo.meta, 14);
   if (objetivo.peso !== null && objetivo.peso !== undefined) e.campo("Peso", `${objetivo.peso} %`, 14);
   for (const evidencia of objetivo.evidencias ?? []) {
-    e.parrafo(`Evidencias realizadas (antes del seguimiento ${evidencia.numero}): ${evidencia.texto}`, { sangria: 14, tamano: 9.5 });
+    e.parrafo(`Acciones realizadas (antes del seguimiento ${evidencia.numero}): ${evidencia.texto}`, { sangria: 14, tamano: 9.5 });
   }
   for (const s of objetivo.seguimientos) {
     const avance = s.porcentaje !== null && s.porcentaje !== undefined ? ` — ${s.porcentaje} %` : "";
     e.parrafo(`Seguimiento ${s.numero}${avance}: ${s.comentario}`, { sangria: 14, tamano: 9.5 });
+  }
+  const avance = ultimoPorcentaje(objetivo.seguimientos);
+  if (avance !== null && objetivo.peso) {
+    e.campo(
+      "Avance",
+      `${avance} % · aporta ${formatearPuntos(puntosDeAvance(objetivo.peso, avance))} de ${formatearPuntos(objetivo.peso)} puntos`,
+      14,
+    );
   }
   if (objetivo.calificacionFinal !== null && objetivo.calificacionFinal !== undefined) {
     e.campo("% de cumplimiento", `${objetivo.calificacionFinal} %`, 14);
@@ -272,13 +282,13 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
 
 function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; personas: PersonaPdf[] }>, datos: ConsolidadoDatos) {
   e.doc.addPage();
-  e.titulo("Componente 1 (C1): Metas individuales");
+  e.titulo("Metas individuales");
   if (grupos.length === 0) {
     e.parrafo("No hay metas individuales aprobadas en este periodo.", { color: GRIS });
     return;
   }
   e.parrafo(
-    `${datos.empleado ? "" : "Agrupados por gerencia y por persona. "}Los 4 pesan lo mismo (10 % de 40 %): cada objetivo termina en Cumple / No cumple.`,
+    `${datos.empleado ? "" : "Agrupados por gerencia y por persona. "}Los ${CANTIDAD_OBJETIVOS_DESEMPENO} pesan lo mismo (${PESO_OBJETIVO_INDIVIDUAL} % cada uno, ${PESO_TOTAL_INDIVIDUALES} % en total): se siguen con % de avance y cada uno termina en Cumple / No cumple.`,
     { color: GRIS },
   );
   grupos.forEach((grupo, i) => {
@@ -289,11 +299,16 @@ function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; pers
     e.separador(2);
     for (const persona of grupo.personas) {
       const cumplen = persona.objetivos.filter((o) => o.cumplido === true).length;
+      const avancePersona = avancePonderado(persona.objetivos);
       e.separador(8);
       e.asegurarEspacio(90);
       e.subtitulo(persona.nombre, TEXTO, 12);
       e.parrafo(
-        `${persona.cargo ? `${persona.cargo} · ` : ""}${cumplen} de ${persona.objetivos.length} objetivos cumplen`,
+        `${persona.cargo ? `${persona.cargo} · ` : ""}${cumplen} de ${persona.objetivos.length} objetivos cumplen${
+          avancePersona.conAvance > 0
+            ? ` · avance ponderado ${formatearPuntos(avancePersona.puntos)} de ${formatearPuntos(avancePersona.total)} puntos`
+            : ""
+        }`,
         { color: GRIS, tamano: 9.5 },
       );
       persona.objetivos.forEach((objetivo, j) => dibujarObjetivo(e, objetivo, j + 1));
@@ -350,8 +365,10 @@ export function generarConsolidadoPdf(datos: ConsolidadoDatos): Promise<Buffer> 
       const e = new Escritor(doc);
       dibujarPortada(e, datos);
       dibujarIndividuales(e, datos.individuales, datos);
-      dibujarGerencias(e, datos.gerencias);
-      dibujarEmpresa(e, datos.empresa);
+      if (COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) {
+        dibujarGerencias(e, datos.gerencias);
+        dibujarEmpresa(e, datos.empresa);
+      }
       dibujarPies(
         doc,
         datos.empleado

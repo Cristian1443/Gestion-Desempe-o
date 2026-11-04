@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Evidencias realizadas: el texto que el colaborador escribe antes de un seguimiento.
+// Acciones realizadas: el texto que el colaborador escribe antes de un seguimiento.
 export const guardarEvidenciaSchema = z.object({
   objetivoId: z.string().min(1, "Falta el identificador del objetivo."),
   texto: z.string().trim().min(1, "Cuenta qué hiciste.").max(3000, "El texto es demasiado largo."),

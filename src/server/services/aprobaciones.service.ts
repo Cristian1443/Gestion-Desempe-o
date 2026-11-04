@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
-import { CANTIDAD_DESARROLLO_ACTIVA, FILTRO_OBJETIVOS_ACTIVOS } from "@/lib/objetivos-config";
-import { CANTIDAD_OBJETIVOS_DESEMPENO, PESO_OBJETIVO_INDIVIDUAL } from "@/server/services/calculo-notas";
+import { CANTIDAD_DESARROLLO_ACTIVA, FILTRO_OBJETIVOS_ACTIVOS, PESO_OBJETIVO_INDIVIDUAL } from "@/lib/objetivos-config";
+import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 
 export class ErrorAprobacion extends Error {
@@ -32,7 +32,7 @@ export type ObjetivoPropuesto =
 
 const LARGO_TITULO = 100;
 
-// El conjunto de objetivos individuales: 4 de desempeño (que pesan lo mismo, 10 %
+// El conjunto de objetivos individuales: 4 de desempeño (que pesan lo mismo, 25 %
 // cada uno, y se miden con Cumple / No cumple) y, cuando se vuelvan a manejar,
 // los de desarrollo. El peso no lo escribe la persona: lo pone el sistema.
 function validarConjunto(objetivos: Array<{ tipo: "DESEMPENO" | "DESARROLLO" }>) {

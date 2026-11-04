@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { formatearFecha } from "@/lib/fecha";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { etiquetaMes } from "@/lib/mes";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { PESO_OBJETIVO_CORPORATIVO } from "@/server/services/calculo-notas";
@@ -12,6 +14,8 @@ import { IndicadorCard } from "./components";
 const ROLES_EDITORES = ["GESTOR_CORPORATIVO"] as const;
 
 export default async function IndicadoresPage() {
+  // Oculto por esta vigencia (ver objetivos-config.ts).
+  if (!COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) redirect("/mis-objetivos");
   const usuario = await requireUsuarioAutenticado();
   const puedeEditar = ROLES_EDITORES.some((rol) => usuario.roles.includes(rol));
 

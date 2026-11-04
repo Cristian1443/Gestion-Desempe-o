@@ -44,7 +44,7 @@ export function EvidenciaForm({
   return (
     <div className="flex flex-col gap-2 rounded-md border border-iib-primary/30 bg-iib-primary/[0.04] p-3.5">
       <label className="text-xs font-bold uppercase tracking-wide text-iib-primary" htmlFor={`evidencia-${objetivoId}`}>
-        Evidencias realizadas · antes del seguimiento {numero}
+        Acciones realizadas · antes del seguimiento {numero}
       </label>
       <p className="text-xs text-iib-secondary">{indicacion}</p>
       <textarea
@@ -65,7 +65,7 @@ export function EvidenciaForm({
           disabled={pending || !texto.trim() || sinCambios}
           className="rounded-md bg-iib-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-iib-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Guardando…" : guardado ? "Actualizar evidencias" : "Guardar evidencias"}
+          {pending ? "Guardando…" : guardado ? "Actualizar acciones realizadas" : "Guardar acciones realizadas"}
         </button>
       </div>
     </div>

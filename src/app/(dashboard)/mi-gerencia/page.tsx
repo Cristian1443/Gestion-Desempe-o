@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { FranjaBanner } from "@/components/FranjaBanner";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { CargarIndicadores } from "@/components/CargarIndicadores";
 import { TarjetaResumen } from "@/components/indicador-ui";
 import { requireRol } from "@/server/auth/rbac";
@@ -8,6 +10,8 @@ import { accionCrearIndicadorGerencia } from "./actions";
 import { ColaboradorConsolidadoRow, IndicadorGerenciaCard } from "./components";
 
 export default async function MiGerenciaPage() {
+  // Oculto por esta vigencia (ver objetivos-config.ts).
+  if (!COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS) redirect("/mis-objetivos");
   const gerente = await requireRol("GERENTE");
   const datos = await obtenerMiGerencia(gerente.usuarioId);
 

@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
+import {
+  COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS,
+  DESARROLLO_HABILITADO,
+  PESO_OBJETIVO_INDIVIDUAL,
+  PESO_TOTAL_INDIVIDUALES,
+} from "@/lib/objetivos-config";
 import {
   CANTIDAD_OBJETIVOS_CORPORATIVOS,
   CANTIDAD_OBJETIVOS_DESEMPENO,
   CANTIDAD_OBJETIVOS_GERENCIA,
   PESO_OBJETIVO_CORPORATIVO,
   PESO_OBJETIVO_GERENCIA,
-  PESO_OBJETIVO_INDIVIDUAL,
 } from "@/server/services/calculo-notas";
 import { resumirResultados } from "@/server/services/consolidado.service";
 import { proponerObjetivosSchema } from "@/server/validations/aprobacion.schema";
@@ -36,9 +40,14 @@ describe("propuesta de objetivos individuales (peso automático, sin desarrollo 
     expect(DESARROLLO_HABILITADO).toBe(false);
   });
 
-  it("los pesos por nivel suman 100 y se reparten por igual", () => {
-    expect(PESO_OBJETIVO_INDIVIDUAL).toBe(10);
-    expect(CANTIDAD_OBJETIVOS_DESEMPENO * PESO_OBJETIVO_INDIVIDUAL).toBe(40);
+  it("gerencia y resultado institucional están ocultos y las 4 metas individuales suman 100 (25 c/u)", () => {
+    expect(COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS).toBe(false);
+    expect(PESO_TOTAL_INDIVIDUALES).toBe(100);
+    expect(PESO_OBJETIVO_INDIVIDUAL).toBe(25);
+    expect(CANTIDAD_OBJETIVOS_DESEMPENO * PESO_OBJETIVO_INDIVIDUAL).toBe(100);
+  });
+
+  it("si se reactivan C2 y C3, los pesos de gerencia y empresa siguen sumando 30 + 30", () => {
     expect(CANTIDAD_OBJETIVOS_GERENCIA * PESO_OBJETIVO_GERENCIA).toBe(30);
     expect(CANTIDAD_OBJETIVOS_CORPORATIVOS * PESO_OBJETIVO_CORPORATIVO).toBe(30);
   });

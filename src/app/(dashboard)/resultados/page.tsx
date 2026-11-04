@@ -1,4 +1,5 @@
 import { formatearFecha } from "@/lib/fecha";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS } from "@/lib/objetivos-config";
 import { requireRol } from "@/server/auth/rbac";
 import { obtenerResultados } from "@/server/services/resultados.service";
 import { FilaGerencia, FilaObjetivoSinSeguimiento, TarjetaKpi } from "./components";
@@ -39,8 +40,8 @@ export default async function ResultadosPage() {
       <section className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TarjetaKpi etiqueta="Con seguimiento — Individual" cobertura={datos.coberturaIndividual} />
-          <TarjetaKpi etiqueta="Con seguimiento — Gerencia" cobertura={datos.coberturaGerencia} />
-          <TarjetaKpi etiqueta="Indicadores con avance del mes" cobertura={datos.coberturaCorporativo} />
+          {COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && <TarjetaKpi etiqueta="Con seguimiento — Gerencia" cobertura={datos.coberturaGerencia} />}
+          {COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS && <TarjetaKpi etiqueta="Indicadores con avance del mes" cobertura={datos.coberturaCorporativo} />}
           <div className="flex flex-col gap-1.5 rounded-card bg-iib-surface p-5 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">
               Colaboradores con objetivos

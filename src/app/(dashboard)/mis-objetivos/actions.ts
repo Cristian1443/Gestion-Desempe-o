@@ -31,7 +31,7 @@ export async function accionProponerObjetivos(objetivos: unknown): Promise<Estad
   return { ok: true };
 }
 
-// Evidencias realizadas de un objetivo propio, para el próximo seguimiento (solo antes de que empiece).
+// Acciones realizadas de un objetivo propio, para el próximo seguimiento (solo antes de que empiece).
 export async function accionGuardarEvidencia(input: unknown): Promise<EstadoAccionReporte> {
   const usuario = await requireUsuarioAutenticado();
 
@@ -44,7 +44,7 @@ export async function accionGuardarEvidencia(input: unknown): Promise<EstadoAcci
     await guardarEvidencia({ usuarioId: usuario.usuarioId, ...parsed.data });
   } catch (error) {
     if (error instanceof ErrorEvidencia) return { ok: false, error: error.message };
-    return { ok: false, error: "Ocurrió un error inesperado al guardar las evidencias." };
+    return { ok: false, error: "Ocurrió un error inesperado al guardar las acciones realizadas." };
   }
 
   revalidatePath("/mis-objetivos");
