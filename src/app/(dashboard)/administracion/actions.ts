@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRol } from "@/server/auth/rbac";
+import { agregarActividad, editarActividad, eliminarActividad } from "@/server/services/cronograma.service";
 import {
   ErrorPeriodo,
   abrirPeriodo,
@@ -13,7 +14,10 @@ import {
   eliminarSeguimiento,
 } from "@/server/services/periodos.service";
 import {
+  actividadIdSchema,
+  agregarActividadSchema,
   agregarSeguimientoSchema,
+  editarActividadSchema,
   crearPeriodoSchema,
   editarSeguimientoSchema,
   franjaCumplimientoSchema,
@@ -117,6 +121,33 @@ export async function accionEliminarSeguimiento(seguimientoId: string): Promise<
     { seguimientoId },
     (d) => eliminarSeguimiento(d.seguimientoId),
     "Ocurrió un error inesperado al eliminar el seguimiento.",
+  );
+}
+
+export async function accionAgregarActividad(input: unknown): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    agregarActividadSchema,
+    input,
+    agregarActividad,
+    "Ocurrió un error inesperado al agregar la actividad.",
+  );
+}
+
+export async function accionEditarActividad(input: unknown): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    editarActividadSchema,
+    input,
+    editarActividad,
+    "Ocurrió un error inesperado al editar la actividad.",
+  );
+}
+
+export async function accionEliminarActividad(actividadId: string): Promise<EstadoAccionAdmin> {
+  return ejecutarAdminPeriodo(
+    actividadIdSchema,
+    { actividadId },
+    (d) => eliminarActividad(d.actividadId),
+    "Ocurrió un error inesperado al eliminar la actividad.",
   );
 }
 

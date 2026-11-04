@@ -149,6 +149,10 @@ function TarjetaDesempeno({
             rows={4}
             className={`resize-y ${estiloInput}`}
           />
+          <p className="text-xs text-iib-secondary">
+            Se llena desde el principio, al proponer el objetivo. Lo que vas haciendo (las evidencias realizadas) lo
+            registras después, antes de cada seguimiento.
+          </p>
         </div>
 
         <div className={`${estiloCampo} sm:max-w-xs`}>

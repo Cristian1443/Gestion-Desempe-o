@@ -78,6 +78,7 @@ export async function obtenerIndividualesPorAlcance(usuario: UsuarioAlcance): Pr
         distinct: ["seguimientoId"],
         include: { seguimiento: { select: { numero: true } }, registrador: { select: { nombre: true } } },
       },
+      evidencias: { include: { seguimiento: { select: { numero: true } } } },
     },
     orderBy: { createdAt: "asc" },
   });

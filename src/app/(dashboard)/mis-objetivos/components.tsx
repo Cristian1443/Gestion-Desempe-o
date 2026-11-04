@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { EvidenciasLista } from "@/components/EvidenciasLista";
 import { formatearFecha as formatearFechaBase } from "@/lib/fecha";
 import { LINEAS_ESTRATEGICAS, type LineaEstrategicaCodigo } from "@/lib/lineas-estrategicas";
 import type { ObjetivoVista, SeguimientoVista } from "@/server/services/objetivos.service";
+import { EvidenciaForm, type VentanaEvidenciaUI } from "./EvidenciaForm";
 
 const COLORES_CATEGORIA = {
   corporativo: {
@@ -226,12 +228,45 @@ function BitacoraSeguimiento({ seguimientos }: { seguimientos: SeguimientoVista[
   );
 }
 
+// Evidencias realizadas de un objetivo de desempeño aprobado. Con `ventana` (solo en "Mis
+// objetivos", para el dueño) permite escribir las del próximo seguimiento mientras la
+// ventana esté abierta; sin ella (gerente, dirección) es solo lectura.
+function SeccionEvidencias({ objetivo, ventana }: { objetivo: ObjetivoVista; ventana?: VentanaEvidenciaUI }) {
+  if (objetivo.tipoIndividual !== "DESEMPENO") return null;
+
+  if (ventana?.abierta) {
+    const actual = objetivo.evidencias.find((e) => e.numero === ventana.numero);
+    return (
+      <div className="flex flex-col gap-3">
+        <EvidenciasLista evidencias={objetivo.evidencias.filter((e) => e.numero !== ventana.numero)} />
+        <EvidenciaForm
+          objetivoId={objetivo.id}
+          numero={ventana.numero}
+          indicacion={ventana.indicacion}
+          textoInicial={actual?.texto ?? ""}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <EvidenciasLista evidencias={objetivo.evidencias} />
+      {ventana && !ventana.abierta && (
+        <p className="text-xs text-iib-secondary">Evidencias realizadas: {ventana.motivo}</p>
+      )}
+    </div>
+  );
+}
+
 export function ObjetivoIndividualCard({
   objetivo,
   numero,
+  ventanaEvidencia,
 }: {
   objetivo: ObjetivoVista;
   numero: number;
+  ventanaEvidencia?: VentanaEvidenciaUI;
 }) {
   const encabezado = (
     <div className="flex items-start justify-between gap-3">
@@ -330,6 +365,8 @@ export function ObjetivoIndividualCard({
       </div>
 
       {detalle}
+
+      <SeccionEvidencias objetivo={objetivo} ventana={ventanaEvidencia} />
 
       <BitacoraSeguimiento seguimientos={objetivo.seguimientos} />
 

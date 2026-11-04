@@ -55,6 +55,8 @@ export interface ObjetivoIndividualPdf {
   indicador: string;
   meta?: string | null;
   peso?: number | null;
+  // Evidencias realizadas que registró el colaborador antes de cada seguimiento.
+  evidencias?: Array<{ numero: number; texto: string }>;
   lineaEstrategica: string | null;
   // % de cumplimiento (0-100) y el resultado que sale de él.
   calificacionFinal?: number | null;
@@ -144,6 +146,7 @@ export async function obtenerConsolidado(periodoId: string, opciones: { usuarioI
           distinct: ["seguimientoId"],
           include: { seguimiento: { select: { numero: true } } },
         },
+        evidencias: { include: { seguimiento: { select: { numero: true } } } },
       },
       orderBy: { createdAt: "asc" },
     }),
@@ -205,6 +208,9 @@ export async function obtenerConsolidado(periodoId: string, opciones: { usuarioI
       lineaEstrategica: o.lineaEstrategica ? LINEAS_ESTRATEGICAS[o.lineaEstrategica as LineaEstrategicaCodigo] : null,
       calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
       cumplido: o.cumplido,
+      evidencias: o.evidencias
+        .map((e) => ({ numero: e.seguimiento.numero, texto: e.texto }))
+        .sort((a, b) => a.numero - b.numero),
       seguimientos: o.seguimientos
         .map((s) => ({ numero: s.seguimiento.numero, porcentaje: s.porcentaje, comentario: s.comentario }))
         .sort((a, b) => a.numero - b.numero),

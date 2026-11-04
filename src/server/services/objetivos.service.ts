@@ -16,6 +16,13 @@ export interface SeguimientoVista {
   registradoPorNombre: string;
 }
 
+// Lo que el colaborador contó que hizo antes de un seguimiento.
+export interface EvidenciaVista {
+  numero: number;
+  texto: string;
+  fecha: Date;
+}
+
 export interface ObjetivoVista {
   id: string;
   titulo: string;
@@ -40,6 +47,8 @@ export interface ObjetivoVista {
   calificacionFinal: number | null;
   cumplioDesarrollo: boolean | null;
   cumplido: boolean | null;
+  // Evidencias realizadas, una por seguimiento, en orden.
+  evidencias: EvidenciaVista[];
 }
 
 export interface MisObjetivos {
@@ -81,6 +90,7 @@ export function aVista(objetivo: {
   calificacionFinal: { toNumber(): number } | null;
   cumplioDesarrollo: boolean | null;
   cumplido: boolean | null;
+  evidencias?: Array<{ texto: string; updatedAt: Date; seguimiento: { numero: number } }>;
 }): ObjetivoVista {
   return {
     id: objetivo.id,
@@ -108,6 +118,9 @@ export function aVista(objetivo: {
     calificacionFinal: objetivo.calificacionFinal?.toNumber() ?? null,
     cumplioDesarrollo: objetivo.cumplioDesarrollo,
     cumplido: objetivo.cumplido,
+    evidencias: (objetivo.evidencias ?? [])
+      .map((e) => ({ numero: e.seguimiento.numero, texto: e.texto, fecha: e.updatedAt }))
+      .sort((a, b) => a.numero - b.numero),
   };
 }
 
@@ -136,7 +149,7 @@ export async function obtenerMisObjetivos(usuarioId: string): Promise<MisObjetiv
     obtenerContextoFranjas(periodo.id),
     db.objetivo.findMany({
       where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId, ...FILTRO_OBJETIVOS_ACTIVOS },
-      include: { seguimientos: bitacoraDeSeguimientos },
+      include: { seguimientos: bitacoraDeSeguimientos, evidencias: { include: { seguimiento: { select: { numero: true } } } } },
       orderBy: { createdAt: "asc" },
     }),
     usuario.gerenciaId

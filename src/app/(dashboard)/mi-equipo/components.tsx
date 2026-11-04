@@ -8,6 +8,7 @@ import { RegistrarSeguimientoDialog } from "@/components/RegistrarSeguimientoDia
 import { CumplimientoLectura } from "@/components/CumplimientoLectura";
 import type { FranjaUI } from "@/lib/franja-ui";
 import { Avatar } from "@/components/Avatar";
+import { EvidenciasLista } from "@/components/EvidenciasLista";
 import { CalificacionFinalControl } from "./CalificacionFinalControl";
 
 // Verde: todo al día. Rojo: necesita atención (propuesta pendiente de
@@ -252,6 +253,8 @@ function ObjetivoAprobadoRow({ objetivo, franja }: { objetivo: ObjetivoEquipoVis
     >
       <EncabezadoObjetivo objetivo={objetivo} />
       <DetalleObjetivo objetivo={objetivo} />
+
+      <EvidenciasLista evidencias={objetivo.evidencias} />
 
       <BitacoraSeguimiento objetivo={objetivo} />
 

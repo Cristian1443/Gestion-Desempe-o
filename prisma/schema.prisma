@@ -126,6 +126,7 @@ model Usuario {
   objetivosCalificados Objetivo[] @relation("ObjetivoCalificadoPor")
 
   seguimientosRegistrados RegistroSeguimiento[] @relation("SeguimientoRegistradoPor")
+  evidenciasRegistradas   EvidenciaObjetivo[]   @relation("EvidenciaRegistradaPor")
   avancesRegistrados      AvanceIndicador[]     @relation("AvanceRegistradoPor")
 
   evaluaciones Evaluacion[]
@@ -187,12 +188,33 @@ model Periodo {
 
   objetivos    Objetivo[]
   seguimientos Seguimiento[]
+  actividades  ActividadCronograma[]
   evaluaciones Evaluacion[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("periodos")
+}
+
+// Actividad del cronograma del periodo (cargar indicadores, aprobación de jefes,
+// carga de evidencia…) con su franja de fechas (inclusivas, como las de los
+// seguimientos). Es informativa: se muestra a todos como calendario del periodo y no
+// bloquea nada. Los seguimientos y la franja del resultado final salen de sus propias
+// tablas; el cronograma que se ve junta todo.
+model ActividadCronograma {
+  id          String   @id @default(cuid())
+  periodoId   String   @map("periodo_id")
+  periodo     Periodo  @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  nombre      String
+  fechaInicio DateTime @map("fecha_inicio")
+  fechaFin    DateTime @map("fecha_fin")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([periodoId])
+  @@map("actividades_cronograma")
 }
 
 // Seguimiento numerado de un periodo (Seguimiento 1, 2… N). Talento Humano
@@ -209,7 +231,8 @@ model Seguimiento {
   fechaInicio DateTime @map("fecha_inicio")
   fechaFin    DateTime @map("fecha_fin")
 
-  registros RegistroSeguimiento[]
+  registros  RegistroSeguimiento[]
+  evidencias EvidenciaObjetivo[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -309,6 +332,7 @@ model Objetivo {
   // indicador en `titulo`.
 
   seguimientos RegistroSeguimiento[]
+  evidencias   EvidenciaObjetivo[]
   // Solo CORPORATIVO: avance mes a mes del indicador.
   avances AvanceIndicador[]
 
@@ -338,6 +362,30 @@ model Objetivo {
 // puede corregir su comentario creando una versión nueva en vez de editar la
 // anterior. `version` es el correlativo dentro de (objetivoId, seguimientoId);
 // la de mayor número es la vigente.
+// Evidencias realizadas: lo que el colaborador cuenta que hizo para un objetivo
+// individual, un texto por seguimiento. Se escribe (y se puede corregir) solo antes de
+// que empiece cada seguimiento, para que el jefe lo tenga al hacerlo; ver
+// evidencias.service.ts. Una fila por (objetivo, seguimiento).
+model EvidenciaObjetivo {
+  id            String      @id @default(cuid())
+  objetivoId    String      @map("objetivo_id")
+  objetivo      Objetivo    @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  seguimientoId String      @map("seguimiento_id")
+  seguimiento   Seguimiento @relation(fields: [seguimientoId], references: [id], onDelete: Cascade)
+
+  texto String
+
+  registradoPor String  @map("registrado_por")
+  registrador   Usuario @relation("EvidenciaRegistradaPor", fields: [registradoPor], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([objetivoId, seguimientoId])
+  @@index([seguimientoId])
+  @@map("evidencias_objetivo")
+}
+
 model RegistroSeguimiento {
   id            String      @id @default(cuid())
   objetivoId    String      @map("objetivo_id")

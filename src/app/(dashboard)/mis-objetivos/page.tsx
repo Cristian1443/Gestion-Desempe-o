@@ -1,7 +1,10 @@
+import { CronogramaPeriodo } from "@/components/CronogramaPeriodo";
 import { FranjaItems } from "@/components/FranjaBanner";
 import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerUltimoPeriodoCerrado, tieneObjetivosAprobados } from "@/server/services/individuales.service";
+import { obtenerCronograma } from "@/server/services/cronograma.service";
+import { textoVentanaAbierta, ventanaEvidencia } from "@/server/services/evidencias.service";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
 import {
   ObjetivoIndividualCard,
@@ -9,6 +12,7 @@ import {
   TarjetaCategoria,
   VolverASelectorLink,
 } from "./components";
+import type { VentanaEvidenciaUI } from "./EvidenciaForm";
 import { ProponerObjetivosForm } from "./ProponerObjetivosForm";
 
 type Categoria = "gerencia" | "desempeno" | "desarrollo";
@@ -44,6 +48,13 @@ export default async function MisObjetivosPage({
   }
 
   const { periodo, franjas, nombreJefe, individuales, gerencia, indicadoresTotal } = datos;
+  const cronograma = await obtenerCronograma(periodo.id);
+
+  // Evidencias realizadas: solo se escriben antes de cada seguimiento.
+  const ventana = ventanaEvidencia(franjas);
+  const ventanaUI: VentanaEvidenciaUI = ventana.abierta
+    ? { abierta: true, numero: ventana.seguimiento.numero, indicacion: textoVentanaAbierta(ventana) }
+    : { abierta: false, motivo: ventana.motivo };
 
   const desempeno = individuales.filter((o) => o.tipoIndividual === "DESEMPENO");
   const desarrollo = individuales.filter((o) => o.tipoIndividual === "DESARROLLO");
@@ -101,6 +112,8 @@ export default async function MisObjetivosPage({
       </div>
 
       {!categoria ? (
+        <>
+        <CronogramaPeriodo periodoNombre={periodo.nombre} items={cronograma} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TarjetaCategoria
             categoria="desempeno"
@@ -152,6 +165,7 @@ export default async function MisObjetivosPage({
             />
           )}
         </div>
+        </>
       ) : (
         <div className="flex flex-col gap-4">
           <VolverASelectorLink />
@@ -218,7 +232,7 @@ export default async function MisObjetivosPage({
                   <>
                     <div className="flex flex-col gap-4">
                       {individuales.map((objetivo, indice) => (
-                        <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
+                        <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} ventanaEvidencia={ventanaUI} />
                       ))}
                     </div>
                     <p className="text-sm font-medium text-iib-foreground">
@@ -230,7 +244,7 @@ export default async function MisObjetivosPage({
               ) : (
                 <div className="flex flex-col gap-4">
                   {(categoria === "desempeno" ? desempeno : desarrollo).map((objetivo, indice) => (
-                    <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} />
+                    <ObjetivoIndividualCard key={objetivo.id} objetivo={objetivo} numero={indice + 1} ventanaEvidencia={ventanaUI} />
                   ))}
                 </div>
               )}

@@ -2,6 +2,7 @@ import { formatearFecha } from "@/lib/fecha";
 import { estadoFranja, hoyEnBogota } from "@/lib/franja";
 import { BotonAccionSimple } from "@/components/AccionesSimples";
 import { accionAbrirPeriodo, accionCerrarPeriodo } from "./actions";
+import { ActividadesCronograma } from "./ActividadesCronograma";
 import { AgregarSeguimientoForm } from "./AgregarSeguimientoForm";
 import { FranjaCumplimientoForm } from "./FranjaCumplimientoForm";
 import { SeguimientoRow } from "./SeguimientoRow";
@@ -36,6 +37,7 @@ export function PeriodoRow({
       fechaFin: Date;
       _count: { registros: number };
     }>;
+    actividades: Array<{ id: string; nombre: string; fechaInicio: Date; fechaFin: Date }>;
   };
 }) {
   const hoy = hoyEnBogota();
@@ -109,6 +111,8 @@ export function PeriodoRow({
           />
         )}
       </div>
+
+      <ActividadesCronograma periodoId={periodo.id} actividades={periodo.actividades} periodoCerrado={cerrado} />
 
       {periodo.estado === "BORRADOR" && (
         <div className="flex justify-end">

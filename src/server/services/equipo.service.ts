@@ -32,6 +32,8 @@ export interface ObjetivoEquipoVista {
   // Un registro por seguimiento (el más reciente, si hubo correcciones), ordenado
   // por número de seguimiento ascendente.
   seguimientos: SeguimientoEquipoVista[];
+  // Evidencias realizadas que el colaborador registró antes de cada seguimiento.
+  evidencias: Array<{ numero: number; texto: string; fecha: Date }>;
   // Calificación final: numérica para DESEMPENO, sí/no para DESARROLLO (ver
   // calculo-notas.ts — DESARROLLO no tiene nota, solo cumplimiento).
   calificacionFinal: number | null;
@@ -89,6 +91,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
             distinct: ["seguimientoId"],
             include: { seguimiento: { select: { numero: true } } },
           },
+          evidencias: { include: { seguimiento: { select: { numero: true } } } },
         },
         orderBy: { createdAt: "asc" },
       });
@@ -118,6 +121,9 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
           calificacionFinal: o.calificacionFinal?.toNumber() ?? null,
           cumplioDesarrollo: o.cumplioDesarrollo,
           cumplido: o.cumplido,
+          evidencias: o.evidencias
+            .map((e) => ({ numero: e.seguimiento.numero, texto: e.texto, fecha: e.updatedAt }))
+            .sort((a, b) => a.numero - b.numero),
         })),
       };
     }),

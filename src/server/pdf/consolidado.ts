@@ -256,6 +256,9 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
   e.campo("Fórmula del indicador", objetivo.indicador, 14);
   e.campo("Meta", objetivo.meta, 14);
   if (objetivo.peso !== null && objetivo.peso !== undefined) e.campo("Peso", `${objetivo.peso} %`, 14);
+  for (const evidencia of objetivo.evidencias ?? []) {
+    e.parrafo(`Evidencias realizadas (antes del seguimiento ${evidencia.numero}): ${evidencia.texto}`, { sangria: 14, tamano: 9.5 });
+  }
   for (const s of objetivo.seguimientos) {
     const avance = s.porcentaje !== null && s.porcentaje !== undefined ? ` — ${s.porcentaje} %` : "";
     e.parrafo(`Seguimiento ${s.numero}${avance}: ${s.comentario}`, { sangria: 14, tamano: 9.5 });

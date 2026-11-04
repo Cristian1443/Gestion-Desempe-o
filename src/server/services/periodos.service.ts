@@ -95,6 +95,7 @@ export async function listarPeriodos() {
         orderBy: { numero: "asc" },
         include: { _count: { select: { registros: true } } },
       },
+      actividades: { orderBy: [{ fechaInicio: "asc" }, { fechaFin: "asc" }] },
     },
     orderBy: { fechaInicio: "desc" },
   });
