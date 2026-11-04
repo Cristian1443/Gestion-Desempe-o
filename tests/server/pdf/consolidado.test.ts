@@ -98,4 +98,33 @@ describe("generarConsolidadoPdf", () => {
     // Mucho contenido: tiene que haber pasado a varias páginas.
     expect(paginas(pdf)).toBeGreaterThan(20);
   });
+
+  it("genera el resultado final de una sola persona, con sus datos en la portada", async () => {
+    const datos = datosVacios();
+    datos.empleado = { nombre: "María Ñandú Pérez", cargo: "Analista", gerencia: "Gerencia de Mercadeo", jefe: "Nicolás Suárez" };
+    datos.individuales = [
+      {
+        gerencia: "Gerencia de Mercadeo",
+        personas: [
+          {
+            nombre: "María Ñandú Pérez",
+            cargo: "Analista",
+            objetivos: Array.from({ length: 4 }, (_, o) => ({
+              descripcion: `Objetivo ${o + 1}`,
+              acciones: "Acciones",
+              indicador: "Fórmula",
+              meta: "85 %",
+              peso: 10,
+              lineaEstrategica: null,
+              cumplido: o % 2 === 0,
+              seguimientos: [{ numero: 1, comentario: "Seguimiento uno" }],
+            })),
+          },
+        ],
+      },
+    ];
+    const pdf = await generarConsolidadoPdf(datos);
+    expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+    expect(paginas(pdf)).toBeGreaterThanOrEqual(4);
+  });
 });

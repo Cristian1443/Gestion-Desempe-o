@@ -161,14 +161,14 @@ function DetalleObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
+          <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
             Descripción
           </p>
           <p className="text-sm leading-relaxed">{objetivo.descripcion}</p>
         </div>
         {objetivo.acciones && (
           <div className="flex flex-col gap-0.5">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
+            <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
               Acciones
             </p>
             <p className="text-sm leading-relaxed">{objetivo.acciones}</p>
@@ -177,14 +177,14 @@ function DetalleObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
       </div>
       <div className="grid grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">
+          <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
             Fórmula del indicador
           </p>
           <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
         </div>
         {objetivo.meta && (
           <div className="flex flex-col gap-0.5">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-iib-secondary">Meta</p>
+            <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">Meta</p>
             <p className="text-sm leading-relaxed">{objetivo.meta}</p>
           </div>
         )}

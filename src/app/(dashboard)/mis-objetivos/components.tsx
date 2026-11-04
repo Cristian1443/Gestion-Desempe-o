@@ -261,24 +261,24 @@ export function ObjetivoIndividualCard({
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Descripción</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Descripción</p>
           <p className="text-sm leading-relaxed">{objetivo.descripcion}</p>
         </div>
         {objetivo.acciones && (
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Acciones</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Acciones</p>
             <p className="text-sm leading-relaxed">{objetivo.acciones}</p>
           </div>
         )}
       </div>
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Fórmula del indicador</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Fórmula del indicador</p>
           <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
         </div>
         {objetivo.meta && (
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-iib-secondary">Meta</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-iib-secondary">Meta</p>
             <p className="text-sm leading-relaxed">{objetivo.meta}</p>
           </div>
         )}

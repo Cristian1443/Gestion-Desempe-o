@@ -68,7 +68,16 @@ export interface PersonaPdf {
   objetivos: ObjetivoIndividualPdf[];
 }
 
+export interface EmpleadoPdf {
+  nombre: string;
+  cargo: string | null;
+  gerencia: string | null;
+  jefe: string | null;
+}
+
 export interface ConsolidadoDatos {
+  // Presente solo cuando el documento es el resultado de UNA persona (no el consolidado de todos).
+  empleado?: EmpleadoPdf;
   periodo: { nombre: string; fechaInicio: Date; fechaFin: Date; estado: string };
   generadoEn: Date;
   resumen: { individuales: ResumenNivel; gerencia: ResumenNivel; empresa: ResumenNivel };
@@ -85,8 +94,18 @@ export function resumirResultados(resultados: Array<boolean | null>): ResumenNiv
 
 const SIN_GERENCIA = "Sin gerencia asignada";
 
-export async function obtenerConsolidado(periodoId: string): Promise<ConsolidadoDatos> {
+// Con `usuarioId` trae solo lo de esa persona: sus metas individuales, los indicadores
+// de su gerencia y los de la empresa. Sin él, el consolidado de toda la organización.
+export async function obtenerConsolidado(periodoId: string, opciones: { usuarioId?: string } = {}): Promise<ConsolidadoDatos> {
   const periodo = await db.periodo.findUniqueOrThrow({ where: { id: periodoId } });
+
+  // `select` explícito: sin él Prisma trae también los bytes de la foto de perfil.
+  const persona = opciones.usuarioId
+    ? await db.usuario.findUniqueOrThrow({
+        where: { id: opciones.usuarioId },
+        select: { nombre: true, cargo: true, gerenciaId: true, gerencia: { select: { nombre: true } }, jefe: { select: { nombre: true } } },
+      })
+    : null;
 
   const vigentePorSeguimiento = {
     orderBy: [{ seguimientoId: "asc" as const }, { version: "desc" as const }],
@@ -100,14 +119,24 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
       include: { avances: { orderBy: [{ mes: "asc" }, { version: "desc" }], distinct: ["mes"] } },
       orderBy: { createdAt: "asc" },
     }),
-    db.gerencia.findMany({ include: { gerente: { select: { nombre: true } } }, orderBy: { nombre: "asc" } }),
+    db.gerencia.findMany({
+      where: persona ? { id: persona.gerenciaId ?? "sin-gerencia" } : {},
+      include: { gerente: { select: { nombre: true } } },
+      orderBy: { nombre: "asc" },
+    }),
     db.objetivo.findMany({
-      where: { periodoId, nivel: "GERENCIA" },
+      where: { periodoId, nivel: "GERENCIA", ...(persona ? { gerenciaId: persona.gerenciaId ?? "sin-gerencia" } : {}) },
       include: { seguimientos: vigentePorSeguimiento },
       orderBy: { createdAt: "asc" },
     }),
     db.objetivo.findMany({
-      where: { periodoId, nivel: "INDIVIDUAL", estadoAprobacion: "APROBADO", ...FILTRO_OBJETIVOS_ACTIVOS },
+      where: {
+        periodoId,
+        nivel: "INDIVIDUAL",
+        estadoAprobacion: "APROBADO",
+        ...FILTRO_OBJETIVOS_ACTIVOS,
+        ...(opciones.usuarioId ? { usuarioId: opciones.usuarioId } : {}),
+      },
       include: {
         usuario: { select: { id: true, nombre: true, cargo: true, gerencia: { select: { nombre: true } } } },
         seguimientos: {
@@ -192,6 +221,9 @@ export async function obtenerConsolidado(periodoId: string): Promise<Consolidado
     }));
 
   return {
+    empleado: persona
+      ? { nombre: persona.nombre, cargo: persona.cargo, gerencia: persona.gerencia?.nombre ?? null, jefe: persona.jefe?.nombre ?? null }
+      : undefined,
     periodo: { nombre: periodo.nombre, fechaInicio: periodo.fechaInicio, fechaFin: periodo.fechaFin, estado: periodo.estado },
     generadoEn: new Date(),
     resumen: {

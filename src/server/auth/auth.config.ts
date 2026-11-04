@@ -1,7 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
-const RUTAS_PUBLICAS = ["/login", "/acceso-denegado"];
+// /documentos: PDFs institucionales de consulta que se enlazan desde el login.
+const RUTAS_PUBLICAS = ["/login", "/acceso-denegado", "/documentos"];
 
 // Configuración "edge-safe": nada aquí toca Prisma/la base de datos, porque
 // esta es la config que usa el Middleware, y el Middleware de Next.js corre

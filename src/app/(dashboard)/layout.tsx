@@ -2,6 +2,7 @@ import Image from "next/image";
 import { signOut } from "@/auth";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { db } from "@/server/db";
+import { alcanceDe } from "@/server/services/individuales.service";
 import { Avatar } from "@/components/Avatar";
 import { NavTabs } from "./NavTabs";
 
@@ -27,6 +28,14 @@ export default async function DashboardLayout({
   items.push({ href: "/indicadores", label: "Resultado institucional" });
   if (usuario.roles.includes("JEFE")) {
     items.push({ href: "/mi-equipo", label: "Mi equipo" });
+  }
+  // Gerentes: las metas individuales de toda su gerencia; la directora (y Talento Humano), las de la Corporación.
+  const alcanceIndividuales = alcanceDe(usuario);
+  if (alcanceIndividuales) {
+    items.push({
+      href: "/individuales",
+      label: alcanceIndividuales === "CORPORACION" ? "Individuales de la Corporación" : "Individuales de mi gerencia",
+    });
   }
   if (usuario.roles.includes("GESTION_HUMANA") || usuario.roles.includes("ADMIN")) {
     items.push({ href: "/administracion", label: "Administración" });

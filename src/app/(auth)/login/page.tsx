@@ -2,6 +2,16 @@ import Image from "next/image";
 import { signIn } from "@/auth";
 import { db } from "@/server/db";
 
+// Documentos públicos de consulta (archivos estáticos en public/documentos): se
+// pueden leer sin iniciar sesión, igual que en la aplicación de Compras y Contratación.
+const DOCUMENTOS_LOGIN = [
+  {
+    href: "/documentos/POL-TH-04_Politica_Bono_No_Salarial_2026.pdf",
+    etiqueta: "Política de bono no salarial 2026",
+    detalle: "POL-TH-04 · Talento Humano",
+  },
+];
+
 function IconoMicrosoft() {
   return (
     <svg viewBox="0 0 21 21" className="h-4 w-4 shrink-0" aria-hidden="true">
@@ -140,6 +150,51 @@ export default async function LoginPage({
                 )}
               </div>
             )}
+
+            <nav aria-label="Documentos de consulta" className="mt-8 flex flex-col gap-1.5 border-t border-iib-border pt-5">
+              <span className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
+                Documentos de consulta
+              </span>
+              {DOCUMENTOS_LOGIN.map((doc) => (
+                <a
+                  key={doc.href}
+                  href={doc.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="-mx-2.5 flex items-center gap-2.5 rounded-md px-2.5 py-2 transition hover:bg-iib-surface-sunken"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 shrink-0 text-iib-secondary"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 3v5h5M9 13h6M9 17h6" />
+                  </svg>
+                  <span className="min-w-0">
+                    <span className="block text-[0.8rem] font-semibold leading-tight text-iib-foreground">{doc.etiqueta}</span>
+                    <span className="block text-[0.72rem] text-iib-secondary">{doc.detalle}</span>
+                  </span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="ml-auto h-3.5 w-3.5 shrink-0 text-iib-secondary"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 17 17 7M8 7h9v9" />
+                  </svg>
+                </a>
+              ))}
+            </nav>
 
             <p className="mt-10 text-xs text-iib-secondary lg:hidden">
               © {new Date().getFullYear()} Invest in Bogotá

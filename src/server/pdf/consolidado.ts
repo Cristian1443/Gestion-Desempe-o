@@ -124,12 +124,27 @@ function textoResumen(r: ResumenNivel): string[] {
 
 function dibujarPortada(e: Escritor, datos: ConsolidadoDatos) {
   const { doc } = e;
+  const { empleado } = datos;
   doc.rect(0, 0, doc.page.width, 150).fill(ROJO);
   doc.font("Helvetica-Bold").fontSize(11).fillColor("#FFFFFF").text("INVEST IN BOGOTÁ", MARGEN, 52, { characterSpacing: 2 });
-  doc.font("Helvetica-Bold").fontSize(26).text("Consolidado del resultado final", MARGEN, 76, { width: ANCHO_UTIL });
-  doc.font("Helvetica").fontSize(13).text(limpiar(`Periodo ${datos.periodo.nombre}`), MARGEN, 112);
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(26)
+    .text(empleado ? "Resultado final individual" : "Consolidado del resultado final", MARGEN, 76, { width: ANCHO_UTIL });
+  doc
+    .font("Helvetica")
+    .fontSize(13)
+    .text(limpiar(empleado ? `${empleado.nombre} · Periodo ${datos.periodo.nombre}` : `Periodo ${datos.periodo.nombre}`), MARGEN, 112, {
+      width: ANCHO_UTIL,
+    });
 
   doc.y = 180;
+  if (empleado) {
+    e.campo("Colaborador", empleado.nombre);
+    e.campo("Cargo", empleado.cargo);
+    e.campo("Gerencia", empleado.gerencia);
+    e.campo("Jefe directo", empleado.jefe);
+  }
   e.campo("Vigencia", `${formatearFecha(datos.periodo.fechaInicio)} al ${formatearFecha(datos.periodo.fechaFin)}`);
   e.campo("Estado del periodo", datos.periodo.estado === "CERRADO" ? "Cerrado" : datos.periodo.estado);
   e.campo("Generado el", formatearFecha(datos.generadoEn));
@@ -251,14 +266,17 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
   e.resultado(objetivo.cumplido, 14);
 }
 
-function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; personas: PersonaPdf[] }>) {
+function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; personas: PersonaPdf[] }>, datos: ConsolidadoDatos) {
   e.doc.addPage();
   e.titulo("Componente 1 (C1): Metas individuales");
   if (grupos.length === 0) {
     e.parrafo("No hay metas individuales aprobadas en este periodo.", { color: GRIS });
     return;
   }
-  e.parrafo("Agrupados por gerencia y por persona. Los 4 pesan lo mismo (10 % de 40 %): cada objetivo termina en Cumple / No cumple.", { color: GRIS });
+  e.parrafo(
+    `${datos.empleado ? "" : "Agrupados por gerencia y por persona. "}Los 4 pesan lo mismo (10 % de 40 %): cada objetivo termina en Cumple / No cumple.`,
+    { color: GRIS },
+  );
   grupos.forEach((grupo, i) => {
     // La primera gerencia sigue en la misma página del título; las demás empiezan una nueva.
     if (i > 0) e.doc.addPage();
@@ -280,7 +298,7 @@ function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; pers
 }
 
 // Pie con el nombre del periodo y el número de página, en todas las páginas menos la portada.
-function dibujarPies(doc: PDFKit.PDFDocument, periodo: string) {
+function dibujarPies(doc: PDFKit.PDFDocument, texto: string) {
   const rango = doc.bufferedPageRange();
   for (let i = 1; i < rango.count; i++) {
     doc.switchToPage(rango.start + i);
@@ -290,7 +308,7 @@ function dibujarPies(doc: PDFKit.PDFDocument, periodo: string) {
       .font("Helvetica")
       .fontSize(8)
       .fillColor(GRIS)
-      .text(limpiar(`Invest in Bogotá · Consolidado ${periodo}`), MARGEN, doc.page.height - 34, {
+      .text(limpiar(texto), MARGEN, doc.page.height - 34, {
         width: ANCHO_UTIL / 2,
         lineBreak: false,
       })
@@ -310,7 +328,11 @@ export function generarConsolidadoPdf(datos: ConsolidadoDatos): Promise<Buffer> 
       margins: { top: MARGEN, bottom: MARGEN, left: MARGEN, right: MARGEN },
       bufferPages: true,
       info: {
-        Title: limpiar(`Consolidado del resultado final — ${datos.periodo.nombre}`),
+        Title: limpiar(
+          datos.empleado
+            ? `Resultado final individual — ${datos.empleado.nombre} — ${datos.periodo.nombre}`
+            : `Consolidado del resultado final — ${datos.periodo.nombre}`,
+        ),
         Author: "Invest in Bogotá — Gestión del Desempeño",
       },
     });
@@ -323,10 +345,15 @@ export function generarConsolidadoPdf(datos: ConsolidadoDatos): Promise<Buffer> 
     try {
       const e = new Escritor(doc);
       dibujarPortada(e, datos);
-      dibujarIndividuales(e, datos.individuales);
+      dibujarIndividuales(e, datos.individuales, datos);
       dibujarGerencias(e, datos.gerencias);
       dibujarEmpresa(e, datos.empresa);
-      dibujarPies(doc, datos.periodo.nombre);
+      dibujarPies(
+        doc,
+        datos.empleado
+          ? `Invest in Bogotá · ${datos.empleado.nombre} · ${datos.periodo.nombre}`
+          : `Invest in Bogotá · Consolidado ${datos.periodo.nombre}`,
+      );
       doc.end();
     } catch (error) {
       reject(error);

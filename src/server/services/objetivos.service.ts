@@ -57,7 +57,7 @@ export interface MisObjetivos {
 // consume la UI. Los `Decimal` de Prisma se normalizan a `number` aquí:
 // cruzar la frontera Server → Client Component con un objeto `Decimal` no es
 // serializable, así que esta es la última parada donde conviene hacerlo.
-function aVista(objetivo: {
+export function aVista(objetivo: {
   id: string;
   titulo: string;
   descripcion: string;

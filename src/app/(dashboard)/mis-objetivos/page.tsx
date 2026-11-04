@@ -1,6 +1,7 @@
 import { FranjaItems } from "@/components/FranjaBanner";
 import { DESARROLLO_HABILITADO } from "@/lib/objetivos-config";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
+import { obtenerUltimoPeriodoCerrado, tieneObjetivosAprobados } from "@/server/services/individuales.service";
 import { obtenerMisObjetivos } from "@/server/services/objetivos.service";
 import {
   ObjetivoIndividualCard,
@@ -21,12 +22,23 @@ export default async function MisObjetivosPage({
   const datos = await obtenerMisObjetivos(usuario.usuarioId);
 
   if (!datos) {
+    // Con el periodo ya cerrado, cada persona puede descargar su resultado final en PDF.
+    const cerrado = await obtenerUltimoPeriodoCerrado();
+    const puedeDescargar = cerrado ? await tieneObjetivosAprobados(cerrado.id, usuario.usuarioId) : false;
     return (
-      <div className="rounded-card bg-iib-surface p-6 text-center shadow-card">
+      <div className="flex flex-col items-center gap-4 rounded-card bg-iib-surface p-6 text-center shadow-card">
         <p className="text-sm text-iib-secondary">
           No hay un periodo de evaluación abierto en este momento. Cuando Talento
           Humano abra el periodo, tus objetivos aparecerán aquí.
         </p>
+        {cerrado && puedeDescargar && (
+          <a
+            href={`/api/resultado-individual/${cerrado.id}/${usuario.usuarioId}`}
+            className="rounded-md bg-iib-primary px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-iib-primary-hover"
+          >
+            Descargar mi resultado final ({cerrado.nombre}) en PDF
+          </a>
+        )}
       </div>
     );
   }
