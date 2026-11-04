@@ -20,10 +20,10 @@ import {
 
 export type EstadoAccionIndicador = { ok: true } | { ok: false; error: string };
 
-// Quién carga y hace el seguimiento de los indicadores: el Gestor corporativo
-// (hoy Andrea Jimenez) y, como respaldo, Talento Humano y Admin. Todos los
-// demás los ven en solo lectura.
-const ROLES_EDITORES = ["GESTOR_CORPORATIVO", "GESTION_HUMANA", "ADMIN"] as const;
+// Quién carga y hace el seguimiento de los indicadores de la empresa: SOLO el Gestor
+// corporativo (Andrea Jimenez). Ni Talento Humano ni Admin: todos los demás los ven
+// en solo lectura. El rol solo debe tenerlo una persona.
+const ROLES_EDITORES = ["GESTOR_CORPORATIVO"] as const;
 
 function revalidarVistas() {
   revalidatePath("/indicadores");

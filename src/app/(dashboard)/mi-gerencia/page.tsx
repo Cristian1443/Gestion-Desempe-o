@@ -1,5 +1,5 @@
 import { FranjaBanner } from "@/components/FranjaBanner";
-import { AgregarIndicador } from "@/components/AgregarIndicador";
+import { CargarIndicadores } from "@/components/CargarIndicadores";
 import { TarjetaResumen } from "@/components/indicador-ui";
 import { requireRol } from "@/server/auth/rbac";
 import { PESO_OBJETIVO_GERENCIA } from "@/server/services/calculo-notas";
@@ -65,7 +65,7 @@ export default async function MiGerenciaPage() {
 
         {indicadores.length === 0 ? (
           <p className="text-sm text-iib-secondary">
-            Todavía no hay indicadores. Agrega los {tope} para empezar el seguimiento.
+            Todavía no hay indicadores. Cárgalos a continuación (son {tope}) para empezar el seguimiento.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -75,7 +75,15 @@ export default async function MiGerenciaPage() {
           </div>
         )}
 
-        {faltanPorCargar > 0 && <AgregarIndicador accion={accionCrearIndicadorGerencia} />}
+        {faltanPorCargar > 0 && (
+          <CargarIndicadores
+            faltan={faltanPorCargar}
+            cargados={indicadores.length}
+            tono="gerencia"
+            peso={PESO_OBJETIVO_GERENCIA}
+            accion={accionCrearIndicadorGerencia}
+          />
+        )}
       </section>
 
       <section className="flex flex-col gap-4">

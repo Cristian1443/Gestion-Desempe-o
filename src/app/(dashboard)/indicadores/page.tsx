@@ -3,12 +3,13 @@ import { etiquetaMes } from "@/lib/mes";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { PESO_OBJETIVO_CORPORATIVO } from "@/server/services/calculo-notas";
 import { obtenerIndicadores } from "@/server/services/indicadores.service";
-import { AgregarIndicador } from "@/components/AgregarIndicador";
+import { CargarIndicadores } from "@/components/CargarIndicadores";
 import { TarjetaResumen } from "@/components/indicador-ui";
 import { accionCrearIndicador } from "./actions";
 import { IndicadorCard } from "./components";
 
-const ROLES_EDITORES = ["GESTOR_CORPORATIVO", "GESTION_HUMANA", "ADMIN"] as const;
+// Solo el Gestor corporativo (Andrea Jimenez) carga y hace seguimiento; ver actions.ts.
+const ROLES_EDITORES = ["GESTOR_CORPORATIVO"] as const;
 
 export default async function IndicadoresPage() {
   const usuario = await requireUsuarioAutenticado();
@@ -112,7 +113,7 @@ export default async function IndicadoresPage() {
         {indicadores.length === 0 ? (
           <p className="text-sm text-iib-secondary">
             {puedeEditar
-              ? `Todavía no hay indicadores. Agrega los ${tope} para empezar el seguimiento.`
+              ? `Todavía no hay indicadores. Cárgalos a continuación (son ${tope}) para empezar el seguimiento.`
               : "Todavía no se han cargado los indicadores del periodo."}
           </p>
         ) : (
@@ -131,7 +132,15 @@ export default async function IndicadoresPage() {
           </div>
         )}
 
-        {puedeEditar && faltanPorCargar > 0 && <AgregarIndicador accion={accionCrearIndicador} />}
+        {puedeEditar && faltanPorCargar > 0 && (
+          <CargarIndicadores
+            faltan={faltanPorCargar}
+            cargados={indicadores.length}
+            tono="empresa"
+            peso={PESO_OBJETIVO_CORPORATIVO}
+            accion={accionCrearIndicador}
+          />
+        )}
       </section>
     </>
   );

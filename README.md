@@ -314,8 +314,8 @@ Viven en su propia pestaña, **Indicadores** (`/indicadores`), visible para todo
   Un periodo no se cierra mientras algún indicador no tenga resultado.
 - **Quién los gestiona.** El rol *Gestor de objetivos corporativos* (hoy Andrea
   Jimenez Fandiño) carga los indicadores, hace el seguimiento mensual y marca el
-  resultado; Talento Humano y Admin pueden hacer lo mismo. Todos los demás los ven
-  en solo lectura. La pantalla muestra como responsables a quienes tengan ese rol.
+  resultado. **Solo ella**: ni Talento Humano ni Admin pueden cargarlos ni editarlos;
+  el rol debe tenerlo una única persona. Todos los demás los ven en solo lectura. La pantalla muestra como responsables a quienes tengan ese rol.
 - **Nota final.** Cómo cuentan los indicadores en el 30% corporativo de la nota
   está sin definir; `calculo-notas.ts` no se tocó y sigue sin conectarse a nada.
 - Los registros de seguimiento viejos de objetivos corporativos (los del modelo
