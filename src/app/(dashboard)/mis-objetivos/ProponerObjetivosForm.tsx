@@ -15,6 +15,7 @@ type FilaDesempeno = {
   lineaEstrategica: string;
   descripcion: string;
   acciones: string;
+  nombreIndicador: string;
   indicador: string;
   meta: string;
   linkRepositorio: string;
@@ -29,7 +30,15 @@ type FilaDesarrollo = {
 };
 
 function filaDesempenoVacia(): FilaDesempeno {
-  return { lineaEstrategica: "", descripcion: "", acciones: "", indicador: "", meta: "", linkRepositorio: "" };
+  return {
+    lineaEstrategica: "",
+    descripcion: "",
+    acciones: "",
+    nombreIndicador: "",
+    indicador: "",
+    meta: "",
+    linkRepositorio: "",
+  };
 }
 
 function filaDesarrolloVacia(): FilaDesarrollo {
@@ -47,6 +56,7 @@ function desempenoDesdeAnterior(objetivos: ObjetivoVista[]): FilaDesempeno[] {
         lineaEstrategica: o.lineaEstrategica ?? "",
         descripcion: o.descripcion,
         acciones: o.acciones ?? "",
+        nombreIndicador: o.nombreIndicador ?? "",
         indicador: o.indicador,
         meta: o.meta ?? "",
         linkRepositorio: o.linkRepositorio ?? "",
@@ -141,6 +151,20 @@ function TarjetaDesempeno({
         </div>
 
         <div className={estiloCampo}>
+          <label className={estiloLabel}>Indicador</label>
+          <input
+            value={fila.nombreIndicador}
+            onChange={(e) => onCambiar("nombreIndicador", e.target.value)}
+            placeholder="ej. Proyectos de inversión concretados"
+            className={estiloInput}
+          />
+          <p className="text-xs text-iib-secondary">
+            Se llena desde el principio, al proponer el objetivo. Lo que vas haciendo (las evidencias realizadas) lo
+            registras después, antes de cada seguimiento.
+          </p>
+        </div>
+
+        <div className={estiloCampo}>
           <label className={estiloLabel}>Fórmula del indicador</label>
           <textarea
             value={fila.indicador}
@@ -149,10 +173,6 @@ function TarjetaDesempeno({
             rows={4}
             className={`resize-y ${estiloInput}`}
           />
-          <p className="text-xs text-iib-secondary">
-            Se llena desde el principio, al proponer el objetivo. Lo que vas haciendo (las evidencias realizadas) lo
-            registras después, antes de cada seguimiento.
-          </p>
         </div>
 
         <div className={`${estiloCampo} sm:max-w-xs`}>
@@ -294,6 +314,7 @@ export function ProponerObjetivosForm({
         ...desempeno.map((f) => ({
           descripcion: f.descripcion,
           acciones: f.acciones,
+          nombreIndicador: f.nombreIndicador,
           indicador: f.indicador,
           meta: f.meta,
           tipoIndividual: "DESEMPENO" as const,
@@ -328,7 +349,10 @@ export function ProponerObjetivosForm({
   }
 
   const puedeEnviar = desempeno.every(
-    (f) => f.lineaEstrategica && f.descripcion.trim() && f.acciones.trim() && f.indicador.trim() && f.meta.trim(),
+    (f) => f.lineaEstrategica && f.descripcion.trim() && f.acciones.trim() &&
+      f.nombreIndicador.trim() &&
+      f.indicador.trim() &&
+      f.meta.trim(),
   );
 
   return (
@@ -381,7 +405,7 @@ export function ProponerObjetivosForm({
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         {!puedeEnviar && (
           <p className="text-sm text-warning">
-            Completa la línea estratégica, la descripción, las acciones, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
+            Completa la línea estratégica, la descripción, las acciones, el indicador, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
             objetivos para poder enviar.
           </p>
         )}

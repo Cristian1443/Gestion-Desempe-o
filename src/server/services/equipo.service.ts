@@ -21,6 +21,7 @@ export interface ObjetivoEquipoVista {
   descripcion: string;
   meta: string | null;
   acciones: string | null;
+  nombreIndicador: string | null;
   indicador: string;
   peso: number;
   tipoIndividual: "DESEMPENO" | "DESARROLLO" | null;
@@ -107,6 +108,7 @@ export async function obtenerMiEquipo(jefeId: string): Promise<MiEquipo | null> 
           descripcion: o.descripcion,
           meta: o.meta,
           acciones: o.acciones,
+          nombreIndicador: o.nombreIndicador,
           indicador: o.indicador,
           peso: o.peso.toNumber(),
           tipoIndividual: o.tipoIndividual,

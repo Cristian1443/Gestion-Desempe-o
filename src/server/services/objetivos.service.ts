@@ -29,6 +29,8 @@ export interface ObjetivoVista {
   descripcion: string;
   meta: string | null;
   acciones: string | null;
+  // Nombre del indicador (se llena desde el principio) y su fórmula de cálculo.
+  nombreIndicador: string | null;
   indicador: string;
   peso: number;
   tipoIndividual: "DESEMPENO" | "DESARROLLO" | null;
@@ -72,6 +74,7 @@ export function aVista(objetivo: {
   descripcion: string;
   meta: string | null;
   acciones: string | null;
+  nombreIndicador: string | null;
   indicador: string;
   peso: { toNumber(): number };
   tipoIndividual: "DESEMPENO" | "DESARROLLO" | null;
@@ -98,6 +101,7 @@ export function aVista(objetivo: {
     descripcion: objetivo.descripcion,
     meta: objetivo.meta,
     acciones: objetivo.acciones,
+    nombreIndicador: objetivo.nombreIndicador,
     indicador: objetivo.indicador,
     peso: objetivo.peso.toNumber(),
     tipoIndividual: objetivo.tipoIndividual,

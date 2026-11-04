@@ -51,7 +51,8 @@ export interface IndicadorGerenciaPdf extends IndicadorPdf {
 export interface ObjetivoIndividualPdf {
   descripcion: string;
   acciones: string | null;
-  // Fórmula del indicador, meta y peso (%).
+  // Indicador (nombre, se llena desde el principio), fórmula del indicador, meta y peso (%).
+  nombreIndicador?: string | null;
   indicador: string;
   meta?: string | null;
   peso?: number | null;
@@ -202,6 +203,7 @@ export async function obtenerConsolidado(periodoId: string, opciones: { usuarioI
     persona.objetivos.push({
       descripcion: o.descripcion,
       acciones: o.acciones,
+      nombreIndicador: o.nombreIndicador,
       indicador: o.indicador,
       meta: o.meta,
       peso: o.peso.toNumber(),

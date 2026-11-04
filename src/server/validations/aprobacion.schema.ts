@@ -6,7 +6,7 @@ import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 const camposComunesObjetivoIndividual = {
   descripcion: z.string().min(1, "La descripción es obligatoria.").max(2000),
   acciones: z.string().min(1, "Las acciones son obligatorias.").max(2000),
-  indicador: z.string().min(1, "El indicador es obligatorio.").max(300),
+  indicador: z.string().min(1, "La fórmula del indicador es obligatoria.").max(300),
   linkRepositorio: z
     .string()
     .trim()
@@ -18,6 +18,7 @@ const camposComunesObjetivoIndividual = {
 export const objetivoDesempenoSchema = z.object({
   ...camposComunesObjetivoIndividual,
   tipoIndividual: z.literal("DESEMPENO"),
+  nombreIndicador: z.string().trim().min(1, "El indicador es obligatorio.").max(300),
   meta: z.string().trim().min(1, "La meta es obligatoria.").max(500),
   lineaEstrategica: z.enum(CODIGOS_LINEA_ESTRATEGICA, {
     errorMap: () => ({ message: "Selecciona una línea estratégica." }),

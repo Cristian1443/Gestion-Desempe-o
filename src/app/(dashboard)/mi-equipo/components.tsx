@@ -177,18 +177,22 @@ function DetalleObjetivo({ objetivo }: { objetivo: ObjetivoEquipoVista }) {
         )}
       </div>
       <div className="grid grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2">
-        <div className="flex flex-col gap-0.5">
-          <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">
-            Fórmula del indicador
-          </p>
-          <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
-        </div>
+        {objetivo.nombreIndicador && (
+          <div className="flex flex-col gap-0.5">
+            <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">Indicador</p>
+            <p className="text-sm leading-relaxed">{objetivo.nombreIndicador}</p>
+          </div>
+        )}
         {objetivo.meta && (
           <div className="flex flex-col gap-0.5">
             <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">Meta</p>
             <p className="text-sm leading-relaxed">{objetivo.meta}</p>
           </div>
         )}
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <p className="text-[0.7rem] font-bold uppercase tracking-wide text-iib-secondary">Fórmula del indicador</p>
+        <p className="text-sm leading-relaxed">{objetivo.indicador}</p>
       </div>
       {objetivo.linkRepositorio && (
         <a

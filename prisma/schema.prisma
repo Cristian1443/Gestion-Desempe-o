@@ -290,6 +290,10 @@ model Objetivo {
   meta         String?
   indicador    String
   unidadMedida String? @map("unidad_medida")
+  // Solo en INDIVIDUAL de desempeño: el nombre del indicador (ej. "Proyectos concretados"),
+  // que se llena desde el principio. `indicador` guarda su fórmula de cálculo. Nulo en los
+  // objetivos propuestos antes de que existiera este campo.
+  nombreIndicador String? @map("nombre_indicador")
 
   // Lo pone el sistema, no la persona: INDIVIDUAL desempeño 10, GERENCIA 15,
   // CORPORATIVO 3.75 (cada nivel reparte su porcentaje por igual: 40/30/30). Los

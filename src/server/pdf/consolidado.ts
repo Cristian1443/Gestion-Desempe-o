@@ -253,6 +253,7 @@ function dibujarObjetivo(e: Escritor, objetivo: ObjetivoIndividualPdf, numero: n
   e.parrafo(`${numero}. ${objetivo.descripcion}`, { negrita: true, sangria: 8 });
   if (objetivo.lineaEstrategica) e.campo("Línea estratégica", objetivo.lineaEstrategica, 14);
   e.campo("Acciones", objetivo.acciones, 14);
+  e.campo("Indicador", objetivo.nombreIndicador, 14);
   e.campo("Fórmula del indicador", objetivo.indicador, 14);
   e.campo("Meta", objetivo.meta, 14);
   if (objetivo.peso !== null && objetivo.peso !== undefined) e.campo("Peso", `${objetivo.peso} %`, 14);

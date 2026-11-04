@@ -16,6 +16,7 @@ export type ObjetivoPropuesto =
       descripcion: string;
       acciones: string;
       indicador: string;
+      nombreIndicador: string;
       meta: string;
       lineaEstrategica: "L1" | "L2" | "L3" | "L4" | "L5";
       linkRepositorio?: string;
@@ -103,6 +104,7 @@ export async function proponerObjetivosIndividuales(
         descripcion: o.descripcion,
         acciones: o.acciones,
         indicador: o.indicador,
+        nombreIndicador: o.tipoIndividual === "DESEMPENO" ? o.nombreIndicador : null,
         meta: o.tipoIndividual === "DESEMPENO" ? o.meta : null,
         peso: o.tipoIndividual === "DESEMPENO" ? PESO_OBJETIVO_INDIVIDUAL : 0,
         tipoIndividual: o.tipoIndividual,

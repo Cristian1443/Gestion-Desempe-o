@@ -16,6 +16,7 @@ function desempeno(cantidad: number) {
     tipoIndividual: "DESEMPENO" as const,
     descripcion: "Concretar proyectos de inversión",
     acciones: "Campañas internacionales",
+    nombreIndicador: "Proyectos concretados",
     indicador: "Proyectos concretados / proyectos planeados",
     meta: "47",
     lineaEstrategica: "L1" as const,
@@ -79,5 +80,14 @@ describe("resumirResultados", () => {
 
   it("con lista vacía todo es cero", () => {
     expect(resumirResultados([])).toEqual({ total: 0, cumplen: 0, noCumplen: 0, sinResultado: 0 });
+  });
+});
+
+describe("indicador (nombre) de los objetivos individuales", () => {
+  it("es obligatorio al proponer, aparte de la fórmula del indicador", () => {
+    const sin = desempeno(4).map((o, i) => (i === 0 ? { ...o, nombreIndicador: "" } : o));
+    const r = proponerObjetivosSchema.safeParse({ objetivos: sin });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0]?.message).toBe("El indicador es obligatorio.");
   });
 });
