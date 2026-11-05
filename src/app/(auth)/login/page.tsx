@@ -6,9 +6,9 @@ import { db } from "@/server/db";
 // pueden leer sin iniciar sesión, igual que en la aplicación de Compras y Contratación.
 const DOCUMENTOS_LOGIN = [
   {
-    href: "/documentos/POL-TH-04_Politica_Bono_No_Salarial_2026.pdf",
-    etiqueta: "Política de bono no salarial 2026",
-    detalle: "POL-TH-04 · Talento Humano",
+    href: "/documentos/MA-TH-02_V03_Manual_Talento_Humano.pdf",
+    etiqueta: "Manual de Talento Humano",
+    detalle: "MA-TH-02 · versión 03",
   },
 ];
 
