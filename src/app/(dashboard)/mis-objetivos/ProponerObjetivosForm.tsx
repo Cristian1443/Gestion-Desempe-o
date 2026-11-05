@@ -14,6 +14,8 @@ type FilaDesempeno = {
   nombreIndicador: string;
   indicador: string;
   meta: string;
+  // Texto mientras se escribe (un número controlado no deja borrar el 0 ni escribir decimales).
+  peso: string;
   linkRepositorio: string;
 };
 
@@ -33,6 +35,7 @@ function filaDesempenoVacia(): FilaDesempeno {
     nombreIndicador: "",
     indicador: "",
     meta: "",
+    peso: String(PESO_OBJETIVO_INDIVIDUAL),
     linkRepositorio: "",
   };
 }
@@ -55,6 +58,7 @@ function desempenoDesdeAnterior(objetivos: ObjetivoVista[]): FilaDesempeno[] {
         nombreIndicador: o.nombreIndicador ?? "",
         indicador: o.indicador,
         meta: o.meta ?? "",
+        peso: String(o.peso),
         linkRepositorio: o.linkRepositorio ?? "",
       }),
     );
@@ -117,9 +121,20 @@ function TarjetaDesempeno({
             </option>
           ))}
         </select>
-        <span className="ml-auto shrink-0 rounded-full bg-iib-surface px-3 py-1 text-xs font-bold tabular-nums text-iib-secondary">
-          Peso {PESO_OBJETIVO_INDIVIDUAL} %
-        </span>
+        <label className="ml-auto flex shrink-0 items-center gap-1.5 text-xs font-semibold text-iib-secondary">
+          Peso
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            value={fila.peso}
+            placeholder="0"
+            onChange={(e) => onCambiar("peso", e.target.value)}
+            className="w-20 rounded-md border border-iib-border bg-iib-surface px-2 py-1.5 text-sm font-bold tabular-nums"
+          />
+          %
+        </label>
       </div>
 
       <div className="flex flex-col gap-3.5 p-4">
@@ -313,6 +328,7 @@ export function ProponerObjetivosForm({
           nombreIndicador: f.nombreIndicador,
           indicador: f.indicador,
           meta: f.meta,
+          peso: Number(f.peso) || 0,
           tipoIndividual: "DESEMPENO" as const,
           lineaEstrategica: f.lineaEstrategica,
           linkRepositorio: f.linkRepositorio || undefined,
@@ -344,12 +360,21 @@ export function ProponerObjetivosForm({
     );
   }
 
+  // El peso de cada meta es editable (25 % por defecto), pero entre las 4 suman exactamente 100 %.
+  const sumaPesos = desempeno.reduce((acc, f) => acc + Math.round((Number(f.peso) || 0) * 100), 0) / 100;
+  const sumaValida = Math.round(sumaPesos * 100) === Math.round(PESO_TOTAL_INDIVIDUALES * 100);
+
+  function repartirEquitativo() {
+    setDesempeno((prev) => prev.map((f) => ({ ...f, peso: String(PESO_OBJETIVO_INDIVIDUAL) })));
+  }
+
   const puedeEnviar = desempeno.every(
     (f) => f.lineaEstrategica && f.descripcion.trim() && f.acciones.trim() &&
       f.nombreIndicador.trim() &&
       f.indicador.trim() &&
-      f.meta.trim(),
-  );
+      f.meta.trim() &&
+      Number(f.peso) > 0,
+  ) && sumaValida;
 
   return (
     <div className="flex flex-col gap-6">
@@ -357,10 +382,27 @@ export function ProponerObjetivosForm({
         <div className="rounded-card border border-iib-border bg-iib-surface px-4 py-3.5 shadow-card">
           <h3 className="text-sm font-bold text-iib-primary">Metas individuales</h3>
           <p className="text-xs text-iib-secondary">
-            {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno con su línea estratégica y su meta. Los cuatro pesan lo mismo
-            ({PESO_OBJETIVO_INDIVIDUAL} % c/u, {PESO_TOTAL_INDIVIDUALES} % en total). Tu jefe hace el seguimiento de cada uno con un
-            % de avance y un comentario, y al final del periodo marca si cumple o no cumple.
+            {CANTIDAD_OBJETIVOS_DESEMPENO} objetivos, cada uno con su línea estratégica y su meta. Cada uno pesa{" "}
+            {PESO_OBJETIVO_INDIVIDUAL} % por defecto; puedes cambiar el peso de cada uno, pero la suma siempre debe ser
+            exactamente {PESO_TOTAL_INDIVIDUALES} %. Tu jefe hace el seguimiento de cada uno con un % de avance y un
+            comentario, y al final del periodo marca si cumple o no cumple.
           </p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
+                sumaValida ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
+              }`}
+            >
+              {sumaPesos.toFixed(2)}% / {PESO_TOTAL_INDIVIDUALES}%
+            </span>
+            <button
+              type="button"
+              onClick={repartirEquitativo}
+              className="rounded-md border border-iib-border px-3 py-1.5 text-xs font-semibold transition hover:bg-iib-surface-sunken"
+            >
+              Volver a {PESO_OBJETIVO_INDIVIDUAL} % cada una
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-4">
           {desempeno.map((fila, indice) => (
@@ -402,7 +444,7 @@ export function ProponerObjetivosForm({
         {!puedeEnviar && (
           <p className="text-sm text-warning">
             Completa la línea estratégica, la descripción, las evidencias, el indicador, la fórmula y la meta de los {CANTIDAD_OBJETIVOS_DESEMPENO}{" "}
-            objetivos para poder enviar.
+            objetivos, y que los pesos sumen {PESO_TOTAL_INDIVIDUALES} %, para poder enviar.
           </p>
         )}
         <button

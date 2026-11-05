@@ -275,8 +275,8 @@ semáforo: describen el flujo anterior, no el actual.
   que Talento Humano define en el periodo (`Periodo.cumplimientoInicio/Fin`), que
   puede terminar después del periodo. En los individuales lo marca el jefe directo.
 - **Objetivos de desempeño.** Cuatro por persona, cada uno con **línea estratégica,
-  descripción, acciones, indicador (su nombre, que se llena desde el principio), fórmula del indicador y meta**. El peso no lo escribe la persona:
-  los cuatro pesan lo mismo, **10 % c/u (40 % del total)**, y lo pone el sistema. El colaborador los
+  descripción, acciones, indicador (su nombre, que se llena desde el principio), fórmula del indicador y meta**. El peso:
+  el peso de cada una empieza en **25 %** y el colaborador lo puede cambiar, pero entre las cuatro siempre suman **exactamente 100 %** (se valida al proponer y al aprobar). El colaborador los
   propone, el jefe los aprueba, en **cada seguimiento** registra el **% de avance** de la
   meta con su comentario y al final pone el % de cumplimiento. El peso aún no entra a
   ninguna nota: la nota final ponderada sigue sin conectarse.

@@ -1,7 +1,7 @@
 import { CronogramaPeriodo } from "@/components/CronogramaPeriodo";
 import { FranjaItems } from "@/components/FranjaBanner";
 import { avancePonderado, formatearPuntos } from "@/lib/avance";
-import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, DESARROLLO_HABILITADO, PESO_OBJETIVO_INDIVIDUAL } from "@/lib/objetivos-config";
+import { COMPONENTES_GERENCIA_Y_EMPRESA_HABILITADOS, DESARROLLO_HABILITADO, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
 import { requireUsuarioAutenticado } from "@/server/auth/rbac";
 import { obtenerUltimoPeriodoCerrado, tieneObjetivosAprobados } from "@/server/services/individuales.service";
 import { obtenerCronograma } from "@/server/services/cronograma.service";
@@ -224,7 +224,7 @@ export default async function MisObjetivosPage({
                     {categoria === "desempeno" ? "Metas individuales" : "Objetivos de desarrollo"}
                   </h2>
                   <span className="rounded-full bg-iib-primary/10 px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-iib-primary">
-                    Cada una pesa {PESO_OBJETIVO_INDIVIDUAL} % · seguimiento con % de avance
+                    Los pesos suman {PESO_TOTAL_INDIVIDUALES} % · seguimiento con % de avance
                   </span>
                   {categoria === "desempeno" && avanceTotal.conAvance > 0 && (
                     <span className="rounded-full bg-success-bg px-2.5 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-success">

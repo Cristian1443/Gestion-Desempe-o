@@ -15,8 +15,10 @@ import {
 import { resumirResultados } from "@/server/services/consolidado.service";
 import { proponerObjetivosSchema } from "@/server/validations/aprobacion.schema";
 
-function desempeno(cantidad: number) {
-  return Array.from({ length: cantidad }, () => ({
+// Por defecto cada meta pesa 25; `pesos` permite probar otros repartos.
+function desempeno(cantidad: number, pesos?: number[]) {
+  return Array.from({ length: cantidad }, (_, i) => ({
+    peso: pesos?.[i] ?? 25,
     tipoIndividual: "DESEMPENO" as const,
     descripcion: "Concretar proyectos de inversión",
     acciones: "Campañas internacionales",
@@ -54,6 +56,26 @@ describe("propuesta de objetivos individuales (peso automático, sin desarrollo 
 
   it("acepta 4 objetivos de desempeño con meta, sin pedir peso", () => {
     expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4) }).success).toBe(true);
+  });
+
+  it("deja cambiar el peso de cada meta mientras la suma sea exactamente 100", () => {
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [40, 30, 20, 10]) }).success).toBe(true);
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [50, 25, 15, 10]) }).success).toBe(true);
+    // Con decimales, sin errores de redondeo de punto flotante.
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [33.33, 33.33, 33.33, 0.01]) }).success).toBe(true);
+  });
+
+  it("rechaza pesos que no suman 100: ni menos ni más", () => {
+    const menos = proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [25, 25, 25, 24]) });
+    expect(menos.success).toBe(false);
+    if (!menos.success) expect(menos.error.issues[0]?.message).toContain("100");
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [30, 30, 30, 30]) }).success).toBe(false);
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [25, 25, 25, 25.01]) }).success).toBe(false);
+  });
+
+  it("rechaza un peso en cero o negativo", () => {
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [50, 50, 0, 0]) }).success).toBe(false);
+    expect(proponerObjetivosSchema.safeParse({ objetivos: desempeno(4, [60, 60, -10, -10]) }).success).toBe(false);
   });
 
   it("rechaza una meta vacía", () => {

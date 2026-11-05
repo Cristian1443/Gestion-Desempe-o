@@ -288,7 +288,7 @@ function dibujarIndividuales(e: Escritor, grupos: Array<{ gerencia: string; pers
     return;
   }
   e.parrafo(
-    `${datos.empleado ? "" : "Agrupados por gerencia y por persona. "}Los ${CANTIDAD_OBJETIVOS_DESEMPENO} pesan lo mismo (${PESO_OBJETIVO_INDIVIDUAL} % cada uno, ${PESO_TOTAL_INDIVIDUALES} % en total): se siguen con % de avance y cada uno termina en Cumple / No cumple.`,
+    `${datos.empleado ? "" : "Agrupados por gerencia y por persona. "}Los ${CANTIDAD_OBJETIVOS_DESEMPENO} suman ${PESO_TOTAL_INDIVIDUALES} % (${PESO_OBJETIVO_INDIVIDUAL} % cada uno por defecto; el colaborador puede cambiar los pesos): se siguen con % de avance y cada uno termina en Cumple / No cumple.`,
     { color: GRIS },
   );
   grupos.forEach((grupo, i) => {

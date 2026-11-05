@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { CANTIDAD_DESARROLLO_ACTIVA, FILTRO_OBJETIVOS_ACTIVOS, PESO_OBJETIVO_INDIVIDUAL } from "@/lib/objetivos-config";
+import { CANTIDAD_DESARROLLO_ACTIVA, FILTRO_OBJETIVOS_ACTIVOS, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
 import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 import { obtenerPeriodoActual } from "@/server/services/periodos.service";
 
@@ -18,6 +18,7 @@ export type ObjetivoPropuesto =
       indicador: string;
       nombreIndicador: string;
       meta: string;
+      peso: number;
       lineaEstrategica: "L1" | "L2" | "L3" | "L4" | "L5";
       linkRepositorio?: string;
     }
@@ -32,10 +33,10 @@ export type ObjetivoPropuesto =
 
 const LARGO_TITULO = 100;
 
-// El conjunto de objetivos individuales: 4 de desempeño (que pesan lo mismo, 25 %
-// cada uno, y se miden con Cumple / No cumple) y, cuando se vuelvan a manejar,
-// los de desarrollo. El peso no lo escribe la persona: lo pone el sistema.
-function validarConjunto(objetivos: Array<{ tipo: "DESEMPENO" | "DESARROLLO" }>) {
+// El conjunto de objetivos individuales: 4 de desempeño (25 % cada uno por defecto, que la
+// persona puede cambiar mientras la suma siga siendo exactamente 100 %) y, cuando se vuelvan
+// a manejar, los de desarrollo.
+function validarConjunto(objetivos: Array<{ tipo: "DESEMPENO" | "DESARROLLO"; peso: number }>) {
   const desempeno = objetivos.filter((o) => o.tipo === "DESEMPENO").length;
   const desarrollo = objetivos.filter((o) => o.tipo === "DESARROLLO").length;
   if (desempeno !== CANTIDAD_OBJETIVOS_DESEMPENO) {
@@ -48,6 +49,14 @@ function validarConjunto(objetivos: Array<{ tipo: "DESEMPENO" | "DESARROLLO" }>)
       CANTIDAD_DESARROLLO_ACTIVA === 0
         ? "Los objetivos de desarrollo no se manejan este año."
         : `Se requieren exactamente ${CANTIDAD_DESARROLLO_ACTIVA} objetivos de desarrollo, se recibieron ${desarrollo}.`,
+    );
+  }
+  const suma = objetivos
+    .filter((o) => o.tipo === "DESEMPENO")
+    .reduce((acc, o) => acc + Math.round(o.peso * 100), 0);
+  if (suma !== Math.round(PESO_TOTAL_INDIVIDUALES * 100)) {
+    throw new ErrorAprobacion(
+      `La suma de los pesos de las metas debe ser ${PESO_TOTAL_INDIVIDUALES} %, es ${suma / 100} %.`,
     );
   }
 }
@@ -78,7 +87,7 @@ export async function proponerObjetivosIndividuales(
     throw new ErrorAprobacion("El periodo no está abierto para proponer objetivos.");
   }
 
-  validarConjunto(objetivos.map((o) => ({ tipo: o.tipoIndividual })));
+  validarConjunto(objetivos.map((o) => ({ tipo: o.tipoIndividual, peso: o.tipoIndividual === "DESEMPENO" ? o.peso : 0 })));
 
   const existentes = await db.objetivo.findMany({
     where: { periodoId: periodo.id, nivel: "INDIVIDUAL", usuarioId },
@@ -106,7 +115,7 @@ export async function proponerObjetivosIndividuales(
         indicador: o.indicador,
         nombreIndicador: o.tipoIndividual === "DESEMPENO" ? o.nombreIndicador : null,
         meta: o.tipoIndividual === "DESEMPENO" ? o.meta : null,
-        peso: o.tipoIndividual === "DESEMPENO" ? PESO_OBJETIVO_INDIVIDUAL : 0,
+        peso: o.tipoIndividual === "DESEMPENO" ? o.peso : 0,
         tipoIndividual: o.tipoIndividual,
         lineaEstrategica: o.tipoIndividual === "DESEMPENO" ? o.lineaEstrategica : null,
         competencia: o.tipoIndividual === "DESARROLLO" ? o.competencia : null,
@@ -142,7 +151,7 @@ export async function aprobarObjetivosIndividuales(
   // Defensivo: re-valida las mismas reglas de negocio antes de aprobar, en
   // vez de asumir que seguían siendo válidas desde que se propusieron.
   validarConjunto(
-    pendientes.map((o) => ({ tipo: o.tipoIndividual as "DESEMPENO" | "DESARROLLO" })),
+    pendientes.map((o) => ({ tipo: o.tipoIndividual as "DESEMPENO" | "DESARROLLO", peso: o.peso.toNumber() })),
   );
 
   await db.objetivo.updateMany({

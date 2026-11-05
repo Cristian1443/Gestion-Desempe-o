@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CODIGOS_LINEA_ESTRATEGICA } from "@/lib/lineas-estrategicas";
-import { CANTIDAD_DESARROLLO_ACTIVA } from "@/lib/objetivos-config";
+import { CANTIDAD_DESARROLLO_ACTIVA, PESO_TOTAL_INDIVIDUALES } from "@/lib/objetivos-config";
 import { CANTIDAD_OBJETIVOS_DESEMPENO } from "@/server/services/calculo-notas";
 
 const camposComunesObjetivoIndividual = {
@@ -20,6 +20,11 @@ export const objetivoDesempenoSchema = z.object({
   tipoIndividual: z.literal("DESEMPENO"),
   nombreIndicador: z.string().trim().min(1, "El indicador es obligatorio.").max(300),
   meta: z.string().trim().min(1, "La meta es obligatoria.").max(500),
+  // Por defecto 25 %, pero la persona lo puede cambiar; entre las 4 metas la suma debe ser 100 %.
+  peso: z
+    .number({ invalid_type_error: "El peso debe ser un número." })
+    .min(0.01, "El peso de cada meta debe ser mayor a 0.")
+    .max(100, "El peso no puede ser mayor a 100."),
   lineaEstrategica: z.enum(CODIGOS_LINEA_ESTRATEGICA, {
     errorMap: () => ({ message: "Selecciona una línea estratégica." }),
   }),
@@ -50,7 +55,13 @@ export const proponerObjetivosSchema = z.object({
       CANTIDAD_DESARROLLO_ACTIVA === 0
         ? "Los objetivos de desarrollo no se manejan este año."
         : `Debes proponer exactamente ${CANTIDAD_DESARROLLO_ACTIVA} objetivos de desarrollo.`,
-    ),
+    )
+    .refine((objetivos) => {
+      const suma = objetivos
+        .filter((o) => o.tipoIndividual === "DESEMPENO")
+        .reduce((acc, o) => acc + Math.round(o.peso * 100), 0);
+      return suma === Math.round(PESO_TOTAL_INDIVIDUALES * 100);
+    }, `La suma de los pesos de las metas debe ser exactamente ${PESO_TOTAL_INDIVIDUALES} %, ni más ni menos.`),
 });
 
 export const aprobarObjetivosSchema = z.object({
