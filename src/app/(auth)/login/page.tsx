@@ -10,6 +10,11 @@ const DOCUMENTOS_LOGIN = [
     etiqueta: "Manual de Talento Humano",
     detalle: "MA-TH-02 · versión 03",
   },
+  {
+    href: "/documentos/Manual_de_Usuario_Gestion_del_Desempeno.pdf",
+    etiqueta: "Manual de usuario",
+    detalle: "Gestión del Desempeño · versión 1.0",
+  },
 ];
 
 function IconoMicrosoft() {
